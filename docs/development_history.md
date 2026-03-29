@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.5.2 (2026-03-29)
+
+Patch release focused on explicit launcher and start or root return controls across Haptic Desktop scenes.
+
+Delivered:
+
+- Replaced ambiguous Home controls with explicit Launcher controls across galleries, file-browser scenes, detail scenes, and opened content scenes.
+- Added direct Start and Root controls so users can jump back to the beginning of the active gallery or browser flow without stepping through intermediate pages.
+- Extended the browser smoke validator to exercise gallery Next, Start, and Launcher controls through the fallback focus path.
+
+Rationale:
+
+- Keep blind-first scene navigation explicit and predictable by separating return-to-launcher from return-to-gallery-start semantics.
+- Make the no-device runtime emulate the same controlled navigation paths that a future haptic-only workflow will require.
+
 ### v0.5.1 (2026-03-29)
 
 Patch release focused on full bundled gallery coverage in the demo workspace, clearer Haptic Desktop pagination, and isolated browser smoke validation.

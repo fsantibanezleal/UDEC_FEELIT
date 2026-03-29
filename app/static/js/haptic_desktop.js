@@ -508,6 +508,26 @@ function buildControlButton(kind, accent, disabled = false) {
     arrow.rotation.z = -Math.PI / 2;
     arrow.position.set(0.12, 0.14, 0);
     group.add(arrow);
+  } else if (kind === "start") {
+    const marker = registerInteractiveMesh(
+      new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 4), material.clone()),
+      "accent",
+    );
+    marker.rotation.y = Math.PI / 4;
+    marker.position.set(-0.08, 0.18, 0);
+    group.add(marker);
+    const ridge = registerInteractiveMesh(
+      new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 0.08), material),
+      "accent",
+    );
+    ridge.position.set(0.06, 0.12, 0);
+    group.add(ridge);
+    const stop = registerInteractiveMesh(
+      new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.08), material.clone()),
+      "accent",
+    );
+    stop.position.set(-0.18, 0.12, 0);
+    group.add(stop);
   } else if (kind === "previous") {
     [-0.1, 0, 0.1].forEach((offset) => {
       const ridge = registerInteractiveMesh(
@@ -1125,6 +1145,43 @@ function detailOriginLabel(origin) {
   return "Launcher";
 }
 
+function originStartConfig(origin) {
+  if (!origin) {
+    return null;
+  }
+  if (origin.type === "gallery") {
+    return {
+      label: "Start",
+      actionLabel: `Return to the first page of ${CATEGORY_META[origin.category].title}`,
+      color: CATEGORY_META[origin.category].color,
+    };
+  }
+  if (origin.type === "file-browser") {
+    return {
+      label: "Root",
+      actionLabel: "Return to the workspace file browser root",
+      color: 0xc297ff,
+    };
+  }
+  return null;
+}
+
+async function navigateToOriginStart(origin) {
+  if (!origin) {
+    await navigateToLauncher();
+    return;
+  }
+  if (origin.type === "gallery") {
+    await navigateToGallery(origin.category, 0);
+    return;
+  }
+  if (origin.type === "file-browser") {
+    await navigateToFileBrowser("", 0);
+    return;
+  }
+  await navigateToLauncher();
+}
+
 function createGalleryItemTarget(item, position, onActivate) {
   const kind = resolveItemKind(item);
   const meta = kindMeta(kind);
@@ -1314,14 +1371,25 @@ async function navigateToGallery(category, page = 0) {
   addGallerySummary(category, pageSlice, workspace.libraries[category].length);
 
   addControlTarget({
-    id: `gallery-${category}-home`,
-    label: "Home",
+    id: `gallery-${category}-launcher`,
+    label: "Launcher",
     type: "Control",
-    actionLabel: "Return to the launcher",
+    actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.45, 0.12, 1.78),
+    position: new THREE.Vector3(-1.74, 0.12, 1.78),
     onActivate: async () => navigateToLauncher(),
+  });
+  addControlTarget({
+    id: `gallery-${category}-start`,
+    label: "Start",
+    type: "Control",
+    actionLabel: `Return to the first page of ${CATEGORY_META[category].title}`,
+    kind: "start",
+    color: CATEGORY_META[category].color,
+    position: new THREE.Vector3(-0.58, 0.12, 1.78),
+    onActivate: async () => navigateToGallery(category, 0),
+    disabled: pageSlice.page === 0,
   });
   addControlTarget({
     id: `gallery-${category}-prev`,
@@ -1330,7 +1398,7 @@ async function navigateToGallery(category, page = 0) {
     actionLabel: "Move to the previous gallery page",
     kind: "previous",
     color: CATEGORY_META[category].color,
-    position: new THREE.Vector3(-0.3, 0.12, 1.78),
+    position: new THREE.Vector3(0.58, 0.12, 1.78),
     onActivate: async () => navigateToGallery(category, pageSlice.page - 1),
     disabled: pageSlice.page === 0,
   });
@@ -1341,7 +1409,7 @@ async function navigateToGallery(category, page = 0) {
     actionLabel: "Move to the next gallery page",
     kind: "next",
     color: CATEGORY_META[category].color,
-    position: new THREE.Vector3(0.86, 0.12, 1.78),
+    position: new THREE.Vector3(1.74, 0.12, 1.78),
     onActivate: async () => navigateToGallery(category, pageSlice.page + 1),
     disabled: pageSlice.page >= pageSlice.pageCount - 1,
   });
@@ -1364,7 +1432,7 @@ async function navigateToGallery(category, page = 0) {
     idleMessage: `Pointer moving across the ${CATEGORY_META[category].title.toLowerCase()}.`,
   });
   focusTarget(
-    pageSlice.items.length > 0 ? `item-${pageSlice.items[0].slug}` : `gallery-${category}-home`,
+    pageSlice.items.length > 0 ? `item-${pageSlice.items[0].slug}` : `gallery-${category}-launcher`,
     { source: "scene", movePointer: false },
   );
 }
@@ -1405,14 +1473,25 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
   });
 
   addControlTarget({
-    id: "file-browser-home",
-    label: "Home",
+    id: "file-browser-launcher",
+    label: "Launcher",
     type: "Control",
-    actionLabel: "Return to the launcher",
+    actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.72, 0.12, 1.78),
+    position: new THREE.Vector3(-2.28, 0.12, 1.78),
     onActivate: async () => navigateToLauncher(),
+  });
+  addControlTarget({
+    id: "file-browser-root",
+    label: "Root",
+    type: "Control",
+    actionLabel: "Return to the workspace file browser root",
+    kind: "start",
+    color: 0xc297ff,
+    position: new THREE.Vector3(-1.14, 0.12, 1.78),
+    onActivate: async () => navigateToFileBrowser("", 0),
+    disabled: payload.current_path === "",
   });
   addControlTarget({
     id: "file-browser-up",
@@ -1421,7 +1500,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Return to the parent folder",
     kind: "up",
     color: 0xc297ff,
-    position: new THREE.Vector3(-0.58, 0.12, 1.78),
+    position: new THREE.Vector3(0, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser(payload.parent_path ?? "", 0),
     disabled: !payload.parent_path,
   });
@@ -1432,7 +1511,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Move to the previous file page",
     kind: "previous",
     color: 0x58a6ff,
-    position: new THREE.Vector3(0.56, 0.12, 1.78),
+    position: new THREE.Vector3(1.14, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser(payload.current_path, pageSlice.page - 1),
     disabled: pageSlice.page === 0,
   });
@@ -1443,7 +1522,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Move to the next file page",
     kind: "next",
     color: 0x58a6ff,
-    position: new THREE.Vector3(1.7, 0.12, 1.78),
+    position: new THREE.Vector3(2.28, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser(payload.current_path, pageSlice.page + 1),
     disabled: pageSlice.page >= pageSlice.pageCount - 1,
   });
@@ -1466,7 +1545,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     idleMessage: "Pointer moving across the workspace file browser.",
   });
   focusTarget(
-    pageSlice.items.length > 0 ? `item-${pageSlice.items[0].slug}` : "file-browser-home",
+    pageSlice.items.length > 0 ? `item-${pageSlice.items[0].slug}` : "file-browser-launcher",
     { source: "scene", movePointer: false },
   );
 }
@@ -1536,16 +1615,29 @@ async function navigateToDetail(item, origin) {
   summarySprite.position.set(0, 0.32, 1.18);
   state.sceneApi.world.add(summarySprite);
 
+  const originStart = originStartConfig(origin);
   addControlTarget({
-    id: "detail-home",
-    label: "Home",
+    id: "detail-launcher",
+    label: "Launcher",
     type: "Control",
-    actionLabel: "Return to the launcher",
+    actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.4, 0.12, 1.42),
+    position: new THREE.Vector3(-1.62, 0.12, 1.42),
     onActivate: async () => navigateToLauncher(),
   });
+  if (originStart) {
+    addControlTarget({
+      id: "detail-origin-start",
+      label: originStart.label,
+      type: "Control",
+      actionLabel: originStart.actionLabel,
+      kind: "start",
+      color: originStart.color,
+      position: new THREE.Vector3(-0.5, 0.12, 1.42),
+      onActivate: async () => navigateToOriginStart(origin),
+    });
+  }
   addControlTarget({
     id: "detail-back",
     label: "Back",
@@ -1553,7 +1645,7 @@ async function navigateToDetail(item, origin) {
     actionLabel: `Return to ${detailOriginLabel(origin)}`,
     kind: "back",
     color: 0x58a6ff,
-    position: new THREE.Vector3(-0.1, 0.12, 1.42),
+    position: new THREE.Vector3(originStart ? 0.62 : 0, 0.12, 1.42),
     onActivate: async () => navigateBackToOrigin(origin),
   });
   addControlTarget({
@@ -1563,7 +1655,7 @@ async function navigateToDetail(item, origin) {
     actionLabel: kind === "unsupported" ? "The selected file is not supported yet" : `Open ${item.title}`,
     kind: "open",
     color: meta.color,
-    position: new THREE.Vector3(1.2, 0.12, 1.42),
+    position: new THREE.Vector3(originStart ? 1.74 : 1.2, 0.12, 1.42),
     onActivate: async () => openItemScene(item, origin),
     disabled: kind === "unsupported",
   });
@@ -1640,17 +1732,30 @@ async function navigateToModelScene(item, origin) {
   const bounds = new THREE.Box3().setFromObject(object);
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
+  const originStart = originStartConfig(origin);
 
   addControlTarget({
-    id: "model-home",
-    label: "Home",
+    id: "model-launcher",
+    label: "Launcher",
     type: "Control",
-    actionLabel: "Return to the launcher",
+    actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.5, 0.12, 1.7),
+    position: new THREE.Vector3(-1.76, 0.12, 1.7),
     onActivate: async () => navigateToLauncher(),
   });
+  if (originStart) {
+    addControlTarget({
+      id: "model-origin-start",
+      label: originStart.label,
+      type: "Control",
+      actionLabel: originStart.actionLabel,
+      kind: "start",
+      color: originStart.color,
+      position: new THREE.Vector3(-0.58, 0.12, 1.7),
+      onActivate: async () => navigateToOriginStart(origin),
+    });
+  }
   addControlTarget({
     id: "model-back",
     label: "Back",
@@ -1658,7 +1763,7 @@ async function navigateToModelScene(item, origin) {
     actionLabel: `Return to ${detailOriginLabel(origin)}`,
     kind: "back",
     color: 0x58a6ff,
-    position: new THREE.Vector3(0, 0.12, 1.7),
+    position: new THREE.Vector3(originStart ? 0.6 : 0, 0.12, 1.7),
     onActivate: async () => navigateBackToOrigin(origin),
   });
 
@@ -1670,8 +1775,8 @@ async function navigateToModelScene(item, origin) {
     ),
   );
   state.pointerController.setBounds(
-    new THREE.Vector3(center.x - size.x * 0.72, 0.14, -1.8),
-    new THREE.Vector3(center.x + size.x * 0.72, Math.max(1.8, size.y + 0.9), 2.1),
+    new THREE.Vector3(Math.min(center.x - size.x * 0.72, -1.95), 0.14, -1.8),
+    new THREE.Vector3(Math.max(center.x + size.x * 0.72, 1.0), Math.max(1.8, size.y + 0.9), 2.1),
   );
   state.pointerController.setPosition(
     new THREE.Vector3(center.x + 0.8, Math.min(size.y + 0.5, 1.25), 0.6),
@@ -1811,16 +1916,29 @@ function renderTextScene(token = state.sceneBuildToken) {
   header.position.set(0, 0.3, 1.44);
   state.sceneApi.world.add(header);
 
+  const originStart = originStartConfig(textScene.origin);
   addControlTarget({
-    id: "text-home",
-    label: "Home",
+    id: "text-launcher",
+    label: "Launcher",
     type: "Control",
-    actionLabel: "Return to the launcher",
+    actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.58, 0.12, 1.78),
+    position: new THREE.Vector3(-2.12, 0.12, 1.78),
     onActivate: async () => navigateToLauncher(),
   });
+  if (originStart) {
+    addControlTarget({
+      id: "text-origin-start",
+      label: originStart.label,
+      type: "Control",
+      actionLabel: originStart.actionLabel,
+      kind: "start",
+      color: originStart.color,
+      position: new THREE.Vector3(-0.98, 0.12, 1.78),
+      onActivate: async () => navigateToOriginStart(textScene.origin),
+    });
+  }
   addControlTarget({
     id: "text-back",
     label: "Back",
@@ -1828,7 +1946,7 @@ function renderTextScene(token = state.sceneBuildToken) {
     actionLabel: `Return to ${detailOriginLabel(textScene.origin)}`,
     kind: "back",
     color: 0x58a6ff,
-    position: new THREE.Vector3(-0.44, 0.12, 1.78),
+    position: new THREE.Vector3(0.16, 0.12, 1.78),
     onActivate: async () => navigateBackToOrigin(textScene.origin),
   });
   addControlTarget({
@@ -1838,7 +1956,7 @@ function renderTextScene(token = state.sceneBuildToken) {
     actionLabel: "Move to the previous reading page",
     kind: "previous",
     color: 0x7ee787,
-    position: new THREE.Vector3(0.7, 0.12, 1.78),
+    position: new THREE.Vector3(1.3, 0.12, 1.78),
     onActivate: async () => moveTextScene(-1),
     disabled: textScene.page === 0 && textScene.payload.previous_offset === null,
   });
@@ -1849,17 +1967,19 @@ function renderTextScene(token = state.sceneBuildToken) {
     actionLabel: "Move to the next reading page",
     kind: "next",
     color: 0x7ee787,
-    position: new THREE.Vector3(1.84, 0.12, 1.78),
+    position: new THREE.Vector3(2.44, 0.12, 1.78),
     onActivate: async () => moveTextScene(1),
     disabled:
       textScene.page >= textPageCount(textScene) - 1 &&
       textScene.payload.next_offset === null,
   });
 
-  state.sceneApi.setBoundarySize(new THREE.Vector3(board.width + 1, 1.0, board.depth + 1.1));
+  state.sceneApi.setBoundarySize(
+    new THREE.Vector3(Math.max(board.width + 1.8, 5.4), 1.0, board.depth + 1.1),
+  );
   state.pointerController.setBounds(
-    new THREE.Vector3(-board.width / 2, 0.14, -board.depth / 2 + 0.02),
-    new THREE.Vector3(board.width / 2, 0.34, 1.95),
+    new THREE.Vector3(-2.55, 0.14, -board.depth / 2 + 0.02),
+    new THREE.Vector3(2.55, 0.34, 1.95),
   );
   state.pointerController.setPosition(new THREE.Vector3(-0.44, 0.24, 1.22));
   finishSceneBuild({
@@ -1929,11 +2049,11 @@ function renderAudioScene(token = state.sceneBuildToken) {
   const audioScene = state.audioScene;
   const player = audioPlayer();
   prepareScene(
-    5.2,
+    6.4,
     4.2,
     audioScene.item.title,
     "Scene 4: tactile audio transport with seek, return, and launcher controls.",
-    [4.8, 3.2, 5.0],
+    [5.2, 3.2, 5.4],
     [0, 0.28, 0],
     true,
   );
@@ -1953,16 +2073,29 @@ function renderAudioScene(token = state.sceneBuildToken) {
   transport.position.set(0, 0.34, 1.16);
   state.sceneApi.world.add(transport);
 
+  const originStart = originStartConfig(audioScene.origin);
   addControlTarget({
-    id: "audio-home",
-    label: "Home",
+    id: "audio-launcher",
+    label: "Launcher",
     type: "Control",
-    actionLabel: "Return to the launcher",
+    actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.78, 0.12, 1.46),
+    position: new THREE.Vector3(-2.32, 0.12, 1.46),
     onActivate: async () => navigateToLauncher(),
   });
+  if (originStart) {
+    addControlTarget({
+      id: "audio-origin-start",
+      label: originStart.label,
+      type: "Control",
+      actionLabel: originStart.actionLabel,
+      kind: "start",
+      color: originStart.color,
+      position: new THREE.Vector3(-1.18, 0.12, 1.46),
+      onActivate: async () => navigateToOriginStart(audioScene.origin),
+    });
+  }
   addControlTarget({
     id: "audio-back",
     label: "Back",
@@ -1970,7 +2103,7 @@ function renderAudioScene(token = state.sceneBuildToken) {
     actionLabel: `Return to ${detailOriginLabel(audioScene.origin)}`,
     kind: "back",
     color: 0x58a6ff,
-    position: new THREE.Vector3(-0.62, 0.12, 1.46),
+    position: new THREE.Vector3(-0.04, 0.12, 1.46),
     onActivate: async () => navigateBackToOrigin(audioScene.origin),
   });
   addControlTarget({
@@ -1980,7 +2113,7 @@ function renderAudioScene(token = state.sceneBuildToken) {
     actionLabel: player.paused ? "Start playback" : "Pause playback",
     kind: "playpause",
     color: 0xf2cc60,
-    position: new THREE.Vector3(0.54, 0.12, 1.46),
+    position: new THREE.Vector3(1.12, 0.12, 1.46),
     onActivate: async () => {
       if (player.paused) {
         await player.play();
@@ -1997,7 +2130,7 @@ function renderAudioScene(token = state.sceneBuildToken) {
     actionLabel: "Seek backward ten seconds",
     kind: "seek-back",
     color: 0xf2cc60,
-    position: new THREE.Vector3(1.7, 0.12, 1.46),
+    position: new THREE.Vector3(2.28, 0.12, 1.46),
     onActivate: async () => {
       seekAudio(-SEEK_SECONDS);
       renderAudioScene();
@@ -2010,7 +2143,7 @@ function renderAudioScene(token = state.sceneBuildToken) {
     actionLabel: "Seek forward ten seconds",
     kind: "seek-forward",
     color: 0xf2cc60,
-    position: new THREE.Vector3(2.86, 0.12, 1.46),
+    position: new THREE.Vector3(3.44, 0.12, 1.46),
     onActivate: async () => {
       seekAudio(SEEK_SECONDS);
       renderAudioScene();
@@ -2018,10 +2151,10 @@ function renderAudioScene(token = state.sceneBuildToken) {
   });
 
   state.pointerController.setBounds(
-    new THREE.Vector3(-2.3, 0.14, -1.5),
-    new THREE.Vector3(3.3, 1.0, 1.7),
+    new THREE.Vector3(-2.6, 0.14, -1.5),
+    new THREE.Vector3(3.8, 1.0, 1.7),
   );
-  state.pointerController.setPosition(new THREE.Vector3(0.54, 0.3, 1.08));
+  state.pointerController.setPosition(new THREE.Vector3(1.12, 0.3, 1.08));
   finishSceneBuild({
     code: "open-audio",
     title: "Audio Scene",
