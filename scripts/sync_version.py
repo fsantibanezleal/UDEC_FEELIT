@@ -9,7 +9,13 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.core.version import APP_NAME, APP_PUBLISHER, APP_VERSION, WINDOWS_FILE_VERSION
+from app.core.version import (
+    APP_NAME,
+    APP_PUBLISHER,
+    APP_VERSION,
+    WINDOWS_FILE_VERSION,
+    WINDOWS_FILE_VERSION_TUPLE,
+)
 
 INSTALLER_DIR = ROOT / "installer"
 ISS_VERSION_FILE = INSTALLER_DIR / "version.iss"
@@ -28,7 +34,7 @@ def build_iss_file() -> str:
 
 def build_pyinstaller_version_file() -> str:
     """Build the Windows version metadata for PyInstaller."""
-    major, minor, patch, build = (int(part) for part in WINDOWS_FILE_VERSION.split("."))
+    major, minor, patch, build = WINDOWS_FILE_VERSION_TUPLE
     return f"""VSVersionInfo(
   ffi=FixedFileInfo(
     filevers=({major}, {minor}, {patch}, {build}),

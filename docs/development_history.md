@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.05.002 (2026-03-29)
+
+Regularize the active FeelIT line onto a legacy-aware release 2 and adopt the fixed-width canonical version format X.XX.XXX.
+
+Delivered:
+
+- Promoted the active FeelIT line from the previous 0.5.x path to the canonical padded version 2.05.002.
+- Updated version tooling so runtime, documentation, PyInstaller metadata, and Inno Setup metadata all consume the padded canonical format.
+- Introduced a packaging-safe normalized version derivation for Python package metadata while preserving the padded workspace version as the canonical project string.
+
+Rationale:
+
+- FeelIT is a modernization of a prior initiative and should not present its active line as an early 0.x prototype.
+- The fixed-width version format improves scanability, consistency, and long-range release tracking across the workspace.
+
 ### v0.5.5 (2026-03-29)
 
 Promote tracked frontend snapshot archives into the FeelIT release workflow and preserve the current UI baseline in git.
@@ -218,13 +233,13 @@ Rationale:
 - scene-native library launch for blind-first reading sessions
 - improved layout constraints tied to device workspace assumptions
 
-### v0.5.x
+### v2.06.x
 
 - richer haptic_workspace authoring and validation
 - blind-first desktop help and cue refinement
 - stronger gallery and file-browser interaction coverage
 
-### v0.6.x
+### v2.07.x
 
 - first native physical haptic bridge integration
 - device capability detection
@@ -232,7 +247,16 @@ Rationale:
 
 ## Versioning Policy
 
-The modern rebuild starts in `0.x` because the repository currently represents a new implementation foundation rather than a feature-complete successor to the legacy system.
+The canonical modern FeelIT line now uses the workspace fixed-width format `X.XX.XXX`.
 
-The first mature release that fully delivers the modern target product can be promoted to `1.0.0` or directly aligned to a legacy-aware `2.0.0` once the scope justifies it.
+For FeelIT, release `2` is the active modernization line because the current repository is a successor to a real prior initiative rather than a disposable greenfield prototype.
+
+That means:
+
+- major release uses the left segment and is normally shown without padding
+- minor release uses two digits of padding
+- patch release uses three digits of padding
+- example: `2.05.002`
+
+When external Python packaging tooling requires normalized numeric segments, it may derive a compatibility version such as `2.5.2`, but the canonical project version shown by the app, documentation, and Windows build metadata remains the padded workspace format.
 

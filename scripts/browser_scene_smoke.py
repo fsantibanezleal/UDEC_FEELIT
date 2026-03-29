@@ -467,7 +467,7 @@ def main() -> None:
     parser.add_argument(
         "--archive-version",
         default="",
-        help="Optional semantic version used to also archive the captured screenshots under artifacts/frontend_snapshots/history/v<version>.",
+        help="Optional canonical workspace version used to also archive the captured screenshots under artifacts/frontend_snapshots/history/v<version>.",
     )
     parser.add_argument(
         "--no-launch",

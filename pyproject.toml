@@ -32,7 +32,7 @@ where = ["."]
 include = ["app*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "app.core.version.APP_VERSION"}
+version = {attr = "app.core.version.PACKAGE_VERSION"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
