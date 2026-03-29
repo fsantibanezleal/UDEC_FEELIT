@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.5.4 (2026-03-29)
+
+Patch release focused on typed Haptic Desktop file-browser interaction, contextual Home or Launcher return semantics, and stronger workspace item contracts.
+
+Delivered:
+
+- Added explicit file-kind contracts for Haptic Desktop entries, including tactile shape keys, mode-routing metadata, and mode-specific action labels.
+- Routed supported file-browser files into their corresponding runtime scenes while keeping Home tied to the exact origin and Launcher tied to the workspace start scene.
+- Fixed fallback activation priority for focused desktop targets and extended automated coverage for file-kind mode mapping plus Haptic Desktop scene flow.
+
+Rationale:
+
+- Keep Haptic Desktop navigation consistent for blind-first workflows by making file type, tactile representation, mode dispatch, and return semantics follow one explicit contract.
+- Prevent focus-driven fallback interaction from silently activating the wrong target when the pointer and fallback focus diverge.
+
 ### v0.5.3 (2026-03-29)
 
 Patch release focused on deterministic launcher return semantics in Haptic Desktop and regression coverage for held activation across scene transitions.

@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`0.5.3`
+`0.5.4`
 
 ## Public Port
 
@@ -42,7 +42,7 @@ Operational workspace that translates text into Braille cells, lays them out on 
 
 ### Haptic Desktop
 
-Workspace-driven tactile desktop that now transitions through a launcher, paginated galleries, a file browser, item detail plaques, and opened scenes for models, text, and audio. The bundled demo workspace mirrors the full internal demo library so the gallery flow covers every bundled model, document, and audio sample.
+Workspace-driven tactile desktop that now transitions through a launcher, paginated galleries, a typed file browser, item detail plaques, and opened scenes for models, text, and audio. The bundled demo workspace mirrors the full internal demo library so the gallery flow covers every bundled model, document, and audio sample. The file browser uses distinct tactile 3D shapes for folders, models, texts, audio files, and unsupported files, and supported files dispatch directly into their corresponding runtime scene.
 
 ### Haptic Workspace Manager
 

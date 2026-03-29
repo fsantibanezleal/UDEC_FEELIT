@@ -26,6 +26,34 @@ SUPPORTED_MODEL_SUFFIXES = {".obj"}
 SUPPORTED_TEXT_SUFFIXES = {".txt", ".html", ".htm", ".epub", ".md"}
 SUPPORTED_AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".m4a"}
 DEFAULT_SEGMENT_CHARS = 1200
+KIND_LABELS = {
+    "directory": "Folder",
+    "model": "3D Model",
+    "text": "Text",
+    "audio": "Audio",
+    "unsupported": "Unsupported file",
+}
+KIND_SHAPE_KEYS = {
+    "directory": "folder_tile",
+    "model": "polyhedral_model_tile",
+    "text": "braille_document_tile",
+    "audio": "speaker_wave_tile",
+    "unsupported": "blocked_file_tile",
+}
+KIND_OPEN_MODES = {
+    "directory": "file-browser",
+    "model": "open-model",
+    "text": "open-text",
+    "audio": "open-audio",
+    "unsupported": "unsupported",
+}
+KIND_OPEN_LABELS = {
+    "directory": "Open folder in the workspace file browser",
+    "model": "Open in the 3D model scene",
+    "text": "Open in the Braille reading scene",
+    "audio": "Open in the audio transport scene",
+    "unsupported": "Inspect unsupported file details",
+}
 
 
 def local_app_state_dir() -> Path:
@@ -115,6 +143,17 @@ def detect_entry_kind(path: Path) -> str:
     if suffix in SUPPORTED_AUDIO_SUFFIXES:
         return "audio"
     return "unsupported"
+
+
+def build_kind_contract(kind: str) -> dict[str, str]:
+    """Return the shared Haptic Desktop contract metadata for one entry kind."""
+    normalized_kind = kind if kind in KIND_LABELS else "unsupported"
+    return {
+        "kind_label": KIND_LABELS[normalized_kind],
+        "shape_key": KIND_SHAPE_KEYS[normalized_kind],
+        "open_mode": KIND_OPEN_MODES[normalized_kind],
+        "open_label": KIND_OPEN_LABELS[normalized_kind],
+    }
 
 
 def _read_workspace_descriptor(path: Path) -> dict[str, Any]:
@@ -270,12 +309,14 @@ def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], categor
         if model is None:
             raise ValueError(f"Unknown demo model reference: {ref}")
         payload["kind"] = "model"
+        payload.update(build_kind_contract("model"))
         payload["source"].update(
             {
                 "ref": ref,
                 "demo_model_slug": model["slug"],
                 "file_url": model["file_url"],
                 "title": model["title"],
+                "extension": ".obj",
             },
         )
         return payload
@@ -285,12 +326,14 @@ def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], categor
         if document is None:
             raise ValueError(f"Unknown library document reference: {ref}")
         payload["kind"] = "text"
+        payload.update(build_kind_contract("text"))
         payload["source"].update(
             {
                 "ref": ref,
                 "document_slug": document["slug"],
                 "text_endpoint": f"/api/library/documents/{document['slug']}",
                 "format": document["format"],
+                "extension": f".{document['format']}",
             },
         )
         return payload
@@ -300,12 +343,14 @@ def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], categor
         if audio is None:
             raise ValueError(f"Unknown library audio reference: {ref}")
         payload["kind"] = "audio"
+        payload.update(build_kind_contract("audio"))
         payload["source"].update(
             {
                 "ref": ref,
                 "audio_slug": audio["slug"],
                 "file_url": audio["file_url"],
                 "format": audio["format"],
+                "extension": f".{audio['format']}",
             },
         )
         return payload
@@ -314,10 +359,12 @@ def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], categor
         relative_path = _normalize_relative_path(source.get("relative_path", ""))
         file_path = _resolve_child_path(record["content_root"], relative_path)
         payload["kind"] = detect_entry_kind(file_path)
+        payload.update(build_kind_contract(payload["kind"]))
         payload["source"].update(
             {
                 "relative_path": relative_path,
                 "raw_file_endpoint": f"/api/haptic-workspaces/{workspace_slug}/raw-file?path={relative_path}",
+                "extension": file_path.suffix.lower(),
             },
         )
         if payload["kind"] == "text":
@@ -395,7 +442,9 @@ def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[
             "kind": kind,
             "relative_path": child_relative,
             "size_bytes": child.stat().st_size if child.is_file() else 0,
+            "extension": child.suffix.lower() if child.is_file() else "",
         }
+        entry.update(build_kind_contract(kind))
         if kind == "directory":
             entry["child_count"] = sum(1 for _ in child.iterdir())
         else:
@@ -403,6 +452,7 @@ def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[
                 "kind": "workspace_file",
                 "relative_path": child_relative,
                 "raw_file_endpoint": f"/api/haptic-workspaces/{slug}/raw-file?path={child_relative}",
+                "extension": child.suffix.lower(),
             }
             if kind == "text":
                 entry["source"]["text_endpoint"] = (
