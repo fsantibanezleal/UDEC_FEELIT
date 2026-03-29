@@ -28,7 +28,7 @@
       <aside class="control-panel">
         <section class="panel-section">
           <div class="section-header">
-            <h2>Desktop Controls</h2>
+            <h2>Layout And Debug</h2>
           </div>
           <label for="layout-preset">Layout preset</label>
           <select id="layout-preset">
@@ -44,10 +44,13 @@
             <input id="pointer-toggle" type="checkbox" checked>
             <span>Show pointer proxy</span>
           </label>
+          <p class="panel-text">
+            The desktop objects inside the 3D world are the primary interaction surface. The buttons below are a fallback debug path.
+          </p>
           <div class="button-row">
-            <button id="focus-prev" class="btn btn-secondary" type="button">Previous</button>
-            <button id="focus-next" class="btn btn-secondary" type="button">Next</button>
-            <button id="focus-activate" class="btn btn-primary" type="button">Activate</button>
+            <button id="focus-prev" class="btn btn-secondary" type="button">Focus Previous (Fallback)</button>
+            <button id="focus-next" class="btn btn-secondary" type="button">Focus Next (Fallback)</button>
+            <button id="focus-activate" class="btn btn-primary" type="button">Activate (Fallback)</button>
           </div>
         </section>
 
@@ -83,7 +86,8 @@
           </div>
           <div class="stage-overlay top-right key-hints">
             <span>Orbit mouse</span>
-            <span>Arrows move focus</span>
+            <span>WASD/QE pointer</span>
+            <span>Space activate</span>
           </div>
           <div class="stage-overlay bottom-left">
             <span id="desktop-status-bar" class="stage-statusbar">Desktop workspace ready.</span>
@@ -139,8 +143,8 @@
         </p>
         <h3>Current Interaction</h3>
         <ul>
-          <li>Switch focus between 3D desktop objects.</li>
-          <li>Activate the current object and emit an announcement.</li>
+          <li>Move the pointer emulator through the desktop world with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
+          <li>Let the pointer hover a desktop object to focus it, then activate it with `Space` or `Enter`.</li>
           <li>Change the layout preset to test different spatial arrangements.</li>
         </ul>
       </div>

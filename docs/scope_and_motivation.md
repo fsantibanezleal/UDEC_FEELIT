@@ -51,6 +51,10 @@ A constrained reading plane where Braille cells are arranged with enough spatial
 
 A virtual item such as a folder, document, button, or launcher represented as a touchable object with an associated label and action.
 
+### Scene-Native Control
+
+A control that exists inside the 3D tactile world itself rather than as a conventional web button. This is a core accessibility requirement when the blind user is expected to operate the experience through the haptic device alone.
+
 ## Scope Of The Modern Application
 
 The modern FeelIT scope is organized into three major workspaces.
@@ -109,6 +113,8 @@ The current baseline already delivers:
 - dedicated pages for the three major workspaces
 - a working Braille translation workflow
 - real 3D workspace rendering for object, Braille, and desktop modes
+- stylus-style pointer emulation for no-device execution
+- scene-native tactile controls inside the Braille reading world
 - bundled OBJ demo models and local OBJ staging
 - initial haptic material profiles grounded in current desktop-haptics capabilities
 - a null backend strategy for hardware-safe execution

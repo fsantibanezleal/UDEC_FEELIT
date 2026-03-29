@@ -60,11 +60,14 @@
 
         <section class="panel-section">
           <div class="section-header">
-            <h2>Navigation</h2>
+            <h2>Fallback Navigation</h2>
           </div>
+          <p class="panel-text">
+            Primary page controls now live inside the 3D tactile world. The buttons below remain available only as a fallback debug path.
+          </p>
           <div class="button-row">
-            <button id="prev-page" class="btn btn-secondary" type="button">Previous Page</button>
-            <button id="next-page" class="btn btn-secondary" type="button">Next Page</button>
+            <button id="prev-page" class="btn btn-secondary" type="button">Previous Page (Fallback)</button>
+            <button id="next-page" class="btn btn-secondary" type="button">Next Page (Fallback)</button>
           </div>
           <div class="status-stack">
             <div class="status-card">
@@ -100,7 +103,8 @@
           </div>
           <div class="stage-overlay top-right key-hints">
             <span>Orbit mouse</span>
-            <span>Arrows select cells</span>
+            <span>WASD/QE pointer</span>
+            <span>Space activate</span>
           </div>
           <div class="stage-overlay bottom-left">
             <span id="reader-status-bar" class="stage-statusbar">Ready for preview generation.</span>
@@ -171,8 +175,9 @@
         <h3>Current Interaction</h3>
         <ul>
           <li>Generate Braille pages from text input.</li>
-          <li>Navigate pages with the page controls.</li>
-          <li>Inspect the 3D tactile board while keeping the 2D reference view available for debugging.</li>
+          <li>Move the pointer emulator through the tactile world with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
+          <li>Activate scene-native previous and next page controls with `Space` or `Enter`.</li>
+          <li>Keep the 2D reference board only as a secondary debugging and teaching view.</li>
         </ul>
       </div>
     </div>

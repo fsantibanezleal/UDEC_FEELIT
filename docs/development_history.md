@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.3.0 (2026-03-29)
+
+Release focused on trustworthy 3D interaction worlds, stylus-style pointer emulation, and scene-native tactile controls.
+
+Delivered:
+
+- Fixed the bundled three.js runtime so all mode workspaces load coherent module assets without the missing three.core.js failure.
+- Upgraded the shared pointer emulator into a stylus-like proxy with safer keyboard capture, surface-state feedback, and activation cues.
+- Reworked Braille and desktop scenes around spatially meaningful tactile geometry instead of overlapping explanatory labels.
+
+Rationale:
+
+- Treat the visible 3D worlds as the real interaction contract for no-device execution, not as decorative previews.
+- Keep release versioning, packaging metadata, and development history synchronized with each completed implementation cycle.
+
 ### v0.2.0 (2026-03-29)
 
 Release focused on real 3D workspace delivery, tactile material modeling, and stricter documentation and diagram governance.
@@ -78,7 +93,6 @@ Rationale:
 ### v0.4.x
 
 - richer Braille document ingestion
-- tactile navigation controls embedded in the scene
 - improved layout constraints tied to device workspace assumptions
 
 ### v0.5.x

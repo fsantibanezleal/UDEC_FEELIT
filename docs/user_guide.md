@@ -33,12 +33,14 @@ Current use:
 - stage the current object in the live 3D workspace
 - select a tactile material profile
 - adjust bounded workspace scale
-- move the proxy pointer with keyboard support
+- move the stylus-style pointer proxy with keyboard support
+- emulate a surface contact on the staged object
 
 Current keyboard cues:
 
 - `W`, `A`, `S`, `D`: move over the workspace plane
 - `Q`, `E`: move vertically
+- `Space` or `Enter`: emulate contact near the current object surface
 
 This workspace currently focuses on visual staging and tactile context preparation ahead of native haptic contact rendering.
 
@@ -56,11 +58,16 @@ Current use:
 - choose the number of columns
 - generate a Braille preview layout
 - inspect the 3D Braille world and the auxiliary board together
+- move through the reading surface with the stylus-style pointer proxy
+- activate the scene-native previous and next tactile controls
 - inspect per-cell metadata by selecting rendered cells
 
 Current keyboard cues:
 
-- arrow keys move the current cell focus across the tactile board
+- `W`, `A`, `S`, `D`: move across the tactile reading plane
+- `Q`, `E`: adjust pointer height within the bounded workspace
+- `Space` or `Enter`: activate the tactile control or current cell under the pointer
+- arrow keys: fallback debug navigation across the generated page
 
 This is the main legacy-aligned operational mode in the current baseline.
 
@@ -74,14 +81,17 @@ Route:
 
 Current use:
 
-- move focus between desktop objects inside the 3D desktop scene
+- move the stylus-style pointer proxy through a shape-coded desktop world
+- let the pointer focus desktop objects by spatial proximity
 - activate the focused object
 - inspect the current announcement and focus metadata
 
 Current keyboard cues:
 
-- arrow keys move focus between tactile desktop objects
-- `Enter` activates the focused object
+- `W`, `A`, `S`, `D`: move across the desktop world
+- `Q`, `E`: move vertically
+- `Space` or `Enter`: activate the focused desktop object
+- arrow keys: fallback debug focus traversal
 
 This workspace currently acts as a focused interaction prototype for future haptic desktop behavior.
 
@@ -95,6 +105,18 @@ All pages expose:
 - haptic backend mode
 
 If no physical haptic device is configured, the application remains usable in visual fallback mode.
+
+## Browser Smoke Validation
+
+For scene-regression checks beyond API tests:
+
+```powershell
+pip install -e ".[dev]"
+python -m playwright install chromium
+python scripts\browser_scene_smoke.py
+```
+
+This validation opens all three routes, captures the 3D canvas in Chromium, and fails if the pages log runtime errors or if the rendered scene looks under-populated.
 
 ## API Endpoints
 

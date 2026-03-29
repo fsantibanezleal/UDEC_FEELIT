@@ -36,6 +36,7 @@ Current shared files:
 - `app/static/css/style.css`
 - `app/static/js/app.js`
 - `app/static/js/three_scene_common.js`
+- `app/static/vendor/three/three.core.js`
 - `app/static/vendor/three/three.module.js`
 - `app/static/vendor/three/OrbitControls.js`
 
@@ -54,8 +55,9 @@ This avoids collapsing incompatible workflows into one long page.
 The object explorer, Braille reader, and haptic desktop each render an actual 3D world as the main pane:
 
 - the object explorer stages real OBJ meshes inside a bounded scene
-- the Braille reader renders the tactile board as raised 3D geometry
-- the desktop mode renders focusable objects inside a spatial desktop layout
+- the Braille reader renders the tactile board as raised 3D geometry with scene-native navigation controls
+- the desktop mode renders shape-coded tactile objects inside a spatial desktop layout
+- the shared pointer emulator behaves as a stylus-like proxy when no hardware device is attached
 
 Auxiliary 2D views are secondary and are only used when they help interpretation or debugging.
 
@@ -145,9 +147,11 @@ Current file:
 3. The user opens one of the dedicated mode routes.
 4. The shared frontend shell requests `/api/health` and `/api/meta`.
 5. The object explorer additionally calls `/api/materials` and `/api/demo-models`.
-6. The Braille reader calls `/api/braille/preview` and realizes the response as a 3D tactile board.
-7. The desktop mode instantiates a bounded desktop scene from its local interaction model.
-8. Runtime and device status are reflected in the current workspace.
+6. Each workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
+7. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
+8. The Braille reader calls `/api/braille/preview` and realizes the response as a 3D tactile board with in-scene controls.
+9. The desktop mode instantiates a bounded desktop scene from its local interaction model.
+10. Runtime and device status are reflected in the current workspace.
 
 ## Future Extension Points
 
@@ -157,7 +161,8 @@ Current baseline:
 
 - real OBJ loading from local bundled assets
 - local OBJ upload and client-side parsing
-- bounded 3D scene with pointer proxy
+- bounded 3D scene with stylus-like pointer proxy
+- visible exploration plinth and adaptive scene bounds
 - tactile material preset selection
 
 Next additions:
@@ -173,12 +178,13 @@ Current baseline:
 
 - Braille translation API
 - page slicing and 3D Braille board rendering
+- scene-native previous and next tactile controls
+- orientation rail and origin marker inside the reading world
 - selected-cell inspection and auxiliary 2D board
 
 Next additions:
 
 - document ingestion service for richer formats
-- tactile navigation widgets mapped to scene geometry
 - richer layout constraints tied to device workspace assumptions
 
 ### Haptic Desktop
@@ -187,7 +193,8 @@ Current baseline:
 
 - 3D desktop object scene
 - focus traversal and activation prototype
-- label sprites and announcement panel
+- shape-coded tactile object families instead of text-heavy world labels
+- announcement and inspector metadata outside the scene itself
 
 Next additions:
 

@@ -162,6 +162,7 @@ venv.bak/
 .pytest_cache/
 .ruff_cache/
 installer/Output/
+artifacts/
 
 # latex
 *.fls 

@@ -1,5 +1,5 @@
 import { OBJLoader } from "../vendor/three/OBJLoader.js";
-import { THREE, createWorkspaceScene } from "./three_scene_common.js";
+import { THREE, attachPointerEmulation, createWorkspaceScene } from "./three_scene_common.js";
 
 const materialsUrl = "/api/materials";
 const demoModelsUrl = "/api/demo-models";
@@ -11,8 +11,7 @@ const state = {
   currentMaterial: null,
   currentObject: null,
   currentBounds: null,
-  pointer: new THREE.Vector3(0, 0.45, 0),
-  keysDown: new Set(),
+  pointerController: null,
 };
 
 function byId(id) {
@@ -59,11 +58,59 @@ function populateSelect(select, items, valueField, labelField) {
   });
 }
 
+function buildExplorationPlinth(material) {
+  const group = new THREE.Group();
+  const accent = new THREE.Color(material.visual_color);
+
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.32, 1.42, 0.12, 42),
+    new THREE.MeshStandardMaterial({
+      color: 0x0f1724,
+      roughness: 0.9,
+      metalness: 0.06,
+    }),
+  );
+  base.position.y = 0.06;
+  group.add(base);
+
+  const topPlate = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.06, 1.12, 0.045, 42),
+    new THREE.MeshStandardMaterial({
+      color: accent.clone().multiplyScalar(0.72),
+      roughness: Math.min(0.96, material.visual_roughness + 0.08),
+      metalness: Math.max(0.02, material.visual_metalness * 0.5),
+      emissive: accent.clone().multiplyScalar(0.05),
+    }),
+  );
+  topPlate.position.y = 0.145;
+  group.add(topPlate);
+
+  const guideRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.08, 0.028, 12, 64),
+    new THREE.MeshStandardMaterial({
+      color: 0x39d2c0,
+      emissive: 0x0e2b29,
+      roughness: 0.34,
+      metalness: 0.16,
+    }),
+  );
+  guideRing.rotation.x = Math.PI / 2;
+  guideRing.position.y = 0.17;
+  group.add(guideRing);
+
+  return group;
+}
+
 function applyMaterialToObject(root, material) {
   const color = new THREE.Color(material.visual_color);
   root.traverse((node) => {
     if (!node.isMesh) {
       return;
+    }
+    if (Array.isArray(node.material)) {
+      node.material.forEach((currentMaterial) => currentMaterial.dispose?.());
+    } else {
+      node.material?.dispose?.();
     }
     const meshMaterial = new THREE.MeshStandardMaterial({
       color,
@@ -71,44 +118,45 @@ function applyMaterialToObject(root, material) {
       metalness: material.visual_metalness,
       emissive: color.clone().multiplyScalar(0.06),
     });
-    node.material.dispose?.();
     node.material = meshMaterial;
     node.castShadow = false;
     node.receiveShadow = true;
   });
 }
 
-function registerPointerMovement(sceneApi) {
-  document.addEventListener("keydown", (event) => {
-    state.keysDown.add(event.code);
-  });
-  document.addEventListener("keyup", (event) => {
-    state.keysDown.delete(event.code);
-  });
+function updatePointerFeedback(sceneApi, position) {
+  if (!state.currentBounds) {
+    byId("explorer-stage-pill").textContent = "Pointer emulator";
+    sceneApi.setPointerState("idle");
+    return;
+  }
 
-  setInterval(() => {
-    const speed = 0.06;
-    if (state.keysDown.has("KeyW")) state.pointer.z -= speed;
-    if (state.keysDown.has("KeyS")) state.pointer.z += speed;
-    if (state.keysDown.has("KeyA")) state.pointer.x -= speed;
-    if (state.keysDown.has("KeyD")) state.pointer.x += speed;
-    if (state.keysDown.has("KeyQ")) state.pointer.y += speed;
-    if (state.keysDown.has("KeyE")) state.pointer.y -= speed;
+  const distance = state.currentBounds.distanceToPoint(position);
+  if (distance < 0.04) {
+    byId("explorer-stage-pill").textContent = "Pointer near surface";
+    sceneApi.setPointerState("focus");
+    return;
+  }
 
-    state.pointer.x = Math.max(-1.9, Math.min(1.9, state.pointer.x));
-    state.pointer.z = Math.max(-1.9, Math.min(1.9, state.pointer.z));
-    state.pointer.y = Math.max(0.12, Math.min(2.3, state.pointer.y));
-    sceneApi.setPointerPosition(state.pointer);
+  byId("explorer-stage-pill").textContent = "Pointer in workspace";
+  sceneApi.setPointerState("idle");
+}
 
-    if (state.currentBounds) {
-      const distance = state.currentBounds.distanceToPoint(state.pointer);
-      if (distance < 0.08) {
-        byId("explorer-stage-pill").textContent = "Pointer near surface";
-      } else {
-        byId("explorer-stage-pill").textContent = "Visual fallback";
-      }
-    }
-  }, 35);
+function activatePointer(sceneApi) {
+  if (!state.currentBounds) {
+    setStatus("No object is loaded for pointer activation.");
+    return;
+  }
+
+  const distance = state.currentBounds.distanceToPoint(state.pointerController.position);
+  if (distance < 0.12) {
+    setStatus("Pointer activation registered on the current object surface.");
+    sceneApi.setPointerState("active");
+    window.setTimeout(() => updatePointerFeedback(sceneApi, state.pointerController.position), 180);
+    return;
+  }
+
+  setStatus("Pointer activation is outside the current object envelope.");
 }
 
 async function fetchJson(url) {
@@ -122,14 +170,32 @@ async function fetchJson(url) {
 async function loadObjectIntoScene(sceneApi, object, model) {
   const scaleFactor = Number(byId("workspace-scale").value) / 100;
   sceneApi.clearWorld();
+  sceneApi.world.add(buildExplorationPlinth(state.currentMaterial));
   applyMaterialToObject(object, state.currentMaterial);
   object.userData.rotateOnIdle = true;
   sceneApi.world.add(object);
   const targetSize = 2.2 * scaleFactor * model.scale_hint;
   sceneApi.normalizeObject(object, targetSize);
+  object.position.y += 0.18;
   sceneApi.frameObject(object);
   state.currentObject = object;
   state.currentBounds = new THREE.Box3().setFromObject(object);
+  const objectSize = state.currentBounds.getSize(new THREE.Vector3());
+  const objectCenter = state.currentBounds.getCenter(new THREE.Vector3());
+  sceneApi.setBoundarySize(
+    new THREE.Vector3(
+      Math.max(3.8, objectSize.x + 1.8),
+      Math.max(2.2, objectSize.y + 0.9),
+      Math.max(3.8, objectSize.z + 1.8),
+    ),
+  );
+  state.pointerController?.setBounds(
+    new THREE.Vector3(objectCenter.x - objectSize.x * 0.7, 0.14, objectCenter.z - objectSize.z * 0.7),
+    new THREE.Vector3(objectCenter.x + objectSize.x * 0.7, Math.max(1.4, objectSize.y + 0.8), objectCenter.z + objectSize.z * 0.7),
+  );
+  state.pointerController?.setPosition(
+    objectCenter.clone().add(new THREE.Vector3(objectSize.x * 0.35, Math.min(objectSize.y + 0.35, 1.2), objectSize.z * 0.35)),
+  );
   updateModelInspector(model);
   setStatus(`Loaded ${model.title} into the bounded scene.`);
 }
@@ -182,9 +248,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     target: [0, 0.8, 0],
   });
 
-  state.pointer.set(0, 0.45, 0);
-  sceneApi.setPointerPosition(state.pointer);
-  registerPointerMovement(sceneApi);
+  state.pointerController = attachPointerEmulation(sceneApi, {
+    initialPosition: new THREE.Vector3(0, 0.45, 0),
+    boundsMin: new THREE.Vector3(-1.9, 0.12, -1.9),
+    boundsMax: new THREE.Vector3(1.9, 2.3, 1.9),
+    speed: 1.65,
+    onMove: (position) => updatePointerFeedback(sceneApi, position),
+    onActivate: () => activatePointer(sceneApi),
+  });
 
   const [materialPayload, modelPayload] = await Promise.all([
     fetchJson(materialsUrl),
@@ -204,7 +275,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateMaterialPanel(state.currentMaterial);
 
   byId("explorer-stage-pill").textContent =
-    shell.health.haptics.mode === "available" ? "Haptic ready" : "Visual fallback";
+    shell.health.haptics.mode === "available" ? "Haptic ready" : "Pointer emulator";
 
   byId("load-selection").addEventListener("click", () => {
     loadSelectedModel(sceneApi).catch(() => {
@@ -254,4 +325,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   updateModelInspector(initialModel);
   await loadSelectedModel(sceneApi);
+  updatePointerFeedback(sceneApi, state.pointerController.position);
 });

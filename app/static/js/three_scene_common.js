@@ -9,18 +9,100 @@ function buildBoundaryMesh(size) {
   return new THREE.LineSegments(geometry, material);
 }
 
+function buildPointerProxy(pointerColor) {
+  const group = new THREE.Group();
+
+  const tipMaterial = new THREE.MeshStandardMaterial({
+    color: pointerColor,
+    emissive: 0x664400,
+    roughness: 0.24,
+    metalness: 0.2,
+  });
+  const shaftMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc9d1d9,
+    emissive: 0x09111c,
+    roughness: 0.26,
+    metalness: 0.82,
+  });
+  const gripMaterial = new THREE.MeshStandardMaterial({
+    color: 0x1f2937,
+    emissive: 0x09111c,
+    roughness: 0.72,
+    metalness: 0.12,
+  });
+  const ringMaterial = new THREE.MeshStandardMaterial({
+    color: pointerColor,
+    emissive: 0x664400,
+    transparent: true,
+    opacity: 0.7,
+    roughness: 0.34,
+    metalness: 0.06,
+  });
+
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 24, 18), tipMaterial);
+  tip.userData.kind = "pointer-tip";
+  group.add(tip);
+
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.034, 0.68, 24), shaftMaterial);
+  shaft.rotation.z = Math.PI / 5;
+  shaft.position.set(-0.16, 0.24, 0.14);
+  shaft.userData.kind = "pointer-shaft";
+  group.add(shaft);
+
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.18, 18), gripMaterial);
+  grip.rotation.z = Math.PI / 5;
+  grip.position.set(-0.28, 0.41, 0.24);
+  grip.userData.kind = "pointer-grip";
+  group.add(grip);
+
+  const collar = new THREE.Mesh(
+    new THREE.TorusGeometry(0.092, 0.008, 12, 32),
+    ringMaterial,
+  );
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = 0.01;
+  collar.userData.kind = "pointer-collar";
+  group.add(collar);
+
+  group.userData.pointerMaterials = {
+    tipMaterial,
+    shaftMaterial,
+    gripMaterial,
+    ringMaterial,
+  };
+  return group;
+}
+
+function isEditableTarget(target) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target.isContentEditable
+    || target.tagName === "INPUT"
+    || target.tagName === "TEXTAREA"
+    || target.tagName === "SELECT"
+    || target.tagName === "OPTION"
+  );
+}
+
 export function createWorkspaceScene(canvas, options = {}) {
   const background = options.background ?? 0x0d1117;
   const cameraPosition = options.cameraPosition ?? [3.6, 2.8, 4.6];
   const target = options.target ?? [0, 0.6, 0];
   const pointerColor = options.pointerColor ?? 0xf2cc60;
   const boundarySize = options.boundarySize ?? new THREE.Vector3(4, 2.8, 4);
+  const frameCallbacks = new Set();
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(background);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.04;
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.01, 100);
   camera.position.set(...cameraPosition);
@@ -62,15 +144,7 @@ export function createWorkspaceScene(canvas, options = {}) {
   boundary.position.y = boundarySize.y / 2;
   scene.add(boundary);
 
-  const pointer = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 24, 18),
-    new THREE.MeshStandardMaterial({
-      color: pointerColor,
-      emissive: 0x664400,
-      roughness: 0.3,
-      metalness: 0.08,
-    }),
-  );
+  const pointer = buildPointerProxy(pointerColor);
   pointer.position.set(0, 0.45, 0);
   scene.add(pointer);
 
@@ -105,6 +179,56 @@ export function createWorkspaceScene(canvas, options = {}) {
   function setPointerPosition(position) {
     pointer.position.copy(position);
     pointerShadow.position.set(position.x, 0.002, position.z);
+  }
+
+  function setPointerState(mode = "idle") {
+    const pointerMaterials = pointer.userData.pointerMaterials;
+    const palette = {
+      idle: {
+        tip: pointerColor,
+        emissive: 0x664400,
+        shaft: 0xc9d1d9,
+        shaftEmissive: 0x09111c,
+        grip: 0x1f2937,
+        ring: pointerColor,
+        shadow: pointerColor,
+        shadowOpacity: 0.4,
+      },
+      focus: {
+        tip: 0x7ee787,
+        emissive: 0x12311b,
+        shaft: 0xd2f1dc,
+        shaftEmissive: 0x102315,
+        grip: 0x1b3a28,
+        ring: 0x7ee787,
+        shadow: 0x7ee787,
+        shadowOpacity: 0.58,
+      },
+      active: {
+        tip: 0x79c0ff,
+        emissive: 0x163f63,
+        shaft: 0xe6f3ff,
+        shaftEmissive: 0x10263a,
+        grip: 0x1a2c3f,
+        ring: 0x79c0ff,
+        shadow: 0x79c0ff,
+        shadowOpacity: 0.7,
+      },
+    }[mode] ?? null;
+
+    if (!palette) {
+      return;
+    }
+
+    pointerMaterials.tipMaterial.color.setHex(palette.tip);
+    pointerMaterials.tipMaterial.emissive.setHex(palette.emissive);
+    pointerMaterials.shaftMaterial.color.setHex(palette.shaft);
+    pointerMaterials.shaftMaterial.emissive.setHex(palette.shaftEmissive);
+    pointerMaterials.gripMaterial.color.setHex(palette.grip);
+    pointerMaterials.ringMaterial.color.setHex(palette.ring);
+    pointerMaterials.ringMaterial.emissive.setHex(palette.emissive);
+    pointerShadow.material.color.setHex(palette.shadow);
+    pointerShadow.material.opacity = palette.shadowOpacity;
   }
 
   function setPointerVisible(visible) {
@@ -172,11 +296,13 @@ export function createWorkspaceScene(canvas, options = {}) {
         child.rotation.y += delta * 0.18;
       }
     });
+    frameCallbacks.forEach((callback) => callback(delta));
     controls.update();
     renderer.render(scene, camera);
   }
 
   resizeRenderer();
+  setPointerState("idle");
   animate();
   window.addEventListener("resize", resizeRenderer);
 
@@ -196,11 +322,144 @@ export function createWorkspaceScene(canvas, options = {}) {
     frameObject,
     resetCamera,
     resizeRenderer,
+    registerFrameCallback(callback) {
+      frameCallbacks.add(callback);
+      return () => frameCallbacks.delete(callback);
+    },
     setBoundarySize,
     setBoundaryVisible,
     setGridVisible,
     setPointerPosition,
+    setPointerState,
     setPointerVisible,
+  };
+}
+
+export function attachPointerEmulation(sceneApi, options = {}) {
+  const keyMap = {
+    forward: "KeyW",
+    backward: "KeyS",
+    left: "KeyA",
+    right: "KeyD",
+    up: "KeyQ",
+    down: "KeyE",
+    ...(options.keyMap ?? {}),
+  };
+  const activationKeys = new Set(options.activationKeys ?? ["Space", "Enter"]);
+  const keysDown = new Set();
+  const boundsMin = (options.boundsMin ?? new THREE.Vector3(-1.8, 0.12, -1.8)).clone();
+  const boundsMax = (options.boundsMax ?? new THREE.Vector3(1.8, 2.4, 1.8)).clone();
+  const position = (options.initialPosition ?? sceneApi.pointer.position).clone();
+  const speed = options.speed ?? 1.2;
+  let lastActivation = 0;
+
+  function clampPosition() {
+    position.x = Math.max(boundsMin.x, Math.min(boundsMax.x, position.x));
+    position.y = Math.max(boundsMin.y, Math.min(boundsMax.y, position.y));
+    position.z = Math.max(boundsMin.z, Math.min(boundsMax.z, position.z));
+  }
+
+  function setBounds(min, max) {
+    boundsMin.copy(min);
+    boundsMax.copy(max);
+    clampPosition();
+    sceneApi.setPointerPosition(position);
+    options.onMove?.(position.clone());
+  }
+
+  function setPosition(nextPosition) {
+    position.copy(nextPosition);
+    clampPosition();
+    sceneApi.setPointerPosition(position);
+    options.onMove?.(position.clone());
+  }
+
+  function activate() {
+    options.onActivate?.(position.clone());
+  }
+
+  function handleKeyDown(event) {
+    if (isEditableTarget(event.target)) {
+      return;
+    }
+
+    if (
+      Object.values(keyMap).includes(event.code)
+      || activationKeys.has(event.code)
+      || activationKeys.has(event.key)
+    ) {
+      event.preventDefault();
+    }
+    keysDown.add(event.code);
+    if (activationKeys.has(event.code) || activationKeys.has(event.key)) {
+      const now = performance.now();
+      if (now - lastActivation > 120) {
+        activate();
+        lastActivation = now;
+      }
+    }
+  }
+
+  function handleKeyUp(event) {
+    if (isEditableTarget(event.target)) {
+      return;
+    }
+    keysDown.delete(event.code);
+  }
+
+  function update(delta) {
+    let changed = false;
+    const step = speed * Math.max(delta, 1 / 120);
+
+    if (keysDown.has(keyMap.forward)) {
+      position.z -= step;
+      changed = true;
+    }
+    if (keysDown.has(keyMap.backward)) {
+      position.z += step;
+      changed = true;
+    }
+    if (keysDown.has(keyMap.left)) {
+      position.x -= step;
+      changed = true;
+    }
+    if (keysDown.has(keyMap.right)) {
+      position.x += step;
+      changed = true;
+    }
+    if (keysDown.has(keyMap.up)) {
+      position.y += step;
+      changed = true;
+    }
+    if (keysDown.has(keyMap.down)) {
+      position.y -= step;
+      changed = true;
+    }
+
+    if (!changed) {
+      return;
+    }
+
+    clampPosition();
+    sceneApi.setPointerPosition(position);
+    options.onMove?.(position.clone());
+  }
+
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("keyup", handleKeyUp);
+  const unregisterFrame = sceneApi.registerFrameCallback(update);
+  setPosition(position);
+
+  return {
+    position,
+    setBounds,
+    setPosition,
+    activate,
+    destroy() {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+      unregisterFrame();
+    },
   };
 }
 
@@ -221,9 +480,13 @@ export function createLabelSprite(text, options = {}) {
   const draw = canvas.getContext("2d");
   draw.font = font;
   draw.fillStyle = background;
-  draw.beginPath();
-  draw.roundRect(0, 0, canvas.width, canvas.height, 18);
-  draw.fill();
+  if (typeof draw.roundRect === "function") {
+    draw.beginPath();
+    draw.roundRect(0, 0, canvas.width, canvas.height, 18);
+    draw.fill();
+  } else {
+    draw.fillRect(0, 0, canvas.width, canvas.height);
+  }
   draw.fillStyle = color;
   draw.textBaseline = "middle";
   draw.fillText(text, padding, canvas.height / 2 + 2);
