@@ -296,18 +296,6 @@ Rationale:
 
 ## Planned Milestones
 
-### v0.3.x
-
-- richer 3D asset pipeline beyond current OBJ staging
-- server-side asset validation and metadata persistence
-- tighter mapping from material profiles to device-specific force models
-
-### v0.4.x
-
-- richer Braille document compatibility beyond TXT, HTML, and EPUB
-- scene-native library launch for blind-first reading sessions
-- improved layout constraints tied to device workspace assumptions
-
 ### v2.06.x
 
 - richer haptic_workspace authoring and validation

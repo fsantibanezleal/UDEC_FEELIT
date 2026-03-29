@@ -137,8 +137,8 @@ The current baseline does not yet deliver:
 - physical haptic bridge integration
 - full desktop action execution model
 - full-document compatibility beyond the current TXT, HTML, and EPUB baseline
-- scene-native library selection for blind-first document session launch
 - force-feedback realization of the material profiles
+- formal user-study validation against blind-first performance goals
 
 ## Success Criteria
 
