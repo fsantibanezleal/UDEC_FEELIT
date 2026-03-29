@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.5.5 (2026-03-29)
+
+Promote tracked frontend snapshot archives into the FeelIT release workflow and preserve the current UI baseline in git.
+
+Delivered:
+
+- Stopped blanket-ignoring curated artifacts and documented the tracked frontend snapshot archive structure.
+- Expanded the browser smoke workflow to capture all current frontend routes, including the Haptic Workspace Manager.
+- Archived the visual baseline under artifacts/frontend_snapshots/history/v0.5.4 before preparing the new release baseline.
+
+Rationale:
+
+- The repository should preserve visual evidence of the shipped interface, not only textual documentation and SVG diagrams.
+- Frontend evolution needs a stable release-by-release audit trail for UI reviews, regression checks, and methodological history.
+
 ### v0.5.4 (2026-03-29)
 
 Patch release focused on typed Haptic Desktop file-browser interaction, contextual Home or Launcher return semantics, and stronger workspace item contracts.

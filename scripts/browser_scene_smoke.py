@@ -1,35 +1,51 @@
-"""Run a browser smoke test against the three FeelIT 3D workspaces."""
+"""Run a browser smoke test against the current FeelIT frontend routes."""
 
 from __future__ import annotations
 
 import argparse
+import json
+import shutil
 import socket
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import urlopen
 from urllib.parse import urlparse
 
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.core.version import APP_VERSION
 
 
 @dataclass(frozen=True)
 class SceneSpec:
-    """Describe one user-facing 3D workspace to validate."""
+    """Describe one user-facing route to validate and capture."""
 
     route: str
     canvas_selector: str
     min_unique_colors: int
+    wait_until: str = "domcontentloaded"
 
 
 SCENES: tuple[SceneSpec, ...] = (
     SceneSpec(route="/object-explorer", canvas_selector="#object-canvas", min_unique_colors=1200),
     SceneSpec(route="/braille-reader", canvas_selector="#braille-canvas", min_unique_colors=1500),
     SceneSpec(route="/haptic-desktop", canvas_selector="#desktop-canvas", min_unique_colors=1500),
+    SceneSpec(
+        route="/haptic-workspace-manager",
+        canvas_selector=".workspace-grid",
+        min_unique_colors=1200,
+        wait_until="commit",
+    ),
 )
 
 
@@ -40,21 +56,22 @@ def reserve_free_local_port() -> int:
         return int(sock.getsockname()[1])
 
 
-def wait_for_server(process: subprocess.Popen[str], timeout_seconds: int) -> None:
-    """Wait for the local FeelIT server to report readiness."""
+def wait_for_server(base_url: str, timeout_seconds: int) -> None:
+    """Wait for the local FeelIT server to expose a healthy HTTP endpoint."""
     deadline = time.time() + timeout_seconds
-    log_lines: list[str] = []
     while time.time() < deadline:
-        line = process.stdout.readline()
-        if line:
-            log_lines.append(line.rstrip())
-            if "Uvicorn running on" in line or "Application startup complete" in line:
-                return
-        else:
+        try:
+            with urlopen(f"{base_url}/api/health", timeout=2) as response:
+                if response.status == 200:
+                    return
+        except URLError:
             time.sleep(0.2)
+        except OSError:
+            time.sleep(0.2)
+        else:
+                return
 
-    recent = "\n".join(log_lines[-20:])
-    raise SystemExit(f"Server did not become ready within {timeout_seconds} seconds.\n{recent}")
+    raise SystemExit(f"Server did not become ready within {timeout_seconds} seconds at {base_url}.")
 
 
 def measure_canvas_colors(image_path: Path) -> int:
@@ -79,9 +96,45 @@ def cycle_focus_to(page, label: str, *, max_steps: int = 20) -> bool:
     return focused_label(page) == label
 
 
+def write_snapshot_manifest(
+    target_dir: Path,
+    *,
+    base_url: str,
+    routes: tuple[SceneSpec, ...],
+    version: str,
+) -> None:
+    """Write a small manifest describing one captured visual snapshot set."""
+    target_dir.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "app": "FeelIT",
+        "version": version,
+        "base_url": base_url,
+        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        "routes": [
+            {
+                "route": scene.route,
+                "image": f"{scene.route.strip('/').replace('-', '_')}.png",
+            }
+            for scene in routes
+        ],
+    }
+    (target_dir / "snapshot_manifest.json").write_text(
+        json.dumps(manifest, indent=2),
+        encoding="utf-8",
+    )
+
+
+def prepare_snapshot_dir(target_dir: Path) -> None:
+    """Remove curated snapshot payloads before writing a fresh set."""
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for pattern in ("*.png", "*.json"):
+        for file_path in target_dir.glob(pattern):
+            file_path.unlink()
+
+
 def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
     """Validate that each workspace loads and produces a non-trivial canvas image."""
-    screenshot_dir.mkdir(parents=True, exist_ok=True)
+    prepare_snapshot_dir(screenshot_dir)
     failures: list[str] = []
 
     with sync_playwright() as playwright:
@@ -106,7 +159,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 ),
             )
 
-            page.goto(f"{base_url}{scene.route}", wait_until="domcontentloaded", timeout=30_000)
+            page.goto(f"{base_url}{scene.route}", wait_until=scene.wait_until, timeout=30_000)
             page.wait_for_selector(scene.canvas_selector, state="visible", timeout=15_000)
             if scene.route == "/braille-reader":
                 page.wait_for_function(
@@ -288,6 +341,18 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             failures.append(
                                 f"/haptic-desktop supported text file did not advertise the Braille reading scene action; action={focus_action!r}",
                             )
+            if scene.route == "/haptic-workspace-manager":
+                page.wait_for_function(
+                    """
+                    () => {
+                      const workspaces = document.querySelectorAll('#workspace-list .workspace-card').length;
+                      const runtime = document.querySelector('#manager-runtime-pill')?.textContent?.trim() ?? '';
+                      const pageStatus = document.querySelector('#manager-page-status')?.textContent?.trim() ?? '';
+                      return workspaces > 0 && runtime !== '' && runtime !== 'Loading' && pageStatus !== '' && pageStatus !== 'Waiting';
+                    }
+                    """,
+                    timeout=15_000,
+                )
             page.wait_for_timeout(1_200)
 
             screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
@@ -307,7 +372,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 failures.extend(error_logs)
             if unique_colors < scene.min_unique_colors:
                 failures.append(
-                    f"{scene.route} canvas looks under-rendered: "
+                    f"{scene.route} capture looks under-rendered: "
                     f"{unique_colors} unique colors < {scene.min_unique_colors}",
                 )
             if version_text in {"", "v--", "Loading", "Error"}:
@@ -340,6 +405,19 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-desktop models gallery did not expose real pagination")
                 if scene_code in {"", "--", "Loading"}:
                     failures.append("/haptic-desktop did not initialize the scene code")
+            if scene.route == "/haptic-workspace-manager":
+                workspace_cards = page.locator("#workspace-list .workspace-card").count()
+                manager_runtime = (page.locator("#manager-runtime-pill").text_content() or "").strip()
+                manager_status = (page.locator("#manager-page-status").text_content() or "").strip()
+                selected_title = (page.locator("#selected-workspace-title").text_content() or "").strip()
+                if workspace_cards == 0:
+                    failures.append("/haptic-workspace-manager did not render any registered workspace cards")
+                if manager_runtime in {"", "Loading", "Runtime error"}:
+                    failures.append("/haptic-workspace-manager did not initialize the runtime pill")
+                if manager_status in {"", "Waiting", "Boot failed"}:
+                    failures.append("/haptic-workspace-manager did not initialize the page status")
+                if selected_title in {"", "--"}:
+                    failures.append("/haptic-workspace-manager did not initialize the selected workspace summary")
 
             print(
                 f"{scene.route}: unique_colors={unique_colors} "
@@ -353,6 +431,29 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
     if failures:
         raise SystemExit("Browser smoke test failed:\n- " + "\n- ".join(failures))
 
+    write_snapshot_manifest(
+        screenshot_dir,
+        base_url="local_smoke_capture",
+        routes=SCENES,
+        version=APP_VERSION,
+    )
+
+
+def archive_snapshot_set(current_dir: Path, archive_version: str) -> Path:
+    """Copy the current snapshot set into a versioned history folder."""
+    archive_dir = ROOT / "artifacts" / "frontend_snapshots" / "history" / f"v{archive_version}"
+    prepare_snapshot_dir(archive_dir)
+    for file_path in current_dir.iterdir():
+        if file_path.is_file():
+            shutil.copy2(file_path, archive_dir / file_path.name)
+    write_snapshot_manifest(
+        archive_dir,
+        base_url="archived_release_snapshot",
+        routes=SCENES,
+        version=archive_version,
+    )
+    return archive_dir
+
 
 def main() -> None:
     """Run the browser smoke test with or without launching a local server."""
@@ -360,8 +461,13 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://127.0.0.1:8101")
     parser.add_argument(
         "--screenshot-dir",
-        default=str(ROOT / "artifacts" / "browser_smoke"),
+        default=str(ROOT / "artifacts" / "frontend_snapshots" / "current"),
         help="Directory where canvas screenshots will be written.",
+    )
+    parser.add_argument(
+        "--archive-version",
+        default="",
+        help="Optional semantic version used to also archive the captured screenshots under artifacts/frontend_snapshots/history/v<version>.",
     )
     parser.add_argument(
         "--no-launch",
@@ -381,13 +487,15 @@ def main() -> None:
             server_process = subprocess.Popen(
                 [sys.executable, "run_app.py", "--no-browser", "--host", host, "--port", str(port)],
                 cwd=ROOT,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT,
-                text=True,
             )
-            wait_for_server(server_process, timeout_seconds=30)
+            wait_for_server(base_url, timeout_seconds=30)
 
         run_browser_smoke(base_url, Path(args.screenshot_dir))
+        if args.archive_version:
+            archive_dir = archive_snapshot_set(Path(args.screenshot_dir), args.archive_version)
+            print(f"Archived snapshot set at {archive_dir}")
         print("Browser smoke test passed.")
     finally:
         if server_process is not None:
