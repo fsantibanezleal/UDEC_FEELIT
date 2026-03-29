@@ -51,10 +51,25 @@ def test_frontend_mode_routes_are_served() -> None:
         desktop_response = client.get("/haptic-desktop")
     assert object_response.status_code == 200
     assert "3D Object Explorer" in object_response.text
+    assert "Space activate" in object_response.text
     assert braille_response.status_code == 200
     assert "Braille Reader" in braille_response.text
+    assert "Previous Page (Fallback)" in braille_response.text
+    assert "WASD/QE pointer" in braille_response.text
     assert desktop_response.status_code == 200
     assert "Haptic Desktop" in desktop_response.text
+    assert "Activate (Fallback)" in desktop_response.text
+    assert "Space activate" in desktop_response.text
+
+
+def test_three_vendor_runtime_assets_are_served() -> None:
+    with TestClient(app) as client:
+        module_response = client.get("/static/vendor/three/three.module.js")
+        core_response = client.get("/static/vendor/three/three.core.js")
+    assert module_response.status_code == 200
+    assert core_response.status_code == 200
+    assert "from './three.core.js'" in module_response.text
+    assert "class Quaternion" in core_response.text
 
 
 def test_material_catalog_endpoint_exposes_realistic_profiles() -> None:

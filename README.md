@@ -12,11 +12,11 @@ FeelIT is a modernization of a university-era accessibility project focused on g
 - `/braille-reader`
 - `/haptic-desktop`
 
-The current implementation provides real 3D workspace rendering across all three modes, bundled OBJ demo assets, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
+The current implementation provides real 3D workspace rendering across all three modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, bundled OBJ demo assets, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
 
 ## Current Version
 
-`0.2.0`
+`0.3.0`
 
 ## Public Port
 
@@ -33,15 +33,15 @@ The preserved legacy project in `legacy/Registro Software` demonstrates a text-f
 
 ### 3D Object Explorer
 
-Dedicated workspace for staging real OBJ models, selecting tactile material presets, and preparing a bounded exploration context in a live 3D scene.
+Dedicated workspace for staging real OBJ models on an exploration plinth, selecting tactile material presets, and preparing a bounded exploration context in a live 3D scene.
 
 ### Braille Reader
 
-Operational workspace that translates text into Braille cells, lays them out on a bounded reading surface, and renders that reading surface as a 3D world with an auxiliary 2D inspection board.
+Operational workspace that translates text into Braille cells, lays them out on a bounded reading surface, and renders that reading surface as a 3D world with orientation cues, scene-native page controls, and an auxiliary 2D inspection board.
 
 ### Haptic Desktop
 
-Prototype workspace for focusable action objects that stand in for folders, media, settings, and other desktop interactions inside a bounded 3D desktop scene.
+Prototype workspace for shape-coded action objects that stand in for folders, media, settings, and other desktop interactions inside a bounded 3D desktop scene.
 
 ## Bundled Demo Assets
 
@@ -83,17 +83,26 @@ Open one of the mode routes:
 python -m pytest tests -v
 ```
 
+### 4. Optional browser smoke test for the 3D scenes
+
+```powershell
+pip install -e ".[dev]"
+python -m playwright install chromium
+python scripts\browser_scene_smoke.py
+```
+
 ## Runtime Capabilities
 
 - FastAPI backend on port `8101`
 - multi-page frontend shell aligned to the reference workbench style
 - real 3D workspace rendering in all three user modes
+- stylus-style pointer emulation with hover and activation feedback
 - bundled OBJ demo assets plus local OBJ upload for staging
 - tactile material catalog exposed at `GET /api/materials`
 - demo model catalog exposed at `GET /api/demo-models`
 - Braille preview API at `POST /api/braille/preview`
-- bounded 3D Braille world plus auxiliary inspection board
-- prototype 3D desktop scene with focusable tactile objects
+- bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
+- prototype 3D desktop scene with distinct tactile object families
 - null haptic backend abstraction for no-device execution
 - shared runtime metadata for version, port, and device state
 
@@ -101,6 +110,7 @@ python -m pytest tests -v
 
 - [Scope And Motivation](docs/scope_and_motivation.md)
 - [Architecture](docs/architecture.md)
+- [Implementation Gap Audit](docs/implementation_gap_audit.md)
 - [Material Profiles](docs/material_profiles.md)
 - [Asset Sources](docs/asset_sources.md)
 - [Theory](docs/theory.md)
