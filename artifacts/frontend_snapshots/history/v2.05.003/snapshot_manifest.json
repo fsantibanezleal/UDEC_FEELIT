@@ -1,7 +1,7 @@
 {
   "app": "FeelIT",
   "version": "2.05.003",
-  "base_url": "local_smoke_capture",
+  "base_url": "archived_release_snapshot",
   "generated_at_utc": "2026-03-29T18:16:24+00:00",
   "routes": [
     {

@@ -1,4 +1,4 @@
 #define AppName "FeelIT"
-#define AppVersion "2.05.002"
+#define AppVersion "2.05.003"
 #define AppPublisher "Felipe Santibanez"
 #define AppExeName "FeelIT.exe"

@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.05.003 (2026-03-29)
+
+Tighten the Haptic Desktop gallery and browser return flow so users land on explicit scene hubs instead of falling back onto a content item.
+
+Delivered:
+
+- Added explicit Gallery and Browser hub controls so paginated scenes now open on a scene-level anchor before item-level exploration.
+- Changed opened Haptic Desktop scenes to expose contextual return controls labeled Gallery or Browser, alongside Launcher and Start or Root controls.
+- Extended the browser smoke validator to assert gallery and file-browser hub focus across launcher, page-turn, return, and folder-entry transitions.
+
+Rationale:
+
+- Blind-first navigation should communicate scene context first, not drop the user directly onto a single item tile.
+- Return controls need to make the difference between launcher, current origin page, and first-page or root return paths explicit and testable.
+
 ### v2.05.002 (2026-03-29)
 
 Regularize the active FeelIT line onto a legacy-aware release 2 and adopt the fixed-width canonical version format X.XX.XXX.

@@ -576,6 +576,34 @@ function buildControlButton(kind, accent, disabled = false) {
       arrow.position.set(offset, 0.12, 0);
       group.add(arrow);
     });
+  } else if (kind === "hub") {
+    const outer = registerInteractiveMesh(
+      new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.12, 0.06, 24),
+        material,
+      ),
+      "accent",
+    );
+    outer.position.y = 0.12;
+    group.add(outer);
+    const inner = registerInteractiveMesh(
+      new THREE.Mesh(
+        new THREE.CylinderGeometry(0.055, 0.055, 0.075, 20),
+        material.clone(),
+      ),
+      "accent",
+    );
+    inner.position.y = 0.17;
+    group.add(inner);
+    const marker = registerInteractiveMesh(
+      new THREE.Mesh(
+        new THREE.SphereGeometry(0.028, 18, 14),
+        material.clone(),
+      ),
+      "accent",
+    );
+    marker.position.set(0.1, 0.2, 0);
+    group.add(marker);
   }
 
   return group;
@@ -1174,17 +1202,31 @@ function detailOriginLabel(origin) {
   return "Launcher";
 }
 
-function homeTargetLabel(origin) {
+function originReturnConfig(origin) {
   if (!origin) {
-    return "the workspace launcher";
+    return {
+      label: "Launcher",
+      actionLabel: "Return to the workspace launcher",
+    };
   }
   if (origin.type === "gallery") {
-    return `${CATEGORY_META[origin.category].title}, page ${origin.page + 1}`;
+    return {
+      label: "Gallery",
+      actionLabel: `Return to ${CATEGORY_META[origin.category].title}, page ${origin.page + 1}`,
+    };
   }
   if (origin.type === "file-browser") {
-    return origin.path ? `the file browser at ${origin.path}` : "the file browser root";
+    return {
+      label: "Browser",
+      actionLabel: origin.path
+        ? `Return to the file browser at ${origin.path}`
+        : "Return to the workspace file browser root",
+    };
   }
-  return "the workspace launcher";
+  return {
+    label: "Launcher",
+    actionLabel: "Return to the workspace launcher",
+  };
 }
 
 function originStartConfig(origin) {
@@ -1206,6 +1248,35 @@ function originStartConfig(origin) {
     };
   }
   return null;
+}
+
+function galleryHubTargetId(category) {
+  return `gallery-${category}-hub`;
+}
+
+function galleryHubMessage(category, pageSlice, totalCount) {
+  const firstItem = pageSlice.items.length ? pageSlice.page * GALLERY_PAGE_SIZE + 1 : 0;
+  const lastItem = pageSlice.items.length ? firstItem + pageSlice.items.length - 1 : 0;
+  const rangeText =
+    firstItem > 0
+      ? `Items ${firstItem} through ${lastItem} of ${totalCount}`
+      : `No items are currently visible on this page`;
+  return `${CATEGORY_META[category].title}, page ${pageSlice.page + 1} of ${pageSlice.pageCount}. ${rangeText}.`;
+}
+
+function browserHubTargetId() {
+  return "file-browser-hub";
+}
+
+function fileBrowserHubMessage(payload, pageSlice) {
+  const location = payload.current_path ? `Path ${payload.current_path}` : "Workspace file browser root";
+  const firstItem = pageSlice.items.length ? pageSlice.page * FILE_BROWSER_PAGE_SIZE + 1 : 0;
+  const lastItem = pageSlice.items.length ? firstItem + pageSlice.items.length - 1 : 0;
+  const rangeText =
+    firstItem > 0
+      ? `Visible entries ${firstItem} through ${lastItem} of ${payload.entries.length}`
+      : "No entries are currently visible on this page";
+  return `${location}. Page ${pageSlice.page + 1} of ${pageSlice.pageCount}. ${rangeText}.`;
 }
 
 async function navigateToOriginStart(origin) {
@@ -1420,11 +1491,11 @@ async function navigateToGallery(category, page = 0) {
   const workspace = state.activeWorkspace;
   const pageSlice = slicePage(workspace.libraries[category], GALLERY_PAGE_SIZE, page);
   prepareScene(
-    5.4,
+    6.2,
     4.6,
     CATEGORY_META[category].title,
     `Scene 2: paginated tactile gallery for ${category}.`,
-    [0, 3.65, 5.15],
+    [0, 3.75, 5.45],
     [0, 0.3, 0.08],
   );
 
@@ -1446,8 +1517,23 @@ async function navigateToGallery(category, page = 0) {
     actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-1.74, 0.12, 1.78),
+    position: new THREE.Vector3(-2.32, 0.12, 1.78),
     onActivate: async () => navigateToLauncher(),
+  });
+  addControlTarget({
+    id: galleryHubTargetId(category),
+    label: "Gallery",
+    type: "Control",
+    actionLabel: `Stay on ${CATEGORY_META[category].title}, page ${pageSlice.page + 1}, and survey the paginated gallery`,
+    kind: "hub",
+    color: CATEGORY_META[category].color,
+    position: new THREE.Vector3(-1.16, 0.12, 1.78),
+    onActivate: async () =>
+      publishStatus(
+        galleryHubMessage(category, pageSlice, workspace.libraries[category].length),
+        "Ready",
+        `gallery-hub-${category}-${pageSlice.page}`,
+      ),
   });
   addControlTarget({
     id: `gallery-${category}-start`,
@@ -1456,7 +1542,7 @@ async function navigateToGallery(category, page = 0) {
     actionLabel: `Return to the first page of ${CATEGORY_META[category].title}`,
     kind: "start",
     color: CATEGORY_META[category].color,
-    position: new THREE.Vector3(-0.58, 0.12, 1.78),
+    position: new THREE.Vector3(0, 0.12, 1.78),
     onActivate: async () => navigateToGallery(category, 0),
     disabled: pageSlice.page === 0,
   });
@@ -1467,7 +1553,7 @@ async function navigateToGallery(category, page = 0) {
     actionLabel: "Move to the previous gallery page",
     kind: "previous",
     color: CATEGORY_META[category].color,
-    position: new THREE.Vector3(0.58, 0.12, 1.78),
+    position: new THREE.Vector3(1.16, 0.12, 1.78),
     onActivate: async () => navigateToGallery(category, pageSlice.page - 1),
     disabled: pageSlice.page === 0,
   });
@@ -1478,17 +1564,17 @@ async function navigateToGallery(category, page = 0) {
     actionLabel: "Move to the next gallery page",
     kind: "next",
     color: CATEGORY_META[category].color,
-    position: new THREE.Vector3(1.74, 0.12, 1.78),
+    position: new THREE.Vector3(2.32, 0.12, 1.78),
     onActivate: async () => navigateToGallery(category, pageSlice.page + 1),
     disabled: pageSlice.page >= pageSlice.pageCount - 1,
   });
 
   state.pointerController.setBounds(
-    new THREE.Vector3(-2.4, 0.14, -1.6),
-    new THREE.Vector3(2.4, 1.1, 2.0),
+    new THREE.Vector3(-2.8, 0.14, -1.6),
+    new THREE.Vector3(2.8, 1.1, 2.0),
   );
   state.pointerController.setPosition(
-    positions[0]?.clone().setY(0.36) ?? new THREE.Vector3(-1.45, 0.36, 1.3),
+    new THREE.Vector3(-1.16, 0.36, 1.32),
   );
   assertSceneToken(token);
   finishSceneBuild({
@@ -1501,7 +1587,7 @@ async function navigateToGallery(category, page = 0) {
     idleMessage: `Pointer moving across the ${CATEGORY_META[category].title.toLowerCase()}.`,
   });
   focusTarget(
-    pageSlice.items.length > 0 ? `item-${pageSlice.items[0].slug}` : `gallery-${category}-launcher`,
+    galleryHubTargetId(category),
     { source: "scene", movePointer: false },
   );
 }
@@ -1512,11 +1598,11 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
   const payload = await fetchJson(workspaceBrowseUrl(workspace.slug, relativePath));
   const pageSlice = slicePage(payload.entries, FILE_BROWSER_PAGE_SIZE, page);
   prepareScene(
-    5.8,
+    6.8,
     4.5,
     "Workspace File Browser",
     "Scene 2: tactile filesystem navigation rooted in the active workspace.",
-    [5.2, 3.4, 5.4],
+    [5.8, 3.6, 5.9],
     [0, 0.28, 0.16],
   );
 
@@ -1559,8 +1645,23 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Return to the main launcher",
     kind: "home",
     color: 0x39d2c0,
-    position: new THREE.Vector3(-2.28, 0.12, 1.78),
+    position: new THREE.Vector3(-2.85, 0.12, 1.78),
     onActivate: async () => navigateToLauncher(),
+  });
+  addControlTarget({
+    id: browserHubTargetId(),
+    label: "Browser",
+    type: "Control",
+    actionLabel: "Stay in the current workspace browser page and survey the visible entries",
+    kind: "hub",
+    color: 0xc297ff,
+    position: new THREE.Vector3(-1.71, 0.12, 1.78),
+    onActivate: async () =>
+      publishStatus(
+        fileBrowserHubMessage(payload, pageSlice),
+        "Ready",
+        `browser-hub-${payload.current_path}-${pageSlice.page}`,
+      ),
   });
   addControlTarget({
     id: "file-browser-root",
@@ -1569,7 +1670,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Return to the workspace file browser root",
     kind: "start",
     color: 0xc297ff,
-    position: new THREE.Vector3(-1.14, 0.12, 1.78),
+    position: new THREE.Vector3(-0.57, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser("", 0),
     disabled: payload.current_path === "",
   });
@@ -1580,7 +1681,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Return to the parent folder",
     kind: "up",
     color: 0xc297ff,
-    position: new THREE.Vector3(0, 0.12, 1.78),
+    position: new THREE.Vector3(0.57, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser(payload.parent_path ?? "", 0),
     disabled: !payload.parent_path,
   });
@@ -1591,7 +1692,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Move to the previous file page",
     kind: "previous",
     color: 0x58a6ff,
-    position: new THREE.Vector3(1.14, 0.12, 1.78),
+    position: new THREE.Vector3(1.71, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser(payload.current_path, pageSlice.page - 1),
     disabled: pageSlice.page === 0,
   });
@@ -1602,17 +1703,17 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     actionLabel: "Move to the next file page",
     kind: "next",
     color: 0x58a6ff,
-    position: new THREE.Vector3(2.28, 0.12, 1.78),
+    position: new THREE.Vector3(2.85, 0.12, 1.78),
     onActivate: async () => navigateToFileBrowser(payload.current_path, pageSlice.page + 1),
     disabled: pageSlice.page >= pageSlice.pageCount - 1,
   });
 
   state.pointerController.setBounds(
-    new THREE.Vector3(-2.5, 0.14, -1.6),
-    new THREE.Vector3(2.5, 1.1, 2.0),
+    new THREE.Vector3(-3.2, 0.14, -1.6),
+    new THREE.Vector3(3.2, 1.1, 2.0),
   );
   state.pointerController.setPosition(
-    positions[0]?.clone().setY(0.36) ?? new THREE.Vector3(-1.72, 0.36, 1.3),
+    new THREE.Vector3(-1.71, 0.36, 1.32),
   );
   assertSceneToken(token);
   finishSceneBuild({
@@ -1625,7 +1726,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     idleMessage: "Pointer moving across the workspace file browser.",
   });
   focusTarget(
-    pageSlice.items.length > 0 ? `item-${pageSlice.items[0].slug}` : "file-browser-launcher",
+    browserHubTargetId(),
     { source: "scene", movePointer: false },
   );
 }
@@ -1673,6 +1774,7 @@ async function navigateToDetail(item, origin) {
   state.sceneApi.world.add(summarySprite);
 
   const originStart = originStartConfig(origin);
+  const originReturn = originReturnConfig(origin);
   addControlTarget({
     id: "detail-launcher",
     label: "Launcher",
@@ -1696,10 +1798,10 @@ async function navigateToDetail(item, origin) {
     });
   }
   addControlTarget({
-    id: "detail-home",
-    label: "Home",
+    id: "detail-return",
+    label: originReturn.label,
     type: "Control",
-    actionLabel: `Return to ${homeTargetLabel(origin)}`,
+    actionLabel: originReturn.actionLabel,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(originStart ? 0.62 : 0, 0.12, 1.42),
@@ -1737,7 +1839,7 @@ async function navigateToDetail(item, origin) {
     pagination: "1 / 1",
     idleMessage: `Pointer moving across the detail scene for ${item.title}.`,
   });
-  focusTarget("detail-open", { source: "scene", movePointer: false });
+  focusTarget("detail-return", { source: "scene", movePointer: false });
   publishStatus(`${item.title}. ${item.summary || meta.title}.`, "Ready", `detail-${item.slug}`);
 }
 
@@ -1790,6 +1892,7 @@ async function navigateToModelScene(item, origin) {
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
   const originStart = originStartConfig(origin);
+  const originReturn = originReturnConfig(origin);
 
   addControlTarget({
     id: "model-launcher",
@@ -1814,10 +1917,10 @@ async function navigateToModelScene(item, origin) {
     });
   }
   addControlTarget({
-    id: "model-home",
-    label: "Home",
+    id: "model-return",
+    label: originReturn.label,
     type: "Control",
-    actionLabel: `Return to ${homeTargetLabel(origin)}`,
+    actionLabel: originReturn.actionLabel,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(originStart ? 0.6 : 0, 0.12, 1.7),
@@ -1848,7 +1951,7 @@ async function navigateToModelScene(item, origin) {
     pagination: "1 / 1",
     idleMessage: `Pointer moving across the opened 3D model ${item.title}.`,
   });
-  focusTarget("model-home", { source: "scene", movePointer: false });
+  focusTarget("model-return", { source: "scene", movePointer: false });
   publishStatus(`Opened ${item.title} in the model scene.`, "Ready", `open-model-${item.slug}`);
 }
 
@@ -1974,6 +2077,7 @@ function renderTextScene(token = state.sceneBuildToken) {
   state.sceneApi.world.add(header);
 
   const originStart = originStartConfig(textScene.origin);
+  const originReturn = originReturnConfig(textScene.origin);
   addControlTarget({
     id: "text-launcher",
     label: "Launcher",
@@ -1997,10 +2101,10 @@ function renderTextScene(token = state.sceneBuildToken) {
     });
   }
   addControlTarget({
-    id: "text-home",
-    label: "Home",
+    id: "text-return",
+    label: originReturn.label,
     type: "Control",
-    actionLabel: `Return to ${homeTargetLabel(textScene.origin)}`,
+    actionLabel: originReturn.actionLabel,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(0.16, 0.12, 1.78),
@@ -2048,7 +2152,7 @@ function renderTextScene(token = state.sceneBuildToken) {
     pagination: `${textScene.page + 1} / ${textPageCount(textScene)}`,
     idleMessage: `Pointer moving across the reading surface for ${textScene.item.title}.`,
   });
-  focusTarget("text-next", { source: "scene", movePointer: false });
+  focusTarget("text-return", { source: "scene", movePointer: false });
 }
 
 async function navigateToTextScene(item, origin, offset = 0) {
@@ -2131,6 +2235,7 @@ function renderAudioScene(token = state.sceneBuildToken) {
   state.sceneApi.world.add(transport);
 
   const originStart = originStartConfig(audioScene.origin);
+  const originReturn = originReturnConfig(audioScene.origin);
   addControlTarget({
     id: "audio-launcher",
     label: "Launcher",
@@ -2154,10 +2259,10 @@ function renderAudioScene(token = state.sceneBuildToken) {
     });
   }
   addControlTarget({
-    id: "audio-home",
-    label: "Home",
+    id: "audio-return",
+    label: originReturn.label,
     type: "Control",
-    actionLabel: `Return to ${homeTargetLabel(audioScene.origin)}`,
+    actionLabel: originReturn.actionLabel,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(-0.04, 0.12, 1.46),

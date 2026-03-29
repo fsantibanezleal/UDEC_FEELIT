@@ -93,9 +93,10 @@ Current use:
 - load the bundled demo workspace or a registered external workspace
 - use the bundled demo workspace as a full internal-library baseline covering every bundled model, document, and audio sample
 - start in a tactile launcher with a neutral launcher hub plus entry objects for models, texts, audio, and the workspace file browser
+- enter gallery and file-browser scenes through a neutral `Gallery` or `Browser` hub before moving to individual items
 - move through smaller paginated gallery scenes and a workspace-root file browser where folders, models, texts, audio files, and unsupported files use different tactile 3D shapes
-- use explicit in-scene `Launcher` controls plus `Start` or `Root` controls to jump back to the main menu or the beginning of the active gallery or browser flow
-- expect `Launcher` to return to the neutral launcher hub, while `Home` returns to the exact gallery page or file-browser location that launched the current scene and `Start` or `Root` return to the beginning of the active gallery or browser flow
+- use explicit in-scene `Launcher` controls plus `Gallery` or `Browser` return controls and `Start` or `Root` controls to jump back to the main menu, the current origin page, or the beginning of the active gallery or browser flow
+- expect `Launcher` to return to the neutral launcher hub, while `Gallery` or `Browser` return to the exact gallery page or file-browser location that launched the current scene and `Start` or `Root` return to the beginning of the active gallery or browser flow
 - open a detail plaque that exposes the content name before opening the real scene
 - open 3D model scenes, Braille reading scenes, and audio transport scenes with scene-native return controls
 - from the file browser, open supported files directly in their corresponding runtime mode: models in the 3D model scene, texts in the Braille reading scene, and audio files in the audio transport scene

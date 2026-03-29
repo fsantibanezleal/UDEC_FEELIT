@@ -199,6 +199,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     timeout=15_000,
                 )
                 desktop_gallery_loaded = True
+                if focused_label(page) != "Gallery":
+                    failures.append(
+                        f"/haptic-desktop entered the models gallery with focus on {focused_label(page)!r} instead of 'Gallery'",
+                    )
                 if not cycle_focus_to(page, "Next"):
                     failures.append("/haptic-desktop could not focus the gallery Next control")
                 else:
@@ -213,6 +217,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         timeout=15_000,
                     )
                     desktop_gallery_paginated = True
+                    if focused_label(page) != "Gallery":
+                        failures.append(
+                            f"/haptic-desktop page turn did not land on the gallery hub; focus={focused_label(page)!r}",
+                        )
                 if not cycle_focus_to(page, "Female Figure"):
                     failures.append("/haptic-desktop could not focus a page-2 model gallery item")
                 else:
@@ -239,8 +247,8 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             """,
                             timeout=15_000,
                         )
-                    if not cycle_focus_to(page, "Home"):
-                        failures.append("/haptic-desktop could not focus the model Home control")
+                    if not cycle_focus_to(page, "Gallery"):
+                        failures.append("/haptic-desktop could not focus the model Gallery return control")
                     else:
                         page.locator("#focus-activate").click()
                         page.wait_for_function(
@@ -253,6 +261,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             """,
                             timeout=15_000,
                         )
+                        if focused_label(page) != "Gallery":
+                            failures.append(
+                                f"/haptic-desktop gallery return landed on {focused_label(page)!r} instead of 'Gallery'",
+                            )
                 if not cycle_focus_to(page, "Start"):
                     failures.append("/haptic-desktop could not focus the gallery Start control")
                 else:
@@ -266,6 +278,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         """,
                         timeout=15_000,
                     )
+                    if focused_label(page) != "Gallery":
+                        failures.append(
+                            f"/haptic-desktop gallery Start did not land on the gallery hub; focus={focused_label(page)!r}",
+                        )
                 if not cycle_focus_to(page, "Launcher"):
                     failures.append("/haptic-desktop could not focus the gallery Launcher control")
                 else:
@@ -297,6 +313,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             """,
                         timeout=15_000,
                     )
+                    if focused_label(page) != "Browser":
+                        failures.append(
+                            f"/haptic-desktop entered the file browser with focus on {focused_label(page)!r} instead of 'Browser'",
+                        )
                     if not cycle_focus_to(page, "documents"):
                         failures.append("/haptic-desktop could not focus the documents folder from the file browser root")
                     else:
@@ -332,6 +352,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             if scene_in_documents != "file-browser" or "documents" not in path_in_documents:
                                 failures.append(
                                     f"/haptic-desktop did not enter the documents folder correctly; scene={scene_in_documents!r} path={path_in_documents!r}",
+                                )
+                            if focused_label(page) != "Browser":
+                                failures.append(
+                                    f"/haptic-desktop did not land on the browser hub after entering documents; focus={focused_label(page)!r}",
                                 )
                     if not cycle_focus_to(page, "alice_in_wonderland.txt"):
                         failures.append("/haptic-desktop could not focus a supported text file inside documents")

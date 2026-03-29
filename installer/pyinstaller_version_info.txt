@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 5, 2, 0),
-    prodvers=(2, 5, 2, 0),
+    filevers=(2, 5, 3, 0),
+    prodvers=(2, 5, 3, 0),
     mask=0x3F,
     flags=0x0,
     OS=0x40004,
@@ -16,11 +16,11 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'Felipe Santibanez'),
           StringStruct('FileDescription', 'FeelIT'),
-          StringStruct('FileVersion', '2.05.002.0'),
+          StringStruct('FileVersion', '2.05.003.0'),
           StringStruct('InternalName', 'FeelIT'),
           StringStruct('OriginalFilename', 'FeelIT.exe'),
           StringStruct('ProductName', 'FeelIT'),
-          StringStruct('ProductVersion', '2.05.002')
+          StringStruct('ProductVersion', '2.05.003')
         ]
       )
     ]),
