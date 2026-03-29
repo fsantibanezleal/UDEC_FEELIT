@@ -17,7 +17,7 @@ const workspaceRawUrl = (slug, path) =>
   `/api/haptic-workspaces/${encodeURIComponent(slug)}/raw-file?path=${encodeURIComponent(path)}`;
 const braillePreviewUrl = "/api/braille/preview";
 
-const GALLERY_PAGE_SIZE = 6;
+const GALLERY_PAGE_SIZE = 3;
 const FILE_BROWSER_PAGE_SIZE = 6;
 const TEXT_COLUMNS = 8;
 const TEXT_ROWS_PER_PAGE = 4;
@@ -375,6 +375,38 @@ function addFloatingLabel(group, text, y = 0.72, color = "#8b949e") {
   });
   sprite.position.set(0, y, 0);
   group.add(sprite);
+}
+
+function truncateLabelLine(text, maxLength = 84) {
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function addGallerySummary(category, pageSlice, totalCount) {
+  if (pageSlice.items.length === 0) {
+    return;
+  }
+  const firstItem = pageSlice.page * GALLERY_PAGE_SIZE + 1;
+  const lastItem = firstItem + pageSlice.items.length - 1;
+  const rangeLine = `${CATEGORY_META[category].title} • page ${pageSlice.page + 1} of ${pageSlice.pageCount} • items ${firstItem}-${lastItem} of ${totalCount}`;
+  const titlesLine = truncateLabelLine(
+    `Visible now: ${pageSlice.items.map((item) => item.title).join(" | ")}`,
+  );
+
+  const rangeSprite = createLabelSprite(rangeLine, {
+    background: "rgba(13, 17, 23, 0.76)",
+    color: "#e6edf3",
+    fontSize: 14,
+  });
+  rangeSprite.position.set(0, 0.64, -1.5);
+  state.sceneApi.world.add(rangeSprite);
+
+  const titlesSprite = createLabelSprite(titlesLine, {
+    background: "rgba(13, 17, 23, 0.68)",
+    color: "#8b949e",
+    fontSize: 13,
+  });
+  titlesSprite.position.set(0, 0.46, -1.5);
+  state.sceneApi.world.add(titlesSprite);
 }
 
 function beginSceneBuild(title) {
@@ -1036,13 +1068,19 @@ function buildBraillePlaque(cells, columns, options = {}) {
 }
 
 function galleryTilePositions(count) {
+  if (count <= 1) {
+    return [new THREE.Vector3(0, 0.12, 0.02)].slice(0, count);
+  }
+  if (count === 2) {
+    return [
+      new THREE.Vector3(-1.18, 0.12, 0.02),
+      new THREE.Vector3(1.18, 0.12, 0.02),
+    ];
+  }
   return [
-    new THREE.Vector3(-1.55, 0.12, -0.72),
-    new THREE.Vector3(0, 0.12, -0.72),
-    new THREE.Vector3(1.55, 0.12, -0.72),
-    new THREE.Vector3(-1.55, 0.12, 0.82),
-    new THREE.Vector3(0, 0.12, 0.82),
-    new THREE.Vector3(1.55, 0.12, 0.82),
+    new THREE.Vector3(-1.48, 0.12, -0.26),
+    new THREE.Vector3(0, 0.12, 0.56),
+    new THREE.Vector3(1.48, 0.12, -0.26),
   ].slice(0, count);
 }
 
@@ -1259,12 +1297,12 @@ async function navigateToGallery(category, page = 0) {
   const workspace = state.activeWorkspace;
   const pageSlice = slicePage(workspace.libraries[category], GALLERY_PAGE_SIZE, page);
   prepareScene(
-    5.8,
-    4.5,
+    5.4,
+    4.6,
     CATEGORY_META[category].title,
     `Scene 2: paginated tactile gallery for ${category}.`,
-    [5.2, 3.4, 5.4],
-    [0, 0.28, 0.16],
+    [0, 3.65, 5.15],
+    [0, 0.3, 0.08],
   );
 
   const positions = galleryTilePositions(pageSlice.items.length);
@@ -1273,6 +1311,7 @@ async function navigateToGallery(category, page = 0) {
       navigateToDetail(item, { type: "gallery", category, page: pageSlice.page }),
     );
   });
+  addGallerySummary(category, pageSlice, workspace.libraries[category].length);
 
   addControlTarget({
     id: `gallery-${category}-home`,

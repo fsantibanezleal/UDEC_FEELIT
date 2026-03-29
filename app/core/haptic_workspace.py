@@ -129,6 +129,70 @@ def _read_workspace_descriptor(path: Path) -> dict[str, Any]:
     return descriptor
 
 
+def _bundled_demo_workspace_defaults() -> dict[str, list[dict[str, Any]]]:
+    """Return the complete seeded library for the bundled demo workspace."""
+    return {
+        "models": [
+            {
+                "slug": f"{model['slug']}_session",
+                "title": model["title"],
+                "summary": model["description"],
+                "source": {"kind": "demo_model", "ref": model["slug"]},
+            }
+            for model in build_demo_model_catalog()
+        ],
+        "texts": [
+            {
+                "slug": f"{document['slug']}_session",
+                "title": document["title"],
+                "summary": document["summary"],
+                "source": {"kind": "library_document", "ref": document["slug"]},
+            }
+            for document in build_document_catalog()
+        ],
+        "audio": [
+            {
+                "slug": f"{audio['slug']}_session",
+                "title": audio["title"],
+                "summary": audio["summary"],
+                "source": {"kind": "library_audio", "ref": audio["slug"]},
+            }
+            for audio in build_audio_catalog()
+        ],
+    }
+
+
+def _normalize_workspace_libraries(
+    descriptor: dict[str, Any],
+    *,
+    registry_source: str,
+) -> dict[str, list[dict[str, Any]]]:
+    """Return workspace libraries with any bundled-demo defaults merged in."""
+    libraries = {
+        category: [dict(item) for item in descriptor.get("libraries", {}).get(category, [])]
+        for category in ("models", "texts", "audio")
+    }
+
+    if not (
+        registry_source == "bundled_demo"
+        and descriptor.get("auto_include_all_bundled_assets")
+    ):
+        return libraries
+
+    defaults = _bundled_demo_workspace_defaults()
+    for category in ("models", "texts", "audio"):
+        existing_refs = {
+            item.get("source", {}).get("ref")
+            for item in libraries[category]
+            if item.get("source", {}).get("kind")
+        }
+        for item in defaults[category]:
+            ref = item["source"]["ref"]
+            if ref not in existing_refs:
+                libraries[category].append(item)
+    return libraries
+
+
 def _load_workspace_record(path: Path, *, registry_source: str) -> dict[str, Any]:
     """Return a resolved catalog record for one workspace descriptor file."""
     descriptor = _read_workspace_descriptor(path)
@@ -139,7 +203,7 @@ def _load_workspace_record(path: Path, *, registry_source: str) -> dict[str, Any
     if not file_browser_root.exists():
         raise ValueError(f"Workspace file-browser root does not exist for {path.name}.")
 
-    libraries = descriptor.get("libraries", {})
+    libraries = _normalize_workspace_libraries(descriptor, registry_source=registry_source)
     return {
         "slug": descriptor["slug"],
         "title": descriptor["title"],

@@ -5,6 +5,7 @@
   "title": "FeelIT Demo Workspace",
   "description": "Curated launcher workspace that combines demo models, bundled documents, bundled audio, and a controlled file-browser root for internal demonstrations.",
   "is_default": true,
+  "auto_include_all_bundled_assets": true,
   "content_root": {
     "mode": "app_static_relative",
     "path": "assets"

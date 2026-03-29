@@ -91,8 +91,9 @@ Current use:
 
 - select the active structured workspace from the left panel
 - load the bundled demo workspace or a registered external workspace
+- use the bundled demo workspace as a full internal-library baseline covering every bundled model, document, and audio sample
 - start in a tactile launcher with entry objects for models, texts, audio, and the workspace file browser
-- move through paginated gallery scenes and a workspace-root file browser
+- move through smaller paginated gallery scenes and a workspace-root file browser
 - open a detail plaque that exposes the content name before opening the real scene
 - open 3D model scenes, Braille reading scenes, and audio transport scenes with scene-native return controls
 

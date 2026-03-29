@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`0.5.0`
+`0.5.1`
 
 ## Public Port
 
@@ -42,7 +42,7 @@ Operational workspace that translates text into Braille cells, lays them out on 
 
 ### Haptic Desktop
 
-Workspace-driven tactile desktop that now transitions through a launcher, curated galleries, a file browser, item detail plaques, and opened scenes for models, text, and audio.
+Workspace-driven tactile desktop that now transitions through a launcher, paginated galleries, a file browser, item detail plaques, and opened scenes for models, text, and audio. The bundled demo workspace mirrors the full internal demo library so the gallery flow covers every bundled model, document, and audio sample.
 
 ### Haptic Workspace Manager
 
@@ -96,7 +96,7 @@ FeelIT now includes a structured workspace layer for Haptic Desktop:
   - `POST /api/haptic-workspaces/create`
   - `POST /api/haptic-workspaces/register`
 
-The demo desktop workspace uses curated galleries plus a file-browser root. User-created workspaces keep their heavy assets outside the repository and only register descriptor files locally.
+The demo desktop workspace uses curated galleries plus a file-browser root, and it auto-surfaces the full bundled asset catalog so no internal demo item is omitted from the launcher flow. User-created workspaces keep their heavy assets outside the repository and only register descriptor files locally.
 
 ## Quick Start
 
@@ -153,6 +153,7 @@ python scripts\browser_scene_smoke.py
 - Braille preview API at `POST /api/braille/preview`
 - bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
 - workspace-driven 3D desktop launcher, galleries, file browser, detail scenes, and opened content scenes
+- bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
 - null haptic backend abstraction for no-device execution
 - shared runtime metadata for version, port, and device state
 
