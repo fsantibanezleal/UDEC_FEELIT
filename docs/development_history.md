@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.5.3 (2026-03-29)
+
+Patch release focused on deterministic launcher return semantics in Haptic Desktop and regression coverage for held activation across scene transitions.
+
+Delivered:
+
+- Made Launcher returns land on a neutral launcher hub instead of inheriting focus on a specific gallery tile.
+- Suppressed repeated held-key activations during scene transitions in the shared pointer emulator.
+- Extended the browser smoke validator to reproduce and guard the file-browser-to-launcher return path.
+
+Rationale:
+
+- Keep Haptic Desktop navigation semantically stable so blind-first return controls always land in the expected scene and focus anchor.
+- Prevent held activation from leaking across scene rebuilds and causing accidental follow-up navigation.
+
 ### v0.5.2 (2026-03-29)
 
 Patch release focused on explicit launcher and start or root return controls across Haptic Desktop scenes.

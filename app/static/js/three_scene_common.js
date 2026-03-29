@@ -383,6 +383,7 @@ export function attachPointerEmulation(sceneApi, options = {}) {
       return;
     }
 
+    const wasAlreadyDown = keysDown.has(event.code);
     if (
       Object.values(keyMap).includes(event.code)
       || activationKeys.has(event.code)
@@ -391,7 +392,7 @@ export function attachPointerEmulation(sceneApi, options = {}) {
       event.preventDefault();
     }
     keysDown.add(event.code);
-    if (activationKeys.has(event.code) || activationKeys.has(event.key)) {
+    if (!wasAlreadyDown && (activationKeys.has(event.code) || activationKeys.has(event.key))) {
       const now = performance.now();
       if (now - lastActivation > 120) {
         activate();

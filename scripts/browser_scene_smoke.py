@@ -129,7 +129,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
-                page.locator("#focus-activate").click()
+                if not cycle_focus_to(page, "Models Gallery"):
+                    failures.append("/haptic-desktop could not focus Models Gallery from the launcher")
+                else:
+                    page.locator("#focus-activate").click()
                 page.wait_for_function(
                     """
                     () => {
@@ -179,7 +182,45 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         """,
                         timeout=15_000,
                     )
-                    page.locator("#focus-activate").click()
+                    launcher_focus = focused_label(page)
+                    if launcher_focus != "Launcher":
+                        failures.append(
+                            f"/haptic-desktop returned to launcher but left focus on {launcher_focus!r} instead of 'Launcher'",
+                        )
+                    if not cycle_focus_to(page, "File Browser"):
+                        failures.append("/haptic-desktop could not focus File Browser from the launcher")
+                    else:
+                        page.locator("#focus-activate").click()
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                              return sceneCode === 'file-browser';
+                            }
+                            """,
+                            timeout=15_000,
+                        )
+                    if not cycle_focus_to(page, "Launcher"):
+                        failures.append("/haptic-desktop could not focus the file-browser Launcher control")
+                    else:
+                        page.keyboard.down("Space")
+                        page.wait_for_timeout(900)
+                        page.keyboard.up("Space")
+                        page.wait_for_timeout(700)
+                        scene_after_hold = (page.locator("#desktop-scene-code").text_content() or "").strip()
+                        focus_after_hold = focused_label(page)
+                        if scene_after_hold != "launcher":
+                            failures.append(
+                                f"/haptic-desktop held-space return from file browser ended on {scene_after_hold!r} instead of 'launcher'",
+                            )
+                        if focus_after_hold != "Launcher":
+                            failures.append(
+                                f"/haptic-desktop held-space return from file browser left focus on {focus_after_hold!r} instead of 'Launcher'",
+                            )
+                    if not cycle_focus_to(page, "Models Gallery"):
+                        failures.append("/haptic-desktop could not refocus Models Gallery after returning to launcher")
+                    else:
+                        page.locator("#focus-activate").click()
                     page.wait_for_function(
                         """
                         () => {
