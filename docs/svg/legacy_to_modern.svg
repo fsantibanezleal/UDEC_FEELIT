@@ -89,11 +89,11 @@
   <text x="1114" y="312" class="cardTitle">Modern FeelIT Scope</text>
   <text x="1114" y="340" class="mono">Operational baseline plus structured next layers</text>
   <text x="1114" y="390" class="section">OPERATIONAL NOW</text>
-  <text x="1114" y="418" class="body">Real 3D worlds for the three modes, Braille workflow,</text>
-  <text x="1114" y="442" class="body">OBJ demos, material presets, and null-device runtime.</text>
+  <text x="1114" y="418" class="body">Four routed workspaces, scene-native Braille library</text>
+  <text x="1114" y="442" class="body">launch, structured desktop workspaces, and null-safe 3D scenes.</text>
   <text x="1114" y="492" class="section">NEXT CAPABILITIES</text>
-  <text x="1114" y="520" class="body">Native haptic bridge, richer document ingestion,</text>
-  <text x="1114" y="544" class="body">desktop action graph, and stronger asset pipelines.</text>
+  <text x="1114" y="520" class="body">Native haptic bridge, richer geometry ingestion,</text>
+  <text x="1114" y="544" class="body">desktop action graph, and stronger workspace validation.</text>
   <text x="1114" y="594" class="section">DOCUMENTATION RULE</text>
   <text x="1114" y="622" class="body">Scope, architecture, theory, diagrams, and history</text>
   <text x="1114" y="646" class="body">must evolve together whenever product meaning changes.</text>

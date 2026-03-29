@@ -6,7 +6,7 @@ Modern accessibility-centered haptic application for tactile 3D object explorati
 
 ## Overview
 
-FeelIT is a modernization of a university-era accessibility project focused on giving people with visual impairment a richer way to access shape, texture, and text through bounded haptic interaction. The modern repository is organized as a multi-workspace application with four dedicated routes rather than a single scrolling page:
+FeelIT is a modernization of an accessibility project originally developed by Felipe Santibanez during his Electronic Engineering studies in Concepcion, Chile. It focuses on giving people with visual impairment a richer way to access shape, texture, and text through bounded haptic interaction. The modern repository is organized as a multi-workspace application with four dedicated routes rather than a single scrolling page:
 
 - `/object-explorer`
 - `/braille-reader`
@@ -14,6 +14,12 @@ FeelIT is a modernization of a university-era accessibility project focused on g
 - `/haptic-workspace-manager`
 
 The current implementation provides real 3D workspace rendering across the spatial modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, a bundled public-domain reading and audio library, a structured `haptic_workspace` format with a Workspace Manager route, and a null-hardware-safe runtime foundation for future physical device integration.
+
+## Interaction Diagrams
+
+![FeelIT mode map](docs/svg/mode_map.svg)
+
+![FeelIT Braille pipeline](docs/svg/braille_pipeline.svg)
 
 ## Current Version
 
