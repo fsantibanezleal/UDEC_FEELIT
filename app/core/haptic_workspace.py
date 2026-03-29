@@ -1,0 +1,480 @@
+"""Workspace descriptors and filesystem services for the Haptic Desktop."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from pathlib import Path, PurePosixPath
+from typing import Any
+
+from app.core.demo_assets import build_demo_model_catalog
+from app.core.library_assets import (
+    build_audio_catalog,
+    build_document_catalog,
+    build_document_payload,
+    build_text_payload_from_path,
+)
+
+APP_DIR = Path(__file__).resolve().parents[1]
+STATIC_DIR = APP_DIR / "static"
+WORKSPACES_DIR = STATIC_DIR / "assets" / "workspaces"
+DEMO_WORKSPACE_FILE = WORKSPACES_DIR / "feelit_demo.haptic_workspace.json"
+WORKSPACE_FORMAT = "feelit_haptic_workspace"
+WORKSPACE_SUFFIX = ".haptic_workspace.json"
+SUPPORTED_MODEL_SUFFIXES = {".obj"}
+SUPPORTED_TEXT_SUFFIXES = {".txt", ".html", ".htm", ".epub", ".md"}
+SUPPORTED_AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".m4a"}
+DEFAULT_SEGMENT_CHARS = 1200
+
+
+def local_app_state_dir() -> Path:
+    """Return the local writable directory used for user-scoped FeelIT state."""
+    if os.name == "nt":
+        root = Path(os.getenv("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        return root / "FeelIT"
+    return Path.home() / ".feelit"
+
+
+REGISTRY_FILE = local_app_state_dir() / "haptic_workspace_registry.json"
+
+
+def _slugify(value: str) -> str:
+    """Normalize a user-facing name into a filesystem-safe slug."""
+    slug = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+    return slug or "workspace"
+
+
+def _ensure_registry_file() -> None:
+    """Create the local workspace registry file when it does not exist yet."""
+    REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if not REGISTRY_FILE.exists():
+        REGISTRY_FILE.write_text(json.dumps({"workspace_files": []}, indent=2), encoding="utf-8")
+
+
+def _load_registry_payload() -> dict[str, Any]:
+    """Return the current local registry payload."""
+    _ensure_registry_file()
+    payload = json.loads(REGISTRY_FILE.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or "workspace_files" not in payload:
+        payload = {"workspace_files": []}
+    return payload
+
+
+def _save_registry_payload(payload: dict[str, Any]) -> None:
+    """Persist the local registry payload."""
+    _ensure_registry_file()
+    REGISTRY_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _resolve_location(descriptor_path: Path, location: dict[str, Any]) -> Path:
+    """Resolve a descriptor location object into an absolute filesystem path."""
+    mode = location.get("mode")
+    raw_path = location.get("path", "")
+    if not raw_path:
+        raise ValueError("Workspace location path is required.")
+
+    if mode == "absolute":
+        return Path(raw_path).expanduser().resolve()
+    if mode == "workspace_relative":
+        return (descriptor_path.parent / raw_path).resolve()
+    if mode == "app_static_relative":
+        return (STATIC_DIR / raw_path).resolve()
+    raise ValueError(f"Unsupported workspace location mode: {mode}")
+
+
+def _normalize_relative_path(relative_path: str) -> str:
+    """Normalize a client relative path into a safe POSIX-like representation."""
+    if not relative_path:
+        return ""
+    cleaned = relative_path.replace("\\", "/").strip("/")
+    path = PurePosixPath(cleaned)
+    if any(part in {"..", "."} for part in path.parts):
+        raise ValueError("Relative path traversal is not allowed.")
+    return path.as_posix()
+
+
+def _resolve_child_path(root: Path, relative_path: str) -> Path:
+    """Resolve a client-supplied relative path under a validated root."""
+    normalized = _normalize_relative_path(relative_path)
+    candidate = (root / Path(normalized)).resolve() if normalized else root.resolve()
+    if not candidate.is_relative_to(root.resolve()):
+        raise ValueError("Requested path escapes the configured workspace root.")
+    return candidate
+
+
+def detect_entry_kind(path: Path) -> str:
+    """Classify a filesystem entry into a Haptic Desktop content kind."""
+    if path.is_dir():
+        return "directory"
+    suffix = path.suffix.lower()
+    if suffix in SUPPORTED_MODEL_SUFFIXES:
+        return "model"
+    if suffix in SUPPORTED_TEXT_SUFFIXES:
+        return "text"
+    if suffix in SUPPORTED_AUDIO_SUFFIXES:
+        return "audio"
+    return "unsupported"
+
+
+def _read_workspace_descriptor(path: Path) -> dict[str, Any]:
+    """Load and minimally validate a workspace descriptor file."""
+    descriptor = json.loads(path.read_text(encoding="utf-8"))
+    if descriptor.get("format") != WORKSPACE_FORMAT:
+        raise ValueError(f"Unsupported workspace format in {path.name}.")
+    if descriptor.get("format_version") != 1:
+        raise ValueError(f"Unsupported workspace format_version in {path.name}.")
+    if not descriptor.get("slug") or not descriptor.get("title"):
+        raise ValueError(f"Workspace descriptor {path.name} is missing required title/slug fields.")
+    return descriptor
+
+
+def _load_workspace_record(path: Path, *, registry_source: str) -> dict[str, Any]:
+    """Return a resolved catalog record for one workspace descriptor file."""
+    descriptor = _read_workspace_descriptor(path)
+    content_root = _resolve_location(path, descriptor["content_root"])
+    file_browser_root = _resolve_location(path, descriptor["file_browser_root"])
+    if not content_root.exists():
+        raise ValueError(f"Workspace content root does not exist for {path.name}.")
+    if not file_browser_root.exists():
+        raise ValueError(f"Workspace file-browser root does not exist for {path.name}.")
+
+    libraries = descriptor.get("libraries", {})
+    return {
+        "slug": descriptor["slug"],
+        "title": descriptor["title"],
+        "description": descriptor.get("description", ""),
+        "is_default": bool(descriptor.get("is_default")),
+        "registry_source": registry_source,
+        "workspace_file_path": str(path.resolve()),
+        "content_root": content_root,
+        "file_browser_root": file_browser_root,
+        "libraries": libraries,
+    }
+
+
+def _workspace_records() -> list[dict[str, Any]]:
+    """Return all known workspaces, including the bundled demo workspace."""
+    records: list[dict[str, Any]] = []
+    seen_paths: set[Path] = set()
+    demo_path = DEMO_WORKSPACE_FILE.resolve()
+    if demo_path.exists():
+        records.append(_load_workspace_record(demo_path, registry_source="bundled_demo"))
+        seen_paths.add(demo_path)
+
+    registry_payload = _load_registry_payload()
+    for raw_path in registry_payload.get("workspace_files", []):
+        path = Path(raw_path).expanduser().resolve()
+        if path in seen_paths or not path.exists():
+            continue
+        try:
+            records.append(_load_workspace_record(path, registry_source="user_registered"))
+            seen_paths.add(path)
+        except ValueError:
+            continue
+    return records
+
+
+def _workspace_record_by_slug(slug: str) -> dict[str, Any]:
+    """Return one workspace record by slug."""
+    for record in _workspace_records():
+        if record["slug"] == slug:
+            return record
+    raise KeyError(slug)
+
+
+def _catalog_lookup(items: list[dict[str, Any]], key: str, value: str) -> dict[str, Any] | None:
+    """Return one catalog item by a selected key value."""
+    return next((item for item in items if item.get(key) == value), None)
+
+
+def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], category: str, item: dict[str, Any]) -> dict[str, Any]:
+    """Resolve one workspace item into a frontend-ready payload."""
+    source = item.get("source", {})
+    source_kind = source.get("kind")
+    ref = source.get("ref")
+    payload = {
+        "slug": item["slug"],
+        "title": item["title"],
+        "summary": item.get("summary", ""),
+        "category": category,
+        "source": {"kind": source_kind},
+    }
+
+    if source_kind == "demo_model":
+        model = _catalog_lookup(build_demo_model_catalog(), "slug", ref)
+        if model is None:
+            raise ValueError(f"Unknown demo model reference: {ref}")
+        payload["kind"] = "model"
+        payload["source"].update(
+            {
+                "ref": ref,
+                "demo_model_slug": model["slug"],
+                "file_url": model["file_url"],
+                "title": model["title"],
+            },
+        )
+        return payload
+
+    if source_kind == "library_document":
+        document = _catalog_lookup(build_document_catalog(), "slug", ref)
+        if document is None:
+            raise ValueError(f"Unknown library document reference: {ref}")
+        payload["kind"] = "text"
+        payload["source"].update(
+            {
+                "ref": ref,
+                "document_slug": document["slug"],
+                "text_endpoint": f"/api/library/documents/{document['slug']}",
+                "format": document["format"],
+            },
+        )
+        return payload
+
+    if source_kind == "library_audio":
+        audio = _catalog_lookup(build_audio_catalog(), "slug", ref)
+        if audio is None:
+            raise ValueError(f"Unknown library audio reference: {ref}")
+        payload["kind"] = "audio"
+        payload["source"].update(
+            {
+                "ref": ref,
+                "audio_slug": audio["slug"],
+                "file_url": audio["file_url"],
+                "format": audio["format"],
+            },
+        )
+        return payload
+
+    if source_kind == "workspace_file":
+        relative_path = _normalize_relative_path(source.get("relative_path", ""))
+        file_path = _resolve_child_path(record["content_root"], relative_path)
+        payload["kind"] = detect_entry_kind(file_path)
+        payload["source"].update(
+            {
+                "relative_path": relative_path,
+                "raw_file_endpoint": f"/api/haptic-workspaces/{workspace_slug}/raw-file?path={relative_path}",
+            },
+        )
+        if payload["kind"] == "text":
+            payload["source"]["text_endpoint"] = (
+                f"/api/haptic-workspaces/{workspace_slug}/text-file?path={relative_path}"
+            )
+        return payload
+
+    raise ValueError(f"Unsupported workspace source kind: {source_kind}")
+
+
+def build_haptic_workspace_catalog() -> list[dict[str, Any]]:
+    """Return the public catalog of available Haptic Desktop workspaces."""
+    catalog: list[dict[str, Any]] = []
+    for record in _workspace_records():
+        catalog.append(
+            {
+                "slug": record["slug"],
+                "title": record["title"],
+                "description": record["description"],
+                "is_default": record["is_default"],
+                "registry_source": record["registry_source"],
+                "workspace_file_path": record["workspace_file_path"],
+                "category_counts": {
+                    "models": len(record["libraries"].get("models", [])),
+                    "texts": len(record["libraries"].get("texts", [])),
+                    "audio": len(record["libraries"].get("audio", [])),
+                },
+            },
+        )
+    return catalog
+
+
+def build_haptic_workspace_payload(slug: str) -> dict[str, Any]:
+    """Return one resolved workspace payload for frontend scene generation."""
+    record = _workspace_record_by_slug(slug)
+    libraries = {}
+    for category in ("models", "texts", "audio"):
+        libraries[category] = [
+            _resolve_workspace_item(slug, record, category, item)
+            for item in record["libraries"].get(category, [])
+        ]
+
+    return {
+        "slug": record["slug"],
+        "title": record["title"],
+        "description": record["description"],
+        "is_default": record["is_default"],
+        "registry_source": record["registry_source"],
+        "workspace_file_path": record["workspace_file_path"],
+        "libraries": libraries,
+        "file_browser": {
+            "root_label": record["file_browser_root"].name,
+            "root_path_hint": str(record["file_browser_root"]),
+        },
+    }
+
+
+def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[str, Any]:
+    """Return a safe file-system browser payload under the configured root."""
+    record = _workspace_record_by_slug(slug)
+    current_directory = _resolve_child_path(record["file_browser_root"], relative_path)
+    if not current_directory.is_dir():
+        raise ValueError("Requested workspace browser path is not a directory.")
+
+    normalized_path = _normalize_relative_path(relative_path)
+    entries: list[dict[str, Any]] = []
+    for child in sorted(current_directory.iterdir(), key=lambda path: (not path.is_dir(), path.name.lower())):
+        child_relative = child.relative_to(record["file_browser_root"]).as_posix()
+        kind = detect_entry_kind(child)
+        entry = {
+            "slug": _slugify(child_relative),
+            "title": child.name,
+            "summary": f"{kind.title()} entry in the configured workspace root.",
+            "kind": kind,
+            "relative_path": child_relative,
+            "size_bytes": child.stat().st_size if child.is_file() else 0,
+        }
+        if kind == "directory":
+            entry["child_count"] = sum(1 for _ in child.iterdir())
+        else:
+            entry["source"] = {
+                "kind": "workspace_file",
+                "relative_path": child_relative,
+                "raw_file_endpoint": f"/api/haptic-workspaces/{slug}/raw-file?path={child_relative}",
+            }
+            if kind == "text":
+                entry["source"]["text_endpoint"] = (
+                    f"/api/haptic-workspaces/{slug}/text-file?path={child_relative}"
+                )
+        entries.append(entry)
+
+    parent_path = ""
+    if normalized_path:
+        parent_path = PurePosixPath(normalized_path).parent.as_posix()
+        if parent_path == ".":
+            parent_path = ""
+
+    return {
+        "workspace_slug": slug,
+        "current_path": normalized_path,
+        "current_label": current_directory.name,
+        "parent_path": parent_path or None,
+        "entries": entries,
+    }
+
+
+def raw_workspace_file_path(slug: str, relative_path: str) -> Path:
+    """Return a safe raw file path rooted in the workspace browser root."""
+    record = _workspace_record_by_slug(slug)
+    candidate = _resolve_child_path(record["file_browser_root"], relative_path)
+    if not candidate.is_file():
+        raise ValueError("Requested workspace file does not exist.")
+    return candidate
+
+
+def build_workspace_text_payload(slug: str, relative_path: str, *, offset: int = 0, max_chars: int = DEFAULT_SEGMENT_CHARS) -> dict[str, Any]:
+    """Return a segmented text payload for one raw workspace file."""
+    file_path = raw_workspace_file_path(slug, relative_path)
+    if detect_entry_kind(file_path) != "text":
+        raise ValueError("Requested workspace file is not a supported text file.")
+    return build_text_payload_from_path(
+        file_path,
+        title=file_path.name,
+        source_name="Workspace file",
+        source_url=file_path.as_posix(),
+        offset=offset,
+        max_chars=max_chars,
+    )
+
+
+def register_workspace_file(workspace_file_path: str) -> dict[str, Any]:
+    """Register an existing workspace descriptor file in the local registry."""
+    path = Path(workspace_file_path).expanduser().resolve()
+    if not path.exists() or not path.is_file():
+        raise ValueError("Workspace file path does not exist.")
+    if path.suffixes[-2:] != [".haptic_workspace", ".json"] and not path.name.endswith(WORKSPACE_SUFFIX):
+        raise ValueError(f"Workspace files must end with {WORKSPACE_SUFFIX}.")
+
+    descriptor = _read_workspace_descriptor(path)
+    existing_slugs = {record["slug"] for record in _workspace_records()}
+    if descriptor["slug"] in existing_slugs and path.resolve() != DEMO_WORKSPACE_FILE.resolve():
+        for record in _workspace_records():
+            if record["slug"] == descriptor["slug"] and Path(record["workspace_file_path"]).resolve() != path:
+                raise ValueError(f"A workspace with slug '{descriptor['slug']}' is already registered.")
+
+    payload = _load_registry_payload()
+    paths = {Path(item).expanduser().resolve() for item in payload.get("workspace_files", [])}
+    paths.add(path)
+    payload["workspace_files"] = [str(item) for item in sorted(paths)]
+    _save_registry_payload(payload)
+    return _load_workspace_record(path, registry_source="user_registered")
+
+
+def _auto_collect_workspace_items(root_path: Path, kind: str) -> list[dict[str, Any]]:
+    """Discover workspace files of a given kind under a user root."""
+    suffixes = {
+        "models": SUPPORTED_MODEL_SUFFIXES,
+        "texts": SUPPORTED_TEXT_SUFFIXES,
+        "audio": SUPPORTED_AUDIO_SUFFIXES,
+    }[kind]
+
+    items: list[dict[str, Any]] = []
+    for path in sorted(root_path.rglob("*"), key=lambda entry: entry.as_posix().lower()):
+        if not path.is_file() or path.name.endswith(WORKSPACE_SUFFIX):
+            continue
+        if path.suffix.lower() not in suffixes:
+            continue
+        relative_path = path.relative_to(root_path).as_posix()
+        items.append(
+            {
+                "slug": _slugify(relative_path),
+                "title": path.stem.replace("_", " ").replace("-", " ").title(),
+                "summary": f"Auto-discovered {kind[:-1]} from the workspace root.",
+                "source": {"kind": "workspace_file", "relative_path": relative_path},
+            },
+        )
+    return items
+
+
+def create_workspace_file(
+    *,
+    title: str,
+    slug: str | None,
+    description: str,
+    root_path: str,
+    auto_populate: bool = True,
+) -> dict[str, Any]:
+    """Create, register, and return a new workspace descriptor rooted in a user folder."""
+    workspace_root = Path(root_path).expanduser().resolve()
+    if not workspace_root.exists() or not workspace_root.is_dir():
+        raise ValueError("Workspace root path must be an existing directory.")
+
+    workspace_slug = _slugify(slug or title)
+    workspace_file_path = workspace_root / f"{workspace_slug}{WORKSPACE_SUFFIX}"
+    if workspace_file_path.exists():
+        raise ValueError(f"The workspace file already exists: {workspace_file_path.name}")
+
+    descriptor = {
+        "format": WORKSPACE_FORMAT,
+        "format_version": 1,
+        "slug": workspace_slug,
+        "title": title,
+        "description": description,
+        "is_default": False,
+        "content_root": {"mode": "absolute", "path": str(workspace_root)},
+        "file_browser_root": {"mode": "absolute", "path": str(workspace_root)},
+        "libraries": {
+            "models": _auto_collect_workspace_items(workspace_root, "models") if auto_populate else [],
+            "texts": _auto_collect_workspace_items(workspace_root, "texts") if auto_populate else [],
+            "audio": _auto_collect_workspace_items(workspace_root, "audio") if auto_populate else [],
+        },
+    }
+    workspace_file_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return register_workspace_file(str(workspace_file_path))
+
+
+def build_workspace_manager_payload() -> dict[str, Any]:
+    """Return workspace-manager metadata for the frontend page."""
+    return {
+        "workspace_suffix": WORKSPACE_SUFFIX,
+        "registry_file_path": str(REGISTRY_FILE),
+        "workspaces": build_haptic_workspace_catalog(),
+    }

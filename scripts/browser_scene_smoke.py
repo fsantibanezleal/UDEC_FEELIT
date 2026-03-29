@@ -80,8 +80,32 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 ),
             )
 
-            page.goto(f"{base_url}{scene.route}", wait_until="networkidle", timeout=30_000)
-            page.wait_for_timeout(2_200)
+            page.goto(f"{base_url}{scene.route}", wait_until="domcontentloaded", timeout=30_000)
+            page.wait_for_selector(scene.canvas_selector, state="visible", timeout=15_000)
+            if scene.route == "/braille-reader":
+                page.wait_for_function(
+                    """
+                    () => {
+                      const documents = document.querySelectorAll('#library-document-select option').length;
+                      const title = document.querySelector('#summary-document-title')?.textContent?.trim() ?? '';
+                      return documents > 0 && title !== '' && title !== 'Loading';
+                    }
+                    """,
+                    timeout=15_000,
+                )
+            if scene.route == "/haptic-desktop":
+                page.wait_for_function(
+                    """
+                    () => {
+                      const workspaces = document.querySelectorAll('#desktop-workspace-select option').length;
+                      const title = document.querySelector('#desktop-workspace-title')?.textContent?.trim() ?? '';
+                      const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                      return workspaces > 0 && title !== '' && title !== 'Loading' && title !== 'No workspace' && sceneCode !== '' && sceneCode !== '--' && sceneCode !== 'Loading';
+                    }
+                    """,
+                    timeout=15_000,
+                )
+            page.wait_for_timeout(1_200)
 
             screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
             page.locator(scene.canvas_selector).screenshot(path=str(screenshot_path))
@@ -119,6 +143,16 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/braille-reader did not populate the internal audio library selector")
                 if document_title in {"", "Loading"}:
                     failures.append("/braille-reader did not initialize the active library document summary")
+            if scene.route == "/haptic-desktop":
+                workspace_options = page.locator("#desktop-workspace-select option").count()
+                workspace_title = (page.locator("#desktop-workspace-title").text_content() or "").strip()
+                scene_code = (page.locator("#desktop-scene-code").text_content() or "").strip()
+                if workspace_options == 0:
+                    failures.append("/haptic-desktop did not populate the workspace selector")
+                if workspace_title in {"", "Loading", "No workspace"}:
+                    failures.append("/haptic-desktop did not initialize the active workspace summary")
+                if scene_code in {"", "--", "Loading"}:
+                    failures.append("/haptic-desktop did not initialize the scene code")
 
             print(
                 f"{scene.route}: unique_colors={unique_colors} "
@@ -153,7 +187,7 @@ def main() -> None:
     try:
         if not args.no_launch:
             server_process = subprocess.Popen(
-                [sys.executable, "run_app.py"],
+                [sys.executable, "run_app.py", "--no-browser"],
                 cwd=ROOT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,

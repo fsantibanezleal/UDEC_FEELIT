@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document separates what FeelIT `0.4.0` demonstrably implements today from what remains partial, planned, or hardware-dependent.
+This document separates what FeelIT `0.5.0` demonstrably implements today from what remains partial, planned, or hardware-dependent.
 
 It is intentionally conservative. If a behavior is not visible in the runtime, testable through the current repo, or clearly encoded in the shipped code path, it is not treated here as delivered.
 
@@ -13,7 +13,7 @@ This audit is based on:
 - repository source inspection
 - API and unit tests from `tests/`
 - local browser smoke validation through `scripts/browser_scene_smoke.py`
-- visible runtime behavior in the three shipped workspaces
+- visible runtime behavior in the three shipped 3D workspaces plus the workspace manager route
 - preserved legacy evidence in `legacy/Registro Software`
 
 ## Delivered And Verifiable
@@ -25,10 +25,10 @@ Implemented:
 - FastAPI backend with public metadata, health, mode catalog, material catalog, demo-model catalog, and Braille preview endpoints
 - internal-library document and audio catalog endpoints for bundled public-domain assets
 - canonical semantic version source with synchronized README and Windows packaging metadata
-- three-mode frontend shell served from the backend on port `8101`
+- four-route frontend shell served from the backend on port `8101`
 - shared Three.js scene runtime with bounded workspace, orbit camera, and stylus-style pointer emulator
 - visual fallback execution when no haptic hardware is attached
-- browser smoke validation for the three primary 3D scenes
+- browser smoke validation for the three primary 3D scenes with desktop workspace bootstrap checks
 
 Notable evidence:
 
@@ -79,17 +79,22 @@ Still limited:
 
 Implemented:
 
-- bounded 3D desktop scene with six shape-coded tactile object families
-- pointer-driven focus and activation prototype
-- inspector and announcement surfaces outside the 3D world
-- layout presets for alternative desktop arrangements
+- structured `haptic_workspace` descriptor format with bundled demo workspace
+- dedicated workspace-manager route for creating and registering workspaces rooted in external folders
+- launcher scene for curated models, texts, audio, and workspace file browsing
+- paginated gallery scenes backed by workspace payloads
+- file-browser scene rooted in the configured workspace path
+- detail plaque scene that exposes the content name before opening it
+- opened scenes for 3D models, Braille reading, and audio transport
+- pointer-driven focus and activation across the current scene's tactile controls
 
 Still limited:
 
-- no real content graph behind the desktop objects
-- no actual file, media, or tool execution pipeline
-- no integrated audio playback or screen-reader bridge
-- no persistence or user-defined desktop layouts
+- no native hardware-backed haptic actuation yet
+- no richer workspace editor beyond the first descriptor-based manager route
+- no desktop-wide automation beyond curated content opening and file browsing
+- no support yet for unsupported file types beyond explicit placeholders
+- no real blind-user validation round on the new desktop scene flow
 
 ## Partial Or Prototype-Only Areas
 
@@ -123,7 +128,7 @@ The repository does not yet deliver:
 - runtime device capability detection beyond the null fallback report
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side import and validation for 3D assets
-- real desktop action execution semantics
+- real desktop action execution semantics beyond content launching and playback control
 - hardware-backed tactile realization of the material profiles
 
 ## Legacy Alignment
@@ -147,4 +152,4 @@ Those belong to the modernization path, not to the verified archived implementat
 1. Build a first native backend integration boundary so the material and workspace models can move beyond visual approximation.
 2. Extend the Braille library with richer compatibility and blind-first scene-native library access.
 3. Extend the 3D asset pipeline with server-side validation and additional formats.
-4. Replace the desktop prototype labels and actions with a real content graph plus audio-assisted activation outcomes.
+4. Expand the workspace manager into a richer editor with descriptor validation, asset previews, and safer authoring affordances.

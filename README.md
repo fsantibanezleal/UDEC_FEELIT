@@ -6,17 +6,18 @@ Modern accessibility-centered haptic application for tactile 3D object explorati
 
 ## Overview
 
-FeelIT is a modernization of a university-era accessibility project focused on giving people with visual impairment a richer way to access shape, texture, and text through bounded haptic interaction. The modern repository is organized as a multi-workspace application with three dedicated routes rather than a single scrolling page:
+FeelIT is a modernization of a university-era accessibility project focused on giving people with visual impairment a richer way to access shape, texture, and text through bounded haptic interaction. The modern repository is organized as a multi-workspace application with four dedicated routes rather than a single scrolling page:
 
 - `/object-explorer`
 - `/braille-reader`
 - `/haptic-desktop`
+- `/haptic-workspace-manager`
 
-The current implementation provides real 3D workspace rendering across all three modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, a bundled public-domain reading and audio library, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
+The current implementation provides real 3D workspace rendering across the spatial modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, a bundled public-domain reading and audio library, a structured `haptic_workspace` format with a Workspace Manager route, and a null-hardware-safe runtime foundation for future physical device integration.
 
 ## Current Version
 
-`0.4.0`
+`0.5.0`
 
 ## Public Port
 
@@ -41,7 +42,11 @@ Operational workspace that translates text into Braille cells, lays them out on 
 
 ### Haptic Desktop
 
-Prototype workspace for shape-coded action objects that stand in for folders, media, settings, and other desktop interactions inside a bounded 3D desktop scene.
+Workspace-driven tactile desktop that now transitions through a launcher, curated galleries, a file browser, item detail plaques, and opened scenes for models, text, and audio.
+
+### Haptic Workspace Manager
+
+Dedicated management route for creating and registering structured `haptic_workspace` descriptors rooted in external folders on the user's machine.
 
 ## Bundled Demo Assets
 
@@ -77,6 +82,22 @@ These are exposed through:
 
 See [Library Catalog](docs/library_catalog.md) and [Asset Sources](docs/asset_sources.md).
 
+## Haptic Workspace System
+
+FeelIT now includes a structured workspace layer for Haptic Desktop:
+
+- bundled demo workspace file: `app/static/assets/workspaces/feelit_demo.haptic_workspace.json`
+- API catalog and management endpoints:
+  - `GET /api/haptic-workspaces`
+  - `GET /api/haptic-workspaces/{slug}`
+  - `GET /api/haptic-workspaces/{slug}/browse`
+  - `GET /api/haptic-workspaces/{slug}/text-file`
+  - `GET /api/haptic-workspaces/{slug}/raw-file`
+  - `POST /api/haptic-workspaces/create`
+  - `POST /api/haptic-workspaces/register`
+
+The demo desktop workspace uses curated galleries plus a file-browser root. User-created workspaces keep their heavy assets outside the repository and only register descriptor files locally.
+
 ## Quick Start
 
 ### 1. Create the environment
@@ -98,6 +119,7 @@ Open one of the mode routes:
 - `http://127.0.0.1:8101/object-explorer`
 - `http://127.0.0.1:8101/braille-reader`
 - `http://127.0.0.1:8101/haptic-desktop`
+- `http://127.0.0.1:8101/haptic-workspace-manager`
 
 ### 3. Run tests
 
@@ -116,7 +138,7 @@ python scripts\browser_scene_smoke.py
 ## Runtime Capabilities
 
 - FastAPI backend on port `8101`
-- multi-page frontend shell aligned to the reference workbench style
+- four-page frontend shell aligned to the reference workbench style
 - real 3D workspace rendering in all three user modes
 - stylus-style pointer emulation with hover and activation feedback
 - visible startup diagnostics when a workspace fails to initialize
@@ -127,9 +149,10 @@ python scripts\browser_scene_smoke.py
 - document library catalog exposed at `GET /api/library/documents`
 - document segment loading exposed at `GET /api/library/documents/{slug}`
 - audio catalog exposed at `GET /api/library/audio`
+- structured haptic workspace catalog and management endpoints
 - Braille preview API at `POST /api/braille/preview`
 - bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
-- prototype 3D desktop scene with distinct tactile object families
+- workspace-driven 3D desktop launcher, galleries, file browser, detail scenes, and opened content scenes
 - null haptic backend abstraction for no-device execution
 - shared runtime metadata for version, port, and device state
 

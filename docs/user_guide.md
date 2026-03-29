@@ -89,19 +89,37 @@ Route:
 
 Current use:
 
-- move the stylus-style pointer proxy through a shape-coded desktop world
-- let the pointer focus desktop objects by spatial proximity
-- activate the focused object
-- inspect the current announcement and focus metadata
+- select the active structured workspace from the left panel
+- load the bundled demo workspace or a registered external workspace
+- start in a tactile launcher with entry objects for models, texts, audio, and the workspace file browser
+- move through paginated gallery scenes and a workspace-root file browser
+- open a detail plaque that exposes the content name before opening the real scene
+- open 3D model scenes, Braille reading scenes, and audio transport scenes with scene-native return controls
 
 Current keyboard cues:
 
-- `W`, `A`, `S`, `D`: move across the desktop world
-- `Q`, `E`: move vertically
-- `Space` or `Enter`: activate the focused desktop object
+- `W`, `A`, `S`, `D`: move across the current tactile scene
+- `Q`, `E`: move vertically inside the bounded workspace
+- `Space`: activate the tactile control or item under the pointer
 - arrow keys: fallback debug focus traversal
+- `Enter`: fallback activation of the current focused control
 
-This workspace currently acts as a focused interaction prototype for future haptic desktop behavior.
+The blind-first contract in this mode is that the primary controls live inside the 3D world itself. The surrounding web controls remain a debug and setup layer.
+
+### 4. Haptic Workspace Manager
+
+Route:
+
+```text
+/haptic-workspace-manager
+```
+
+Current use:
+
+- create a new `haptic_workspace` rooted in an external folder on the local machine
+- auto-populate model, text, and audio libraries from supported files already present in that root
+- register an existing `.haptic_workspace.json` descriptor file
+- review the current workspace catalog before opening a workspace inside Haptic Desktop
 
 ## Runtime Information
 
@@ -126,7 +144,7 @@ python -m playwright install chromium
 python scripts\browser_scene_smoke.py
 ```
 
-This validation opens all three routes, captures the 3D canvas in Chromium, and fails if the pages log runtime errors or if the rendered scene looks under-populated.
+This validation opens the three 3D routes, captures the scene canvas in Chromium, and fails if the pages log runtime errors, miss workspace bootstrap data, or if the rendered scene looks under-populated.
 
 ## API Endpoints
 
@@ -199,11 +217,54 @@ GET /api/library/documents/{slug}?offset=0&max_chars=1200
 GET /api/library/audio
 ```
 
+### Haptic Workspace Catalog
+
+```text
+GET /api/haptic-workspaces
+```
+
+### Haptic Workspace Detail
+
+```text
+GET /api/haptic-workspaces/{slug}
+```
+
+### Haptic Workspace Browser
+
+```text
+GET /api/haptic-workspaces/{slug}/browse?path=
+```
+
+### Haptic Workspace Text Payload
+
+```text
+GET /api/haptic-workspaces/{slug}/text-file?path=...&offset=0&max_chars=1200
+```
+
+### Haptic Workspace Raw File
+
+```text
+GET /api/haptic-workspaces/{slug}/raw-file?path=...
+```
+
+### Haptic Workspace Create
+
+```text
+POST /api/haptic-workspaces/create
+```
+
+### Haptic Workspace Register
+
+```text
+POST /api/haptic-workspaces/register
+```
+
 ## Current Limitations
 
 - no physical device bridge is connected yet
 - 3D object staging is currently client-side and focused on `.obj`
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
-- bundled document selection still happens through the surrounding web controls rather than a scene-native library launcher
-- desktop actions are still frontend-level prototypes
+- bundled Braille library selection still begins from surrounding web controls rather than a scene-native library launcher
+- workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances
+- desktop actions are limited to models, text, audio, and file browsing rather than full desktop automation
 - haptic material profiles are plausible approximations, not full physical simulation

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 APP_NAME = "FeelIT"
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.5.0"
 APP_PUBLISHER = "Felipe Santibanez"
 
 

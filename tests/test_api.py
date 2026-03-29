@@ -16,12 +16,12 @@ def test_health_endpoint_reports_port_and_backend() -> None:
     assert payload["haptics"]["backend"] == "null"
 
 
-def test_modes_endpoint_exposes_three_modes() -> None:
+def test_modes_endpoint_exposes_four_modes() -> None:
     with TestClient(app) as client:
         response = client.get("/api/modes")
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload["modes"]) == 3
+    assert len(payload["modes"]) == 4
 
 
 def test_meta_endpoint_reports_version_and_routes() -> None:
@@ -34,6 +34,7 @@ def test_meta_endpoint_reports_version_and_routes() -> None:
         "/object-explorer",
         "/braille-reader",
         "/haptic-desktop",
+        "/haptic-workspace-manager",
     }
 
 
@@ -49,6 +50,7 @@ def test_frontend_mode_routes_are_served() -> None:
         object_response = client.get("/object-explorer")
         braille_response = client.get("/braille-reader")
         desktop_response = client.get("/haptic-desktop")
+        manager_response = client.get("/haptic-workspace-manager")
     assert object_response.status_code == 200
     assert "3D Object Explorer" in object_response.text
     assert "Space activate" in object_response.text
@@ -64,10 +66,15 @@ def test_frontend_mode_routes_are_served() -> None:
     assert '/static/js/app.js" defer' not in braille_response.text
     assert desktop_response.status_code == 200
     assert "Haptic Desktop" in desktop_response.text
-    assert "Activate (Fallback)" in desktop_response.text
+    assert "Load Workspace" in desktop_response.text
+    assert "Virtual Desktop Workspace" in desktop_response.text
     assert "Space activate" in desktop_response.text
     assert 'type="module" src="/static/js/haptic_desktop.js"' in desktop_response.text
     assert '/static/js/app.js" defer' not in desktop_response.text
+    assert manager_response.status_code == 200
+    assert "Haptic Workspace Manager" in manager_response.text
+    assert "Create Workspace" in manager_response.text
+    assert 'type="module" src="/static/js/haptic_workspace_manager.js"' in manager_response.text
 
 
 def test_three_vendor_runtime_assets_are_served() -> None:

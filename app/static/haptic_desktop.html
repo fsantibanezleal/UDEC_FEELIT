@@ -17,6 +17,7 @@
         <a class="mode-link" href="/object-explorer">3D Object Explorer</a>
         <a class="mode-link" href="/braille-reader">Braille Reader</a>
         <a class="mode-link is-active" href="/haptic-desktop">Haptic Desktop</a>
+        <a class="mode-link" href="/haptic-workspace-manager">Workspace Manager</a>
       </nav>
       <div class="header-tools">
         <span class="version-badge" data-runtime="version">v--</span>
@@ -28,39 +29,57 @@
       <aside class="control-panel">
         <section class="panel-section">
           <div class="section-header">
-            <h2>Layout And Debug</h2>
+            <h2>Workspace</h2>
           </div>
-          <label for="layout-preset">Layout preset</label>
-          <select id="layout-preset">
-            <option value="grid" selected>Grid workspace</option>
-            <option value="arc">Arc launcher</option>
-            <option value="cluster">Clustered desk</option>
-          </select>
+          <label for="desktop-workspace-select">Active haptic workspace</label>
+          <select id="desktop-workspace-select"></select>
+          <div class="button-row">
+            <button id="load-desktop-workspace" class="btn btn-primary" type="button">Load Workspace</button>
+            <a class="btn btn-secondary btn-link" href="/haptic-workspace-manager">Open Manager</a>
+          </div>
+          <div class="status-stack">
+            <div class="status-card">
+              <span class="status-label">Current workspace</span>
+              <span id="desktop-workspace-title" class="status-value">Loading</span>
+            </div>
+            <div class="status-card">
+              <span class="status-label">Scene</span>
+              <span id="desktop-scene-code" class="status-value">launcher</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime Controls</h2>
+          </div>
+          <label for="desktop-text-segment-size">Text segment size</label>
+          <input id="desktop-text-segment-size" type="number" min="300" max="4000" value="1200">
           <label class="toggle-row">
             <input id="audio-cues-toggle" type="checkbox" checked>
-            <span>Enable audio cue labels</span>
+            <span>Enable spoken cue announcements</span>
           </label>
           <label class="toggle-row">
             <input id="pointer-toggle" type="checkbox" checked>
             <span>Show pointer proxy</span>
           </label>
           <p class="panel-text">
-            The desktop objects inside the 3D world are the primary interaction surface. The buttons below are a fallback debug path.
+            The controls inside the 3D world are the primary path. The buttons below remain as a fallback debug path while the workspace scenes become richer.
           </p>
           <div class="button-row">
-            <button id="focus-prev" class="btn btn-secondary" type="button">Focus Previous (Fallback)</button>
-            <button id="focus-next" class="btn btn-secondary" type="button">Focus Next (Fallback)</button>
-            <button id="focus-activate" class="btn btn-primary" type="button">Activate (Fallback)</button>
+            <button id="focus-prev" class="btn btn-secondary" type="button">Focus Previous</button>
+            <button id="focus-next" class="btn btn-secondary" type="button">Focus Next</button>
+            <button id="focus-activate" class="btn btn-primary" type="button">Activate Focus</button>
           </div>
         </section>
 
         <section class="panel-section">
           <div class="section-header">
-            <h2>Navigation</h2>
+            <h2>Desktop Intent</h2>
           </div>
           <p class="panel-text">
-            The visible 3D desk is the intended interaction world. The focused item is highlighted,
-            and the pointer proxy moves to the current object target.
+            The Haptic Desktop is no longer a single static desk. It is a workspace-driven scene system where the launcher, galleries,
+            file-browser, and opened content each become their own tactile 3D world.
           </p>
         </section>
       </aside>
@@ -69,18 +88,19 @@
         <div class="panel-heading">
           <div>
             <h2>Virtual Desktop Workspace</h2>
-            <p class="panel-subtitle">3D object-based desktop scene for folders, media, settings, and assistive actions.</p>
+            <p id="desktop-scene-subtitle" class="panel-subtitle">Workspace-driven launcher, galleries, and opened-content scenes for blind-first exploration.</p>
           </div>
           <div class="panel-heading-status">
-            <span id="desktop-runtime-pill" class="status-pill status-pill-purple">Prototype workspace</span>
-            <span id="desktop-page-status" class="status-pill">Ready</span>
+            <span id="desktop-runtime-pill" class="status-pill status-pill-purple">Workspace loading</span>
+            <span id="desktop-page-status" class="status-pill">Waiting</span>
           </div>
         </div>
 
         <div class="workspace-stage stage-3d">
           <canvas id="desktop-canvas" class="stage-canvas"></canvas>
           <div class="stage-overlay top-left telemetry-row">
-            <span class="telemetry-chip">Focus <strong id="desktop-focus-count">1 / 6</strong></span>
+            <span class="telemetry-chip">Workspace <strong id="desktop-workspace-chip">--</strong></span>
+            <span class="telemetry-chip">Scene <strong id="desktop-scene-chip">--</strong></span>
             <span class="telemetry-chip">Audio <strong id="desktop-audio-state">On</strong></span>
             <span class="telemetry-chip">Backend <strong data-runtime="backend">--</strong></span>
           </div>
@@ -92,6 +112,7 @@
           <div class="stage-overlay bottom-left">
             <span id="desktop-status-bar" class="stage-statusbar">Desktop workspace ready.</span>
           </div>
+          <audio id="desktop-audio-player" preload="none"></audio>
         </div>
       </section>
 
@@ -110,6 +131,18 @@
 
         <section class="panel-section">
           <div class="section-header">
+            <h2>Scene State</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Scene</dt><dd id="desktop-scene-label">--</dd></div>
+            <div><dt>Context</dt><dd id="desktop-scene-context">--</dd></div>
+            <div><dt>Path</dt><dd id="desktop-scene-path">--</dd></div>
+            <div><dt>Pagination</dt><dd id="desktop-pagination">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
             <h2>Focused Object</h2>
           </div>
           <dl class="info-grid">
@@ -121,9 +154,21 @@
 
         <section class="panel-section">
           <div class="section-header">
+            <h2>Audio Session</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Track</dt><dd id="desktop-audio-track">--</dd></div>
+            <div><dt>Playback</dt><dd id="desktop-audio-playback">idle</dd></div>
+            <div><dt>Position</dt><dd id="desktop-audio-position">0.0 s</dd></div>
+            <div><dt>Duration</dt><dd id="desktop-audio-duration">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
             <h2>Announcement</h2>
           </div>
-          <p id="desktop-announcement" class="panel-text">Loading desktop objects.</p>
+          <p id="desktop-announcement" class="panel-text">Loading desktop workspace.</p>
         </section>
       </aside>
     </main>
@@ -138,14 +183,21 @@
       <div class="modal-body">
         <h3>Purpose</h3>
         <p>
-          This workspace prototypes a 3D desktop made of touchable objects. The visible desk is the
-          intended world for future haptic navigation and activation.
+          This mode is a workspace-driven tactile desktop. It starts from a structured `haptic_workspace`, then moves the user through a 3D launcher,
+          paginated content galleries, file-system navigation, and opened scenes for models, audio, and text.
         </p>
         <h3>Current Interaction</h3>
         <ul>
-          <li>Move the pointer emulator through the desktop world with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
-          <li>Let the pointer hover a desktop object to focus it, then activate it with `Space` or `Enter`.</li>
-          <li>Change the layout preset to test different spatial arrangements.</li>
+          <li>Select the active workspace from the left panel, then load it into the scene engine.</li>
+          <li>Move the pointer emulator with `W`, `A`, `S`, `D`, `Q`, and `E` and activate focused objects with `Space` or `Enter`.</li>
+          <li>Use tactile scene controls for home, back, paging, opening content, and browsing the workspace file root.</li>
+          <li>Use spoken cues as a support channel while keeping the object shapes and scene changes as the primary interaction contract.</li>
+        </ul>
+        <h3>Current Limits</h3>
+        <ul>
+          <li>The workspace-driven desktop is still a modern rebuild, not a recovered legacy implementation.</li>
+          <li>The initial content-opening paths are designed to prove the interaction model before a native haptic backend is attached.</li>
+          <li>User workspaces are rooted in external folders on disk so large assets do not need to live inside the application repository.</li>
         </ul>
       </div>
     </div>
