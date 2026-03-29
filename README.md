@@ -191,26 +191,6 @@ It also ships `4` companion audio samples from public-domain sources. See [Libra
 
 The bundled demo workspace lives at `app/static/assets/workspaces/feelit_demo.haptic_workspace.json` and mirrors the full internal demo catalog so Haptic Desktop galleries do not hide bundled content behind a partial subset.
 
-## Version Workflow
-
-The canonical application version lives in `app/core/version.py` and follows the workspace format `X.XX.XXX`.
-
-To bump the version and synchronize derived metadata:
-
-```powershell
-python scripts\bump_version.py patch --summary "Short release summary"
-```
-
-That workflow is expected to update:
-
-- canonical version metadata
-- runtime and UI version surfaces
-- README version references
-- `docs/development_history.md`
-- PyInstaller version metadata
-- Inno Setup version metadata
-- impacted documentation
-
 ## Build And Distribution
 
 ### PyInstaller executable
