@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.5.0 (2026-03-29)
+
+Release focused on workspace-driven Haptic Desktop scenes, structured haptic_workspace descriptors, and the first external-workspace management flow.
+
+Delivered:
+
+- Added the haptic_workspace descriptor format, bundled demo workspace, external-root registry flow, and a dedicated Workspace Manager page.
+- Rebuilt Haptic Desktop around a scene graph with launcher, curated galleries, file-browser navigation, detail plaques, and opened scenes for models, text, and audio.
+- Expanded automated coverage with workspace-domain tests, API tests, and a stronger browser smoke validator for desktop workspace bootstrap.
+
+Rationale:
+
+- Shift Haptic Desktop from a static prototype into a real workspace-driven interaction model aligned with the project vision.
+- Treat structured workspace authoring, external asset roots, and blind-first scene transitions as product-level capabilities rather than future notes.
+
 ### v0.4.0 (2026-03-29)
 
 Release focused on the internal public-domain reading library, expanded demo assets, and stronger asset-validation coverage.
@@ -129,15 +144,15 @@ Rationale:
 
 ### v0.5.x
 
-- first native physical haptic bridge integration
-- device capability detection
-- hardware-assisted exploration loop
+- richer haptic_workspace authoring and validation
+- blind-first desktop help and cue refinement
+- stronger gallery and file-browser interaction coverage
 
 ### v0.6.x
 
-- haptic desktop content graph
-- audio labels and action objects
-- curated desktop interaction execution model
+- first native physical haptic bridge integration
+- device capability detection
+- hardware-assisted exploration loop
 
 ## Versioning Policy
 

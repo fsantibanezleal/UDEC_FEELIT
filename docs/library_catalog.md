@@ -8,6 +8,8 @@ This document summarizes the internal public-domain library currently bundled wi
 
 The internal library exists to make the Braille Reader immediately demonstrable without relying on ad hoc pasted text or remote network access during a session.
 
+The same internal assets now also seed the bundled demo `haptic_workspace` used by Haptic Desktop, so the desktop launcher and file browser can open real texts and audio without depending on external user content during first-run validation.
+
 The current loading strategy is intentionally segmented:
 
 - full source documents are preserved in the repository

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FeelIT | Haptic Workspace Manager</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="haptic-workspace-manager">
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-group">
+        <h1>FeelIT</h1>
+        <p class="subtitle">Accessible haptic interaction platform</p>
+      </div>
+      <nav class="mode-nav" aria-label="FeelIT modes">
+        <a class="mode-link" href="/object-explorer">3D Object Explorer</a>
+        <a class="mode-link" href="/braille-reader">Braille Reader</a>
+        <a class="mode-link" href="/haptic-desktop">Haptic Desktop</a>
+        <a class="mode-link is-active" href="/haptic-workspace-manager">Workspace Manager</a>
+      </nav>
+      <div class="header-tools">
+        <span class="version-badge" data-runtime="version">v--</span>
+        <button class="help-btn" type="button" data-open-modal="help-modal" aria-label="Open help">?</button>
+      </div>
+    </header>
+
+    <main class="workspace-grid">
+      <aside class="control-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Create Workspace</h2>
+          </div>
+          <label for="workspace-title">Workspace title</label>
+          <input id="workspace-title" type="text" value="My Haptic Workspace">
+          <label for="workspace-slug">Workspace slug</label>
+          <input id="workspace-slug" type="text" placeholder="Optional; auto-generated when empty">
+          <label for="workspace-root-path">External root folder</label>
+          <input id="workspace-root-path" type="text" placeholder="D:\Media\AccessibleWorkspace">
+          <label for="workspace-description">Description</label>
+          <textarea id="workspace-description" rows="6">External workspace rooted in a user-controlled folder. Large assets stay outside the app repository.</textarea>
+          <label class="toggle-row">
+            <input id="workspace-auto-populate" type="checkbox" checked>
+            <span>Auto-populate model, text, and audio libraries from the root folder</span>
+          </label>
+          <div class="button-row">
+            <button id="create-workspace" class="btn btn-primary" type="button">Create Workspace</button>
+            <button id="refresh-workspaces" class="btn btn-secondary" type="button">Refresh</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Register Existing</h2>
+          </div>
+          <label for="existing-workspace-path">Workspace file path</label>
+          <input id="existing-workspace-path" type="text" placeholder="D:\Media\MyWorkspace\my_workspace.haptic_workspace.json">
+          <div class="button-row">
+            <button id="register-workspace" class="btn btn-primary" type="button">Register Workspace</button>
+          </div>
+          <p class="panel-text">
+            Use this path when the workspace file already exists on disk and you only need FeelIT to register it locally.
+          </p>
+        </section>
+      </aside>
+
+      <section class="workspace-panel workspace-panel-scroll">
+        <div class="panel-heading">
+          <div>
+            <h2>Known Workspaces</h2>
+            <p class="panel-subtitle">Structured desktop workspaces registered for Haptic Desktop. Bundled demo first, user workspaces after that.</p>
+          </div>
+          <div class="panel-heading-status">
+            <span id="manager-runtime-pill" class="status-pill status-pill-cyan">Loading</span>
+            <span id="manager-page-status" class="status-pill">Waiting</span>
+          </div>
+        </div>
+
+        <div class="manager-surface">
+          <div class="subsurface-panel">
+            <div class="subsurface-header">
+              <h3>Registry Summary</h3>
+              <span class="subsurface-note">The registry stores workspace file references, not heavy media payloads.</span>
+            </div>
+            <div class="status-stack manager-summary-grid">
+              <div class="status-card">
+                <span class="status-label">Known workspaces</span>
+                <span id="workspace-count" class="status-value">0</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Workspace suffix</span>
+                <span id="workspace-suffix" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Registry path</span>
+                <span id="workspace-registry-path" class="status-value">Loading</span>
+              </div>
+            </div>
+          </div>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Workspace Catalog</h2>
+            </div>
+            <div id="workspace-list" class="workspace-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="inspector-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>API</dt><dd data-runtime="api-status">Loading</dd></div>
+            <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
+            <div><dt>Port</dt><dd data-runtime="port">Loading</dd></div>
+            <div><dt>Backend</dt><dd data-runtime="backend">Loading</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Selected Workspace</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Title</dt><dd id="selected-workspace-title">--</dd></div>
+            <div><dt>Source</dt><dd id="selected-workspace-source">--</dd></div>
+            <div><dt>Models</dt><dd id="selected-workspace-models">--</dd></div>
+            <div><dt>Texts</dt><dd id="selected-workspace-texts">--</dd></div>
+            <div><dt>Audio</dt><dd id="selected-workspace-audio">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Status</h2>
+          </div>
+          <p id="manager-status-bar" class="panel-text">Loading workspace registry.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="help-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Haptic Workspace Manager</h2>
+        <button class="modal-close" type="button" data-close-modal="help-modal" aria-label="Close help">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>Purpose</h3>
+        <p>
+          This page manages structured desktop workspaces. A workspace file defines curated galleries and a safe file-browser root,
+          while the heavy media stays in an external folder on the user's machine.
+        </p>
+        <h3>Current Interaction</h3>
+        <ul>
+          <li>Create a new workspace rooted in an external folder.</li>
+          <li>Auto-populate that workspace from supported files already present in the chosen root.</li>
+          <li>Register an existing `.haptic_workspace.json` file.</li>
+          <li>Review the currently known workspaces before using them inside Haptic Desktop.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/static/js/haptic_workspace_manager.js"></script>
+</body>
+</html>

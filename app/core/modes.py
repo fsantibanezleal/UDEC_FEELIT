@@ -36,4 +36,14 @@ def build_mode_catalog() -> list[dict[str, object]]:
                 "future haptic interaction with digital content."
             ),
         },
+        {
+            "slug": "haptic-workspace-manager",
+            "route": "/haptic-workspace-manager",
+            "title": "Haptic Workspace Manager",
+            "status": "active",
+            "summary": (
+                "Management workspace for creating, registering, and inspecting structured "
+                "Haptic Desktop workspaces rooted in external user folders."
+            ),
+        },
     ]

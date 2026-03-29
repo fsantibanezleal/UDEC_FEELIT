@@ -72,4 +72,10 @@ async def haptic_desktop_page() -> FileResponse:
     return serve_static_page("haptic_desktop.html")
 
 
+@app.get("/haptic-workspace-manager", include_in_schema=False)
+async def haptic_workspace_manager_page() -> FileResponse:
+    """Serve the haptic workspace management page."""
+    return serve_static_page("haptic_workspace_manager.html")
+
+
 app.mount("/static", StaticFiles(directory=static_dir), name="static")

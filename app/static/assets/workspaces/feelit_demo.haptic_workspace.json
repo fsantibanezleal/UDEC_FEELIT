@@ -1,0 +1,96 @@
+{
+  "format": "feelit_haptic_workspace",
+  "format_version": 1,
+  "slug": "feelit_demo_workspace",
+  "title": "FeelIT Demo Workspace",
+  "description": "Curated launcher workspace that combines demo models, bundled documents, bundled audio, and a controlled file-browser root for internal demonstrations.",
+  "is_default": true,
+  "content_root": {
+    "mode": "app_static_relative",
+    "path": "assets"
+  },
+  "file_browser_root": {
+    "mode": "app_static_relative",
+    "path": "assets/library"
+  },
+  "libraries": {
+    "models": [
+      {
+        "slug": "walt_head_session",
+        "title": "Walt Head",
+        "summary": "Contour-rich sculpture for introductory tactile exploration.",
+        "source": {
+          "kind": "demo_model",
+          "ref": "walt_head"
+        }
+      },
+      {
+        "slug": "terrain_peak_session",
+        "title": "Terrain Peak",
+        "summary": "Topographic relief sample for slope and landscape interpretation.",
+        "source": {
+          "kind": "demo_model",
+          "ref": "terrain_peak"
+        }
+      },
+      {
+        "slug": "open_book_session",
+        "title": "Open Book",
+        "summary": "Reading-adjacent object for page, spine, and surface transitions.",
+        "source": {
+          "kind": "demo_model",
+          "ref": "open_book"
+        }
+      }
+    ],
+    "texts": [
+      {
+        "slug": "alice_reader_session",
+        "title": "Alice in Wonderland",
+        "summary": "Narrative reading sample with segmented tactile access.",
+        "source": {
+          "kind": "library_document",
+          "ref": "alice_in_wonderland_txt"
+        }
+      },
+      {
+        "slug": "pride_reader_session",
+        "title": "Pride and Prejudice",
+        "summary": "Long-form prose sample for multi-segment reading sessions.",
+        "source": {
+          "kind": "library_document",
+          "ref": "pride_and_prejudice_txt"
+        }
+      },
+      {
+        "slug": "raven_reader_session",
+        "title": "The Raven",
+        "summary": "Short HTML poem sample for quick tactile reading flows.",
+        "source": {
+          "kind": "library_document",
+          "ref": "the_raven_html"
+        }
+      }
+    ],
+    "audio": [
+      {
+        "slug": "alice_audio_session",
+        "title": "Alice Chapter One",
+        "summary": "Companion narration from the bundled internal library.",
+        "source": {
+          "kind": "library_audio",
+          "ref": "alice_chapter_01"
+        }
+      },
+      {
+        "slug": "raven_audio_session",
+        "title": "The Raven Audio",
+        "summary": "Short-form spoken-poetry sample for audio-scene controls.",
+        "source": {
+          "kind": "library_audio",
+          "ref": "the_raven_librivox"
+        }
+      }
+    ]
+  }
+}

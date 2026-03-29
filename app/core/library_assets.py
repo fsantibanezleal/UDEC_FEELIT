@@ -339,6 +339,18 @@ def _extract_epub_text(path: Path) -> str:
     return _normalize_text(_strip_gutenberg_boilerplate("\n\n".join(parts)))
 
 
+def extract_document_text_from_path(path: Path) -> str:
+    """Extract readable text from a supported document path."""
+    suffix = path.suffix.lower()
+    if suffix == ".txt" or suffix == ".md":
+        return _extract_txt_text(path)
+    if suffix in {".html", ".htm"}:
+        return _extract_html_file_text(path)
+    if suffix == ".epub":
+        return _extract_epub_text(path)
+    raise ValueError(f"Unsupported document format: {path.suffix}")
+
+
 @lru_cache(maxsize=None)
 def read_document_text(slug: str) -> str:
     """Return the fully extracted text for a known bundled document."""
@@ -347,14 +359,7 @@ def read_document_text(slug: str) -> str:
         raise KeyError(slug)
 
     path = DOCUMENTS_DIR / document.filename
-    suffix = path.suffix.lower()
-    if suffix == ".txt":
-        return _extract_txt_text(path)
-    if suffix in {".html", ".htm"}:
-        return _extract_html_file_text(path)
-    if suffix == ".epub":
-        return _extract_epub_text(path)
-    raise ValueError(f"Unsupported document format: {path.suffix}")
+    return extract_document_text_from_path(path)
 
 
 def _clip_excerpt(text: str, offset: int, max_chars: int) -> tuple[str, int, int]:
@@ -391,6 +396,46 @@ def build_audio_catalog() -> list[dict[str, object]]:
         payload["file_size_bytes"] = _asset_file_size(AUDIO_DIR / audio.filename)
         catalog.append(payload)
     return catalog
+
+
+def build_text_payload_from_path(
+    path: Path,
+    *,
+    title: str,
+    source_name: str,
+    source_url: str,
+    offset: int = 0,
+    max_chars: int = 1200,
+) -> dict[str, object]:
+    """Return a clipped text payload for a supported arbitrary document path."""
+    text = extract_document_text_from_path(path)
+    excerpt, start, end = _clip_excerpt(text, offset, max_chars)
+    return {
+        "slug": _slugify_path(path),
+        "title": title,
+        "author": "Unknown",
+        "format": path.suffix.lower().lstrip("."),
+        "filename": path.name,
+        "file_url": "",
+        "source_name": source_name,
+        "source_url": source_url,
+        "summary": f"Text content loaded from {path.name}.",
+        "recommended_excerpt_chars": max_chars,
+        "companion_audio_slugs": (),
+        "file_size_bytes": _asset_file_size(path),
+        "text": excerpt,
+        "offset": start,
+        "next_offset": end if end < len(text) else None,
+        "previous_offset": max(0, start - max_chars) if start > 0 else None,
+        "loaded_characters": len(excerpt),
+        "total_characters": len(text),
+        "has_more": end < len(text),
+    }
+
+
+def _slugify_path(path: Path) -> str:
+    """Convert a filesystem path into a stable slug."""
+    return re.sub(r"[^a-z0-9]+", "_", path.stem.lower()).strip("_") or "document"
 
 
 def build_document_payload(slug: str, *, offset: int = 0, max_chars: int | None = None) -> dict[str, object]:

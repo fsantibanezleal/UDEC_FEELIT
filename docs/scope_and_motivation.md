@@ -81,9 +81,18 @@ Purpose:
 
 Purpose:
 
-- represent digital actions as tactile objects
-- provide labeled interaction targets for folders, media, settings, and tools
-- support future audio-assisted but not audio-dependent desktop interaction
+- represent digital actions as tactile objects inside a changing 3D scene system
+- provide structured launch, gallery, file-browsing, and opened-content flows
+- support audio-assisted but not audio-dependent interaction for models, text, and audio
+- prepare the ground for a future autonomous haptic desktop experience
+
+### Supporting Route: Haptic Workspace Manager
+
+Purpose:
+
+- create and register structured `haptic_workspace` descriptors
+- keep large user assets outside the application repository
+- define curated galleries and a controlled file-browser root for blind-first desktop sessions
 
 ## Accessibility Position
 
@@ -117,6 +126,8 @@ The current baseline already delivers:
 - real 3D workspace rendering for object, Braille, and desktop modes
 - stylus-style pointer emulation for no-device execution
 - scene-native tactile controls inside the Braille reading world
+- structured `haptic_workspace` descriptors plus a dedicated manager route
+- workspace-driven Haptic Desktop scenes for launcher, galleries, file browsing, and content opening
 - bundled OBJ demo models and local OBJ staging
 - initial haptic material profiles grounded in current desktop-haptics capabilities
 - a null backend strategy for hardware-safe execution

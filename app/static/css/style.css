@@ -180,6 +180,10 @@ a {
   gap: 0;
 }
 
+.workspace-panel-scroll {
+  overflow-y: auto;
+}
+
 .panel-section {
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -343,6 +347,12 @@ input[type="range"] {
 
 .btn-secondary:hover {
   background: rgba(88, 166, 255, 0.22);
+}
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:disabled {
@@ -699,6 +709,59 @@ input[type="range"] {
   filter: saturate(0.82) brightness(0.92);
 }
 
+.manager-surface {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.manager-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace-list {
+  display: grid;
+  gap: 10px;
+}
+
+.workspace-card {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(48, 54, 61, 0.9);
+  background: rgba(13, 17, 23, 0.88);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workspace-card:hover,
+.workspace-card.is-selected {
+  border-color: rgba(57, 210, 192, 0.42);
+  box-shadow: 0 0 0 1px rgba(57, 210, 192, 0.12);
+}
+
+.workspace-card-title {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.workspace-card-body,
+.workspace-card-meta,
+.workspace-card-path {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-size: 0.82rem;
+}
+
+.workspace-card-path {
+  word-break: break-word;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.76rem;
+}
+
 .modal {
   display: none;
   position: fixed;
@@ -845,5 +908,9 @@ input[type="range"] {
   .subsurface-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .manager-summary-grid {
+    grid-template-columns: 1fr;
   }
 }

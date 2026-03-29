@@ -32,6 +32,7 @@ All user workspaces share:
 - a real 3D scene as the primary workspace for spatial modes
 - module-based frontend bootstrap through the shared shell helper
 - visible boot diagnostics when runtime initialization fails
+- workspace-driven scene transitions for Haptic Desktop
 
 Current shared files:
 
@@ -49,6 +50,7 @@ The user-facing interface is separated into dedicated routes:
 - `/object-explorer`
 - `/braille-reader`
 - `/haptic-desktop`
+- `/haptic-workspace-manager`
 
 This avoids collapsing incompatible workflows into one long page.
 
@@ -58,7 +60,7 @@ The object explorer, Braille reader, and haptic desktop each render an actual 3D
 
 - the object explorer stages real OBJ meshes inside a bounded scene
 - the Braille reader renders the tactile board as raised 3D geometry with scene-native navigation controls
-- the desktop mode renders shape-coded tactile objects inside a spatial desktop layout
+- the desktop mode renders a workspace-driven launcher, galleries, detail plaques, and opened content scenes
 - the shared pointer emulator behaves as a stylus-like proxy when no hardware device is attached
 
 Auxiliary 2D views are secondary and are only used when they help interpretation or debugging.
@@ -68,9 +70,11 @@ Auxiliary 2D views are secondary and are only used when they help interpretation
 - `app/static/object_explorer.html`
 - `app/static/braille_reader.html`
 - `app/static/haptic_desktop.html`
+- `app/static/haptic_workspace_manager.html`
 - `app/static/js/object_explorer.js`
 - `app/static/js/braille_reader.js`
 - `app/static/js/haptic_desktop.js`
+- `app/static/js/haptic_workspace_manager.js`
 - `app/static/vendor/three/OBJLoader.js`
 
 ## API Layer
@@ -87,6 +91,7 @@ Current responsibilities:
 - bundled document library catalog
 - bundled document segment loading
 - bundled audio library catalog
+- haptic workspace catalog, browsing, text loading, raw file serving, and descriptor management
 - haptic backend status
 - Braille preview translation
 
@@ -109,6 +114,7 @@ Current responsibilities:
 - bundled demo asset catalog
 - bundled public-domain document and audio catalogs
 - plain-text, HTML, and EPUB extraction for the internal reading library
+- haptic workspace descriptor parsing, registry, and filesystem browsing
 
 Current files:
 
@@ -119,6 +125,7 @@ Current files:
 - `app/core/haptic_materials.py`
 - `app/core/demo_assets.py`
 - `app/core/library_assets.py`
+- `app/core/haptic_workspace.py`
 
 ## Haptic Runtime Layer
 
@@ -156,11 +163,12 @@ Current file:
 4. The shared frontend shell requests `/api/health` and `/api/meta`.
 5. The object explorer additionally calls `/api/materials` and `/api/demo-models`.
 6. The Braille reader additionally calls `/api/library/documents` and `/api/library/audio`.
-7. Each workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
-8. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
-9. The Braille reader loads a bundled document segment, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene controls.
-10. The desktop mode instantiates a bounded desktop scene from its local interaction model.
-11. Runtime and device status are reflected in the current workspace.
+7. Haptic Desktop calls `/api/haptic-workspaces` and resolves the selected `haptic_workspace`.
+8. Each spatial workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
+9. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
+10. The Braille reader loads a bundled document segment, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene controls.
+11. Haptic Desktop moves between launcher, gallery, file-browser, detail, and opened-content scenes using workspace-driven payloads.
+12. Runtime and device status are reflected in the current workspace.
 
 ## Future Extension Points
 
@@ -203,17 +211,20 @@ Next additions:
 
 Current baseline:
 
-- 3D desktop object scene
-- focus traversal and activation prototype
-- shape-coded tactile object families instead of text-heavy world labels
-- announcement and inspector metadata outside the scene itself
+- structured `haptic_workspace` descriptor format and bundled demo workspace
+- dedicated manager route for creating and registering workspaces rooted in external folders
+- launcher scene for curated models, texts, audio, and file browsing
+- paginated gallery scenes for curated workspace content
+- file-browser scene rooted in the configured workspace path
+- detail plaque scene with braille naming before content opening
+- opened model, text, and audio scenes with scene-native return controls
 
 Next additions:
 
-- content graph or object catalog
-- audio label service
-- assistive focus and activation rules
-- integration with real desktop or curated content sources
+- richer workspace authoring tools and validation beyond the first JSON descriptor baseline
+- audio naming and cue refinement tied to real user workflows
+- assistive focus and activation rules tuned against real haptic-device constraints
+- integration with native hardware and richer desktop action execution
 
 ## Packaging Architecture
 
