@@ -1,0 +1,10 @@
+/** @file hdl.h
+** Main API for HDAL services.
+**
+** Copyright 2005-2008 Novint Technologies, Inc. All rights reserved.
+** Available only under license from Novint Technologies, Inc.
+**
+** Haptic Device Abstraction Layer
+** Low level, cross-platform, general purpose interface.
+**/
+

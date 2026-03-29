@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FeelIT | Braille Reader</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="braille-reader">
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-group">
+        <h1>FeelIT</h1>
+        <p class="subtitle">Accessible haptic interaction platform</p>
+      </div>
+      <nav class="mode-nav" aria-label="FeelIT modes">
+        <a class="mode-link" href="/object-explorer">3D Object Explorer</a>
+        <a class="mode-link is-active" href="/braille-reader">Braille Reader</a>
+        <a class="mode-link" href="/haptic-desktop">Haptic Desktop</a>
+      </nav>
+      <div class="header-tools">
+        <span class="version-badge" data-runtime="version">v--</span>
+        <button class="help-btn" type="button" data-open-modal="help-modal" aria-label="Open help">?</button>
+      </div>
+    </header>
+
+    <main class="workspace-grid">
+      <aside class="control-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Text Input</h2>
+          </div>
+          <label for="preview-text">Text to render</label>
+          <textarea id="preview-text" rows="9">FeelIT creates tactile access.</textarea>
+          <div class="button-row">
+            <button id="generate-preview" class="btn btn-primary" type="button">Generate Layout</button>
+            <button id="load-sample-text" class="btn btn-secondary" type="button">Load Sample</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Layout</h2>
+          </div>
+          <label for="preview-columns">Columns</label>
+          <input id="preview-columns" type="number" min="1" max="24" value="8">
+          <label for="rows-per-page">Rows per page</label>
+          <input id="rows-per-page" type="number" min="1" max="10" value="4">
+          <label for="cell-scale">Cell scale</label>
+          <select id="cell-scale">
+            <option value="compact">Compact</option>
+            <option value="standard" selected>Standard</option>
+            <option value="large">Large</option>
+          </select>
+          <label class="toggle-row">
+            <input id="braille-boundary-toggle" type="checkbox" checked>
+            <span>Show tactile boundary surface</span>
+          </label>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Navigation</h2>
+          </div>
+          <div class="button-row">
+            <button id="prev-page" class="btn btn-secondary" type="button">Previous Page</button>
+            <button id="next-page" class="btn btn-secondary" type="button">Next Page</button>
+          </div>
+          <div class="status-stack">
+            <div class="status-card">
+              <span class="status-label">Current page</span>
+              <span id="page-indicator" class="status-value">1 / 1</span>
+            </div>
+            <div class="status-card">
+              <span class="status-label">Current scale</span>
+              <span id="reader-scale-label" class="status-value">Standard</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace-panel workspace-panel-split">
+        <div class="panel-heading">
+          <div>
+            <h2>Braille Workspace</h2>
+            <p class="panel-subtitle">3D tactile reading world plus optional 2D cell map for debugging and teaching.</p>
+          </div>
+          <div class="panel-heading-status">
+            <span id="reader-runtime-pill" class="status-pill status-pill-green">Reader active</span>
+            <span id="reader-page-status" class="status-pill">Waiting</span>
+          </div>
+        </div>
+
+        <div class="workspace-stage stage-3d">
+          <canvas id="braille-canvas" class="stage-canvas"></canvas>
+          <div class="stage-overlay top-left telemetry-row">
+            <span class="telemetry-chip">Cells <strong id="preview-cell-count">0</strong></span>
+            <span class="telemetry-chip">Rows <strong id="preview-row-count">0</strong></span>
+            <span class="telemetry-chip">Device <strong data-runtime="haptics-mode">--</strong></span>
+          </div>
+          <div class="stage-overlay top-right key-hints">
+            <span>Orbit mouse</span>
+            <span>Arrows select cells</span>
+          </div>
+          <div class="stage-overlay bottom-left">
+            <span id="reader-status-bar" class="stage-statusbar">Ready for preview generation.</span>
+          </div>
+        </div>
+
+        <section class="subsurface-panel">
+          <div class="subsurface-header">
+            <h3>2D Cell Reference</h3>
+            <span class="subsurface-note">Optional debug view for inspecting the generated page.</span>
+          </div>
+          <div id="braille-board" class="braille-board braille-scale-standard" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <aside class="inspector-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>API</dt><dd data-runtime="api-status">Loading</dd></div>
+            <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
+            <div><dt>Port</dt><dd data-runtime="port">Loading</dd></div>
+            <div><dt>Backend</dt><dd data-runtime="backend">Loading</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Layout Summary</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Characters</dt><dd id="summary-characters">0</dd></div>
+            <div><dt>Columns</dt><dd id="summary-columns">0</dd></div>
+            <div><dt>Rows</dt><dd id="summary-rows">0</dd></div>
+            <div><dt>Unicode</dt><dd id="summary-unicode">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Selected Cell</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Character</dt><dd id="selected-source">--</dd></div>
+            <div><dt>Normalized</dt><dd id="selected-normalized">--</dd></div>
+            <div><dt>Mask</dt><dd id="selected-mask">--</dd></div>
+            <div><dt>Position</dt><dd id="selected-position">--</dd></div>
+          </dl>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="help-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Braille Reader</h2>
+        <button class="modal-close" type="button" data-close-modal="help-modal" aria-label="Close help">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>Purpose</h3>
+        <p>
+          This workspace renders the tactile reading world itself: a bounded base surface with raised
+          Braille dots that can later be traversed by a haptic pointer.
+        </p>
+        <h3>Current Interaction</h3>
+        <ul>
+          <li>Generate Braille pages from text input.</li>
+          <li>Navigate pages with the page controls.</li>
+          <li>Inspect the 3D tactile board while keeping the 2D reference view available for debugging.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js" defer></script>
+  <script type="module" src="/static/js/braille_reader.js"></script>
+</body>
+</html>

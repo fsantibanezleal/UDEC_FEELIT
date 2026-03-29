@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Basicos">
+      <UniqueIdentifier>{f246acac-69f9-4fd0-ab74-964a0efca4f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\OpenGl">
+      <UniqueIdentifier>{2d610d3f-96fd-4829-9aed-28e0020ce25e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Haptic">
+      <UniqueIdentifier>{85b95978-f940-45fc-a53b-08e0d14456bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Basicos">
+      <UniqueIdentifier>{adc661bd-3b8b-4af1-aaef-4e8bec2901a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\OpenGl">
+      <UniqueIdentifier>{63c69982-b421-4050-803f-1d803e00bcd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Haptic">
+      <UniqueIdentifier>{5a4fa78d-29d7-421e-a1bd-7599e263302b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FeelIT.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VentanaPrincipal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\Basico\BasicComplex.cpp">
+      <Filter>Source Files\Basicos</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\Basico\BasicFunctions.cpp">
+      <Filter>Source Files\Basicos</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\Basico\BasicStructures.cpp">
+      <Filter>Source Files\Basicos</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\OpenGL\GL_Braille.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\OpenGL\GL_Camara.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\OpenGL\OGL.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
+    <ClCompile Include="Bibliotecas\Haptic\haptics.cpp">
+      <Filter>Source Files\Haptic</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VentanaPrincipal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\Basico\BasicComplex.h">
+      <Filter>Header Files\Basicos</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\Basico\BasicFunctions.h">
+      <Filter>Header Files\Basicos</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\Basico\BasicStructures.h">
+      <Filter>Header Files\Basicos</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\OpenGL\GL_Braille.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\OpenGL\GL_Camara.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\OpenGL\OGL.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="Bibliotecas\Haptic\haptics.h">
+      <Filter>Header Files\Haptic</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="app.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="app.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Cambios.txt" />
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+</Project>

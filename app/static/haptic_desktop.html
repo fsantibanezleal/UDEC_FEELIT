@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FeelIT | Haptic Desktop</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="haptic-desktop">
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-group">
+        <h1>FeelIT</h1>
+        <p class="subtitle">Accessible haptic interaction platform</p>
+      </div>
+      <nav class="mode-nav" aria-label="FeelIT modes">
+        <a class="mode-link" href="/object-explorer">3D Object Explorer</a>
+        <a class="mode-link" href="/braille-reader">Braille Reader</a>
+        <a class="mode-link is-active" href="/haptic-desktop">Haptic Desktop</a>
+      </nav>
+      <div class="header-tools">
+        <span class="version-badge" data-runtime="version">v--</span>
+        <button class="help-btn" type="button" data-open-modal="help-modal" aria-label="Open help">?</button>
+      </div>
+    </header>
+
+    <main class="workspace-grid">
+      <aside class="control-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Desktop Controls</h2>
+          </div>
+          <label for="layout-preset">Layout preset</label>
+          <select id="layout-preset">
+            <option value="grid" selected>Grid workspace</option>
+            <option value="arc">Arc launcher</option>
+            <option value="cluster">Clustered desk</option>
+          </select>
+          <label class="toggle-row">
+            <input id="audio-cues-toggle" type="checkbox" checked>
+            <span>Enable audio cue labels</span>
+          </label>
+          <label class="toggle-row">
+            <input id="pointer-toggle" type="checkbox" checked>
+            <span>Show pointer proxy</span>
+          </label>
+          <div class="button-row">
+            <button id="focus-prev" class="btn btn-secondary" type="button">Previous</button>
+            <button id="focus-next" class="btn btn-secondary" type="button">Next</button>
+            <button id="focus-activate" class="btn btn-primary" type="button">Activate</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Navigation</h2>
+          </div>
+          <p class="panel-text">
+            The visible 3D desk is the intended interaction world. The focused item is highlighted,
+            and the pointer proxy moves to the current object target.
+          </p>
+        </section>
+      </aside>
+
+      <section class="workspace-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Virtual Desktop Workspace</h2>
+            <p class="panel-subtitle">3D object-based desktop scene for folders, media, settings, and assistive actions.</p>
+          </div>
+          <div class="panel-heading-status">
+            <span id="desktop-runtime-pill" class="status-pill status-pill-purple">Prototype workspace</span>
+            <span id="desktop-page-status" class="status-pill">Ready</span>
+          </div>
+        </div>
+
+        <div class="workspace-stage stage-3d">
+          <canvas id="desktop-canvas" class="stage-canvas"></canvas>
+          <div class="stage-overlay top-left telemetry-row">
+            <span class="telemetry-chip">Focus <strong id="desktop-focus-count">1 / 6</strong></span>
+            <span class="telemetry-chip">Audio <strong id="desktop-audio-state">On</strong></span>
+            <span class="telemetry-chip">Backend <strong data-runtime="backend">--</strong></span>
+          </div>
+          <div class="stage-overlay top-right key-hints">
+            <span>Orbit mouse</span>
+            <span>Arrows move focus</span>
+          </div>
+          <div class="stage-overlay bottom-left">
+            <span id="desktop-status-bar" class="stage-statusbar">Desktop workspace ready.</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="inspector-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>API</dt><dd data-runtime="api-status">Loading</dd></div>
+            <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
+            <div><dt>Haptics</dt><dd data-runtime="haptics-mode">Loading</dd></div>
+            <div><dt>Port</dt><dd data-runtime="port">Loading</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Focused Object</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Label</dt><dd id="desktop-focus-label">--</dd></div>
+            <div><dt>Type</dt><dd id="desktop-focus-type">--</dd></div>
+            <div><dt>Action</dt><dd id="desktop-focus-action">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Announcement</h2>
+          </div>
+          <p id="desktop-announcement" class="panel-text">Loading desktop objects.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="help-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Haptic Desktop</h2>
+        <button class="modal-close" type="button" data-close-modal="help-modal" aria-label="Close help">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>Purpose</h3>
+        <p>
+          This workspace prototypes a 3D desktop made of touchable objects. The visible desk is the
+          intended world for future haptic navigation and activation.
+        </p>
+        <h3>Current Interaction</h3>
+        <ul>
+          <li>Switch focus between 3D desktop objects.</li>
+          <li>Activate the current object and emit an announcement.</li>
+          <li>Change the layout preset to test different spatial arrangements.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js" defer></script>
+  <script type="module" src="/static/js/haptic_desktop.js"></script>
+</body>
+</html>

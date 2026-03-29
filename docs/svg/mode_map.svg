@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+  <title id="title">FeelIT mode map</title>
+  <desc id="desc">Mode map for FeelIT showing the three workspaces, their focus, current maturity, and shared runtime services.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#142030"/>
+      <stop offset="100%" stop-color="#101722"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#79c0ff"/>
+    </marker>
+    <style>
+      .title { font: 700 40px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .subtitle { font: 400 18px 'Segoe UI', sans-serif; fill: #8b949e; }
+      .cardTitle { font: 700 24px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .section { font: 700 13px 'Segoe UI', sans-serif; fill: #8b949e; letter-spacing: 1.2px; }
+      .body { font: 400 16px 'Segoe UI', sans-serif; fill: #9fb0c3; }
+      .mono { font: 400 14px Consolas, monospace; fill: #d7e2ee; }
+      .badge { font: 700 12px 'Segoe UI', sans-serif; fill: #0d1117; letter-spacing: 1px; }
+      .smallBadge { font: 700 12px 'Segoe UI', sans-serif; fill: #e6edf3; letter-spacing: 0.8px; }
+      .iconStroke { stroke: #e6edf3; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="940" fill="url(#bg)"/>
+  <circle cx="1440" cy="190" r="220" fill="#58a6ff" opacity="0.06"/>
+  <circle cx="240" cy="820" r="200" fill="#c297ff" opacity="0.05"/>
+
+  <text x="78" y="102" class="title">FeelIT Mode Map</text>
+  <text x="78" y="136" class="subtitle">Each mode has a dedicated route, a dedicated task surface, and a distinct maturity level inside the same shared runtime.</text>
+
+  <rect x="78" y="192" width="442" height="488" rx="26" fill="url(#card)" stroke="#58a6ff" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="580" y="192" width="442" height="488" rx="26" fill="url(#card)" stroke="#7ee787" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="1082" y="192" width="442" height="488" rx="26" fill="url(#card)" stroke="#c297ff" stroke-width="2" filter="url(#shadow)"/>
+
+  <circle cx="136" cy="252" r="24" fill="rgba(88,166,255,0.18)" stroke="#58a6ff"/>
+  <path d="M124 254 L136 246 L148 254 L148 268 L136 276 L124 268 Z" class="iconStroke"/>
+  <path d="M136 246 V260" class="iconStroke"/>
+  <path d="M124 254 L136 262 L148 254" class="iconStroke"/>
+  <rect x="174" y="230" width="94" height="28" rx="14" fill="#58a6ff"/>
+  <text x="196" y="248" class="badge">STAGED</text>
+  <text x="110" y="310" class="cardTitle">3D Object Explorer</text>
+  <text x="110" y="338" class="mono">/object-explorer</text>
+  <text x="110" y="388" class="section">PRIMARY PURPOSE</text>
+  <text x="110" y="416" class="body">Stage real OBJ models, assign tactile materials,</text>
+  <text x="110" y="440" class="body">and fit geometry to a bounded exploration space.</text>
+  <text x="110" y="490" class="section">CURRENT BASELINE</text>
+  <text x="110" y="518" class="body">Bundled demo assets, local OBJ upload, 3D scene</text>
+  <text x="110" y="542" class="body">controls, scale tuning, and pointer traversal.</text>
+  <text x="110" y="592" class="section">NEXT LAYER</text>
+  <text x="110" y="620" class="body">Hardware contact rendering, richer formats, and</text>
+  <text x="110" y="644" class="body">server-side validation for imported geometry.</text>
+
+  <circle cx="638" cy="252" r="24" fill="rgba(126,231,135,0.18)" stroke="#7ee787"/>
+  <circle cx="631" cy="244" r="3.2" fill="#e6edf3"/>
+  <circle cx="645" cy="244" r="3.2" fill="#e6edf3"/>
+  <circle cx="631" cy="252" r="3.2" fill="#e6edf3"/>
+  <circle cx="645" cy="252" r="3.2" fill="#e6edf3"/>
+  <circle cx="631" cy="260" r="3.2" fill="#e6edf3"/>
+  <circle cx="645" cy="260" r="3.2" fill="#e6edf3"/>
+  <rect x="676" y="230" width="88" height="28" rx="14" fill="#7ee787"/>
+  <text x="702" y="248" class="badge">ACTIVE</text>
+  <text x="612" y="310" class="cardTitle">Braille Reader</text>
+  <text x="612" y="338" class="mono">/braille-reader</text>
+  <text x="612" y="388" class="section">PRIMARY PURPOSE</text>
+  <text x="612" y="416" class="body">Translate text into tactile cells on a bounded</text>
+  <text x="612" y="440" class="body">reading surface that matches a future haptic space.</text>
+  <text x="612" y="490" class="section">CURRENT BASELINE</text>
+  <text x="612" y="518" class="body">Live text input, pagination, 3D Braille world,</text>
+  <text x="612" y="542" class="body">auxiliary 2D board, and cell-level inspection.</text>
+  <text x="612" y="592" class="section">NEXT LAYER</text>
+  <text x="612" y="620" class="body">Document ingestion, tactile page widgets, and</text>
+  <text x="612" y="644" class="body">hardware-mapped relief and navigation behavior.</text>
+
+  <circle cx="1140" cy="252" r="24" fill="rgba(194,151,255,0.18)" stroke="#c297ff"/>
+  <path d="M1128 243 H1143 L1147 249 H1155 V261 H1128 Z" class="iconStroke"/>
+  <path d="M1134 255 H1149" class="iconStroke"/>
+  <rect x="1178" y="230" width="118" height="28" rx="14" fill="#c297ff"/>
+  <text x="1197" y="248" class="badge">PROTOTYPE</text>
+  <text x="1114" y="310" class="cardTitle">Haptic Desktop</text>
+  <text x="1114" y="338" class="mono">/haptic-desktop</text>
+  <text x="1114" y="388" class="section">PRIMARY PURPOSE</text>
+  <text x="1114" y="416" class="body">Represent folders, media, settings, and tools</text>
+  <text x="1114" y="440" class="body">as focusable tactile objects with clear semantics.</text>
+  <text x="1114" y="490" class="section">CURRENT BASELINE</text>
+  <text x="1114" y="518" class="body">3D desktop layouts, focus traversal, announcement</text>
+  <text x="1114" y="542" class="body">panel, label sprites, and activation placeholders.</text>
+  <text x="1114" y="592" class="section">NEXT LAYER</text>
+  <text x="1114" y="620" class="body">Content graph, audio services, and real execution</text>
+  <text x="1114" y="644" class="body">rules for curated desktop interactions.</text>
+
+  <rect x="118" y="730" width="1364" height="154" rx="24" fill="#111827" stroke="#30363d" stroke-width="2"/>
+  <text x="150" y="772" class="cardTitle">Shared Runtime Services</text>
+  <text x="150" y="804" class="body">All three modes inherit one shell, one release policy, one device boundary, and one documentation baseline.</text>
+
+  <rect x="150" y="824" width="262" height="30" rx="15" fill="rgba(88,166,255,0.16)" stroke="#58a6ff"/>
+  <text x="168" y="843" class="smallBadge">Mode navigation and help surface</text>
+  <rect x="434" y="824" width="272" height="30" rx="15" fill="rgba(126,231,135,0.16)" stroke="#7ee787"/>
+  <text x="452" y="843" class="smallBadge">Runtime status, version, and port</text>
+  <rect x="728" y="824" width="284" height="30" rx="15" fill="rgba(242,204,96,0.16)" stroke="#f2cc60"/>
+  <text x="746" y="843" class="smallBadge">Canonical version and packaging sync</text>
+  <rect x="1034" y="824" width="390" height="30" rx="15" fill="rgba(194,151,255,0.16)" stroke="#c297ff"/>
+  <text x="1052" y="843" class="smallBadge">Null haptic backend until physical device support is attached</text>
+
+  <path d="M299 680 V730" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M801 680 V730" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M1303 680 V730" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+</svg>

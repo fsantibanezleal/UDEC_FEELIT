@@ -1,0 +1,11 @@
+Cambios FeelIT 0.0.5:
+
+* Espacio para OpenGL achicado para poder visualizar texto y letra que se esta convirtiendo.
+* Integrado clase string como elemento privado de VentanaPrincipal para evitar que se cargue el texto cada vez que se presiona una tecla
+* Inclusion de imagen para ayudar a identificar que letra en el texto esta representado como braille.
+* Mano que ayuda a indicar que parte del texto se esta leyendo, se corre un poco pero sirve como guia.
+* Cuadro de dialogo acerca de
+
+Resta Implementar:
+* Funcion que se ejecute constantemente para hacer render de la letra braille
+* Manipulacion haptica ocurre en el instante que se presiona un boton, cambiar eso para que se llame un evento cuando el haptico se mueve
