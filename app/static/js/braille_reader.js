@@ -1,3 +1,4 @@
+import { bootWorkspace } from "./app.js";
 import {
   THREE,
   attachPointerEmulation,
@@ -607,76 +608,94 @@ function moveSelection(sceneApi, deltaRow, deltaColumn) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await window.FeelITShell.loadShell();
+document.addEventListener("DOMContentLoaded", () => {
+  bootWorkspace(
+    {
+      title: "Braille Reader startup failed",
+      stageSelector: "#braille-canvas",
+      runtimePillId: "reader-runtime-pill",
+      runtimePillText: "Runtime error",
+      pageStatusId: "reader-page-status",
+      pageStatusText: "Boot failed",
+      stageStatusId: "reader-status-bar",
+      summaryIds: [
+        "selected-source",
+        "selected-normalized",
+        "selected-mask",
+        "selected-position",
+        "summary-unicode",
+      ],
+    },
+    async () => {
+      const sceneApi = createWorkspaceScene(byId("braille-canvas"), {
+        cameraPosition: [2.4, 2.2, 3.2],
+        target: [0, 0.18, 0.08],
+        boundarySize: new THREE.Vector3(3.6, 0.95, 3.2),
+      });
 
-  const sceneApi = createWorkspaceScene(byId("braille-canvas"), {
-    cameraPosition: [2.4, 2.2, 3.2],
-    target: [0, 0.18, 0.08],
-    boundarySize: new THREE.Vector3(3.6, 0.95, 3.2),
-  });
+      state.pointerController = attachPointerEmulation(sceneApi, {
+        initialPosition: new THREE.Vector3(0, 0.22, 0.2),
+        boundsMin: new THREE.Vector3(-1.6, 0.14, -1.2),
+        boundsMax: new THREE.Vector3(1.6, 0.34, 1.4),
+        speed: 1.4,
+        onMove: (position) => updatePointerTarget(sceneApi, position, getPageCells()),
+        onActivate: () => activatePointerTarget(sceneApi, getPageCells()),
+      });
 
-  state.pointerController = attachPointerEmulation(sceneApi, {
-    initialPosition: new THREE.Vector3(0, 0.22, 0.2),
-    boundsMin: new THREE.Vector3(-1.6, 0.14, -1.2),
-    boundsMax: new THREE.Vector3(1.6, 0.34, 1.4),
-    speed: 1.4,
-    onMove: (position) => updatePointerTarget(sceneApi, position, getPageCells()),
-    onActivate: () => activatePointerTarget(sceneApi, getPageCells()),
-  });
+      byId("generate-preview").addEventListener("click", () => {
+        loadPreview(sceneApi).catch((error) => setStatus(error.message, "preview-error"));
+      });
 
-  byId("generate-preview").addEventListener("click", () => {
-    loadPreview(sceneApi).catch((error) => setStatus(error.message, "preview-error"));
-  });
+      byId("load-sample-text").addEventListener("click", () => {
+        byId("preview-text").value =
+          "Braille reading should remain tactile, spatial, and independent from the audio channel when needed.";
+        loadPreview(sceneApi).catch((error) => setStatus(error.message, "sample-error"));
+      });
 
-  byId("load-sample-text").addEventListener("click", () => {
-    byId("preview-text").value =
-      "Braille reading should remain tactile, spatial, and independent from the audio channel when needed.";
-    loadPreview(sceneApi).catch((error) => setStatus(error.message, "sample-error"));
-  });
+      byId("rows-per-page").addEventListener("change", () => {
+        state.rowsPerPage = Number(byId("rows-per-page").value) || 4;
+        state.currentPage = 0;
+        renderCurrentPage(sceneApi);
+      });
 
-  byId("rows-per-page").addEventListener("change", () => {
-    state.rowsPerPage = Number(byId("rows-per-page").value) || 4;
-    state.currentPage = 0;
-    renderCurrentPage(sceneApi);
-  });
+      byId("preview-columns").addEventListener("change", () => {
+        loadPreview(sceneApi).catch((error) => setStatus(error.message, "columns-error"));
+      });
 
-  byId("preview-columns").addEventListener("change", () => {
-    loadPreview(sceneApi).catch((error) => setStatus(error.message, "columns-error"));
-  });
+      byId("cell-scale").addEventListener("change", (event) => {
+        applyScale(event.target.value);
+      });
 
-  byId("cell-scale").addEventListener("change", (event) => {
-    applyScale(event.target.value);
-  });
+      byId("braille-boundary-toggle").addEventListener("change", (event) => {
+        sceneApi.setBoundaryVisible(event.target.checked);
+      });
 
-  byId("braille-boundary-toggle").addEventListener("change", (event) => {
-    sceneApi.setBoundaryVisible(event.target.checked);
-  });
+      byId("prev-page").addEventListener("click", () => {
+        state.currentPage = Math.max(0, state.currentPage - 1);
+        state.selectedCellId = null;
+        renderCurrentPage(sceneApi);
+        setStatus("Moved to previous page with fallback web control.", "fallback-prev");
+      });
 
-  byId("prev-page").addEventListener("click", () => {
-    state.currentPage = Math.max(0, state.currentPage - 1);
-    state.selectedCellId = null;
-    renderCurrentPage(sceneApi);
-    setStatus("Moved to previous page with fallback web control.", "fallback-prev");
-  });
+      byId("next-page").addEventListener("click", () => {
+        state.currentPage = Math.min(getPageCount() - 1, state.currentPage + 1);
+        state.selectedCellId = null;
+        renderCurrentPage(sceneApi);
+        setStatus("Moved to next page with fallback web control.", "fallback-next");
+      });
 
-  byId("next-page").addEventListener("click", () => {
-    state.currentPage = Math.min(getPageCount() - 1, state.currentPage + 1);
-    state.selectedCellId = null;
-    renderCurrentPage(sceneApi);
-    setStatus("Moved to next page with fallback web control.", "fallback-next");
-  });
+      document.addEventListener("keydown", (event) => {
+        if (event.target.tagName === "TEXTAREA" || event.target.tagName === "INPUT") {
+          return;
+        }
+        if (event.key === "ArrowLeft") moveSelection(sceneApi, 0, -1);
+        if (event.key === "ArrowRight") moveSelection(sceneApi, 0, 1);
+        if (event.key === "ArrowUp") moveSelection(sceneApi, -1, 0);
+        if (event.key === "ArrowDown") moveSelection(sceneApi, 1, 0);
+      });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.target.tagName === "TEXTAREA" || event.target.tagName === "INPUT") {
-      return;
-    }
-    if (event.key === "ArrowLeft") moveSelection(sceneApi, 0, -1);
-    if (event.key === "ArrowRight") moveSelection(sceneApi, 0, 1);
-    if (event.key === "ArrowUp") moveSelection(sceneApi, -1, 0);
-    if (event.key === "ArrowDown") moveSelection(sceneApi, 1, 0);
-  });
-
-  applyScale("standard");
-  await loadPreview(sceneApi);
+      applyScale("standard");
+      await loadPreview(sceneApi);
+    },
+  );
 });

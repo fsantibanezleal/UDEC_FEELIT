@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.3.1 (2026-03-29)
+
+Release focused on reliable frontend bootstrap, visible startup diagnostics, and regression coverage for runtime placeholders.
+
+Delivered:
+
+- Replaced the fragile global shell bootstrap with module-based imports shared by the three workspace entrypoints.
+- Added visible workspace boot diagnostics so stale placeholders such as v--, Loading, or Waiting are no longer silent failure states.
+- Hardened the browser smoke validator to fail when runtime metadata placeholders do not initialize.
+
+Rationale:
+
+- Eliminate bootstrap races that can leave the frontend shell and 3D scenes uninitialized in some real browser runs.
+- Turn user-visible startup ambiguity into explicit diagnostics and automated regression coverage.
+
 ### v0.3.0 (2026-03-29)
 
 Release focused on trustworthy 3D interaction worlds, stylus-style pointer emulation, and scene-native tactile controls.

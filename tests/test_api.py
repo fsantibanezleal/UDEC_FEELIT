@@ -52,14 +52,20 @@ def test_frontend_mode_routes_are_served() -> None:
     assert object_response.status_code == 200
     assert "3D Object Explorer" in object_response.text
     assert "Space activate" in object_response.text
+    assert 'type="module" src="/static/js/object_explorer.js"' in object_response.text
+    assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200
     assert "Braille Reader" in braille_response.text
     assert "Previous Page (Fallback)" in braille_response.text
     assert "WASD/QE pointer" in braille_response.text
+    assert 'type="module" src="/static/js/braille_reader.js"' in braille_response.text
+    assert '/static/js/app.js" defer' not in braille_response.text
     assert desktop_response.status_code == 200
     assert "Haptic Desktop" in desktop_response.text
     assert "Activate (Fallback)" in desktop_response.text
     assert "Space activate" in desktop_response.text
+    assert 'type="module" src="/static/js/haptic_desktop.js"' in desktop_response.text
+    assert '/static/js/app.js" defer' not in desktop_response.text
 
 
 def test_three_vendor_runtime_assets_are_served() -> None:

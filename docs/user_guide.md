@@ -106,6 +106,8 @@ All pages expose:
 
 If no physical haptic device is configured, the application remains usable in visual fallback mode.
 
+If a workspace cannot initialize correctly, the stage should now expose a visible startup error instead of remaining silently stuck in placeholder states such as `v--`, `Loading`, or `Waiting`.
+
 ## Browser Smoke Validation
 
 For scene-regression checks beyond API tests:

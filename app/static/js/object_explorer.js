@@ -1,3 +1,4 @@
+import { bootWorkspace } from "./app.js";
 import { OBJLoader } from "../vendor/three/OBJLoader.js";
 import { THREE, attachPointerEmulation, createWorkspaceScene } from "./three_scene_common.js";
 
@@ -241,89 +242,102 @@ async function loadSelectedModel(sceneApi) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const shell = await window.FeelITShell.loadShell();
-  const sceneApi = createWorkspaceScene(byId("object-canvas"), {
-    cameraPosition: [3.8, 2.9, 4.8],
-    target: [0, 0.8, 0],
-  });
+document.addEventListener("DOMContentLoaded", () => {
+  bootWorkspace(
+    {
+      title: "3D Object Explorer startup failed",
+      stageSelector: "#object-canvas",
+      runtimePillId: "explorer-stage-pill",
+      runtimePillText: "Runtime error",
+      pageStatusId: "explorer-page-status",
+      pageStatusText: "Boot failed",
+      stageStatusId: "object-stage-status",
+      summaryIds: ["material-summary", "stage-model-description"],
+    },
+    async (shell) => {
+      const sceneApi = createWorkspaceScene(byId("object-canvas"), {
+        cameraPosition: [3.8, 2.9, 4.8],
+        target: [0, 0.8, 0],
+      });
 
-  state.pointerController = attachPointerEmulation(sceneApi, {
-    initialPosition: new THREE.Vector3(0, 0.45, 0),
-    boundsMin: new THREE.Vector3(-1.9, 0.12, -1.9),
-    boundsMax: new THREE.Vector3(1.9, 2.3, 1.9),
-    speed: 1.65,
-    onMove: (position) => updatePointerFeedback(sceneApi, position),
-    onActivate: () => activatePointer(sceneApi),
-  });
+      state.pointerController = attachPointerEmulation(sceneApi, {
+        initialPosition: new THREE.Vector3(0, 0.45, 0),
+        boundsMin: new THREE.Vector3(-1.9, 0.12, -1.9),
+        boundsMax: new THREE.Vector3(1.9, 2.3, 1.9),
+        speed: 1.65,
+        onMove: (position) => updatePointerFeedback(sceneApi, position),
+        onActivate: () => activatePointer(sceneApi),
+      });
 
-  const [materialPayload, modelPayload] = await Promise.all([
-    fetchJson(materialsUrl),
-    fetchJson(demoModelsUrl),
-  ]);
+      const [materialPayload, modelPayload] = await Promise.all([
+        fetchJson(materialsUrl),
+        fetchJson(demoModelsUrl),
+      ]);
 
-  state.materials = materialPayload.materials;
-  state.models = modelPayload.models;
+      state.materials = materialPayload.materials;
+      state.models = modelPayload.models;
 
-  populateSelect(byId("material-select"), state.materials, "slug", "title");
-  populateSelect(byId("sample-model"), state.models, "slug", "title");
+      populateSelect(byId("material-select"), state.materials, "slug", "title");
+      populateSelect(byId("sample-model"), state.models, "slug", "title");
 
-  const initialModel = state.models[0];
-  byId("sample-model").value = initialModel.slug;
-  byId("material-select").value = initialModel.default_material;
-  state.currentMaterial = materialBySlug(initialModel.default_material);
-  updateMaterialPanel(state.currentMaterial);
+      const initialModel = state.models[0];
+      byId("sample-model").value = initialModel.slug;
+      byId("material-select").value = initialModel.default_material;
+      state.currentMaterial = materialBySlug(initialModel.default_material);
+      updateMaterialPanel(state.currentMaterial);
 
-  byId("explorer-stage-pill").textContent =
-    shell.health.haptics.mode === "available" ? "Haptic ready" : "Pointer emulator";
+      byId("explorer-stage-pill").textContent =
+        shell.health.haptics.mode === "available" ? "Haptic ready" : "Pointer emulator";
 
-  byId("load-selection").addEventListener("click", () => {
-    loadSelectedModel(sceneApi).catch(() => {
-      setStatus("Model loading failed.");
-    });
-  });
+      byId("load-selection").addEventListener("click", () => {
+        loadSelectedModel(sceneApi).catch(() => {
+          setStatus("Model loading failed.");
+        });
+      });
 
-  byId("reset-camera").addEventListener("click", () => {
-    sceneApi.resetCamera();
-    setStatus("Camera reset to default framing.");
-  });
+      byId("reset-camera").addEventListener("click", () => {
+        sceneApi.resetCamera();
+        setStatus("Camera reset to default framing.");
+      });
 
-  byId("sample-model").addEventListener("change", () => {
-    const model = modelBySlug(byId("sample-model").value);
-    byId("material-select").value = model.default_material;
-    state.currentMaterial = materialBySlug(model.default_material);
-    updateMaterialPanel(state.currentMaterial);
-    updateModelInspector(model);
-    setStatus(`Selected ${model.title}.`);
-  });
+      byId("sample-model").addEventListener("change", () => {
+        const model = modelBySlug(byId("sample-model").value);
+        byId("material-select").value = model.default_material;
+        state.currentMaterial = materialBySlug(model.default_material);
+        updateMaterialPanel(state.currentMaterial);
+        updateModelInspector(model);
+        setStatus(`Selected ${model.title}.`);
+      });
 
-  byId("material-select").addEventListener("change", () => {
-    state.currentMaterial = materialBySlug(byId("material-select").value);
-    updateMaterialPanel(state.currentMaterial);
-    if (state.currentObject) {
-      applyMaterialToObject(state.currentObject, state.currentMaterial);
-    }
-    setStatus(`Applied ${state.currentMaterial.title}.`);
-  });
+      byId("material-select").addEventListener("change", () => {
+        state.currentMaterial = materialBySlug(byId("material-select").value);
+        updateMaterialPanel(state.currentMaterial);
+        if (state.currentObject) {
+          applyMaterialToObject(state.currentObject, state.currentMaterial);
+        }
+        setStatus(`Applied ${state.currentMaterial.title}.`);
+      });
 
-  byId("workspace-scale").addEventListener("input", () => {
-    const value = Number(byId("workspace-scale").value);
-    byId("workspace-scale-value").textContent = `${value}%`;
-  });
+      byId("workspace-scale").addEventListener("input", () => {
+        const value = Number(byId("workspace-scale").value);
+        byId("workspace-scale-value").textContent = `${value}%`;
+      });
 
-  byId("guidance-grid-toggle").addEventListener("change", (event) => {
-    sceneApi.setGridVisible(event.target.checked);
-  });
+      byId("guidance-grid-toggle").addEventListener("change", (event) => {
+        sceneApi.setGridVisible(event.target.checked);
+      });
 
-  byId("boundary-toggle").addEventListener("change", (event) => {
-    sceneApi.setBoundaryVisible(event.target.checked);
-  });
+      byId("boundary-toggle").addEventListener("change", (event) => {
+        sceneApi.setBoundaryVisible(event.target.checked);
+      });
 
-  byId("pointer-toggle").addEventListener("change", (event) => {
-    sceneApi.setPointerVisible(event.target.checked);
-  });
+      byId("pointer-toggle").addEventListener("change", (event) => {
+        sceneApi.setPointerVisible(event.target.checked);
+      });
 
-  updateModelInspector(initialModel);
-  await loadSelectedModel(sceneApi);
-  updatePointerFeedback(sceneApi, state.pointerController.position);
+      updateModelInspector(initialModel);
+      await loadSelectedModel(sceneApi);
+      updatePointerFeedback(sceneApi, state.pointerController.position);
+    },
+  );
 });

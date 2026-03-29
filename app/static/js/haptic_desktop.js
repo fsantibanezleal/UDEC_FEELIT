@@ -1,3 +1,4 @@
+import { bootWorkspace } from "./app.js";
 import {
   THREE,
   attachPointerEmulation,
@@ -496,54 +497,66 @@ function activatePointerTarget(sceneApi) {
   activateFocusedItem(sceneApi, "pointer");
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await window.FeelITShell.loadShell();
+document.addEventListener("DOMContentLoaded", () => {
+  bootWorkspace(
+    {
+      title: "Haptic Desktop startup failed",
+      stageSelector: "#desktop-canvas",
+      runtimePillId: "desktop-runtime-pill",
+      runtimePillText: "Runtime error",
+      pageStatusId: "desktop-page-status",
+      pageStatusText: "Boot failed",
+      stageStatusId: "desktop-status-bar",
+      summaryIds: ["desktop-focus-label", "desktop-focus-type", "desktop-focus-action", "desktop-announcement"],
+    },
+    async () => {
+      const sceneApi = createWorkspaceScene(byId("desktop-canvas"), {
+        cameraPosition: [4.2, 3.0, 4.2],
+        target: [0, 0.38, 0],
+        boundarySize: new THREE.Vector3(5.0, 1.4, 3.8),
+      });
 
-  const sceneApi = createWorkspaceScene(byId("desktop-canvas"), {
-    cameraPosition: [4.2, 3.0, 4.2],
-    target: [0, 0.38, 0],
-    boundarySize: new THREE.Vector3(5.0, 1.4, 3.8),
-  });
+      state.pointerController = attachPointerEmulation(sceneApi, {
+        initialPosition: new THREE.Vector3(-1.1, 0.72, -0.2),
+        boundsMin: new THREE.Vector3(-2.1, 0.18, -1.55),
+        boundsMax: new THREE.Vector3(2.1, 0.95, 1.55),
+        speed: 1.7,
+        onMove: (position) => updatePointerFocus(sceneApi, position),
+        onActivate: () => activatePointerTarget(sceneApi),
+      });
 
-  state.pointerController = attachPointerEmulation(sceneApi, {
-    initialPosition: new THREE.Vector3(-1.1, 0.72, -0.2),
-    boundsMin: new THREE.Vector3(-2.1, 0.18, -1.55),
-    boundsMax: new THREE.Vector3(2.1, 0.95, 1.55),
-    speed: 1.7,
-    onMove: (position) => updatePointerFocus(sceneApi, position),
-    onActivate: () => activatePointerTarget(sceneApi),
-  });
+      renderLayout(sceneApi);
 
-  renderLayout(sceneApi);
+      byId("focus-prev").addEventListener("click", () => moveFocus(sceneApi, -1));
+      byId("focus-next").addEventListener("click", () => moveFocus(sceneApi, 1));
+      byId("focus-activate").addEventListener("click", () => activateFocusedItem(sceneApi, "fallback"));
 
-  byId("focus-prev").addEventListener("click", () => moveFocus(sceneApi, -1));
-  byId("focus-next").addEventListener("click", () => moveFocus(sceneApi, 1));
-  byId("focus-activate").addEventListener("click", () => activateFocusedItem(sceneApi, "fallback"));
+      byId("layout-preset").addEventListener("change", (event) => {
+        state.layout = event.target.value;
+        renderLayout(sceneApi);
+        announce(`Layout preset changed to ${event.target.value}.`);
+      });
 
-  byId("layout-preset").addEventListener("change", (event) => {
-    state.layout = event.target.value;
-    renderLayout(sceneApi);
-    announce(`Layout preset changed to ${event.target.value}.`);
-  });
+      byId("audio-cues-toggle").addEventListener("change", (event) => {
+        byId("desktop-audio-state").textContent = event.target.checked ? "On" : "Off";
+        announce(event.target.checked ? "Audio cue labels enabled." : "Audio cue labels disabled.");
+      });
 
-  byId("audio-cues-toggle").addEventListener("change", (event) => {
-    byId("desktop-audio-state").textContent = event.target.checked ? "On" : "Off";
-    announce(event.target.checked ? "Audio cue labels enabled." : "Audio cue labels disabled.");
-  });
+      byId("pointer-toggle").addEventListener("change", (event) => {
+        sceneApi.setPointerVisible(event.target.checked);
+      });
 
-  byId("pointer-toggle").addEventListener("change", (event) => {
-    sceneApi.setPointerVisible(event.target.checked);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      moveFocus(sceneApi, -1);
-    }
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      moveFocus(sceneApi, 1);
-    }
-    if (event.key === "Enter") {
-      activateFocusedItem(sceneApi, "fallback");
-    }
-  });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+          moveFocus(sceneApi, -1);
+        }
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+          moveFocus(sceneApi, 1);
+        }
+        if (event.key === "Enter") {
+          activateFocusedItem(sceneApi, "fallback");
+        }
+      });
+    },
+  );
 });
