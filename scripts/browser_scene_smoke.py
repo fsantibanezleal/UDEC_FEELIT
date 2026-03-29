@@ -96,6 +96,20 @@ def cycle_focus_to(page, label: str, *, max_steps: int = 20) -> bool:
     return focused_label(page) == label
 
 
+def viewport_overflow_metrics(page) -> dict[str, float]:
+    """Return document-vs-viewport sizing metrics for overflow checks."""
+    return page.evaluate(
+        """
+        () => ({
+          innerHeight: window.innerHeight,
+          docScrollHeight: document.documentElement.scrollHeight,
+          bodyScrollHeight: document.body.scrollHeight,
+          docClientHeight: document.documentElement.clientHeight,
+        })
+        """,
+    )
+
+
 def write_snapshot_manifest(
     target_dir: Path,
     *,
@@ -378,6 +392,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     timeout=15_000,
                 )
             page.wait_for_timeout(1_200)
+            overflow_metrics = viewport_overflow_metrics(page)
 
             screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
             page.locator(scene.canvas_selector).screenshot(path=str(screenshot_path))
@@ -405,6 +420,18 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 failures.append(f"{scene.route} API status slot did not initialize: {api_status_text!r}")
             if error_overlay_count:
                 failures.append(f"{scene.route} rendered a visible stage boot error overlay")
+            if overflow_metrics["docScrollHeight"] > overflow_metrics["innerHeight"] + 2:
+                failures.append(
+                    f"{scene.route} overflowed vertically: "
+                    f"scrollHeight={overflow_metrics['docScrollHeight']} "
+                    f"innerHeight={overflow_metrics['innerHeight']}",
+                )
+            if overflow_metrics["bodyScrollHeight"] > overflow_metrics["innerHeight"] + 2:
+                failures.append(
+                    f"{scene.route} body overflowed vertically: "
+                    f"bodyScrollHeight={overflow_metrics['bodyScrollHeight']} "
+                    f"innerHeight={overflow_metrics['innerHeight']}",
+                )
             if scene.route == "/braille-reader":
                 document_options = page.locator("#library-document-select option").count()
                 audio_options = page.locator("#library-audio-select option").count()
