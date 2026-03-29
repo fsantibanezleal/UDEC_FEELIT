@@ -86,7 +86,7 @@ Implemented:
 - paginated gallery scenes backed by workspace payloads
 - bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
 - typed file-browser entries with distinct tactile forms for folders, models, text files, audio files, and unsupported files
-- explicit in-scene Launcher, Home, and Start or Root return controls across gallery, browser, detail, and opened-content scenes
+- explicit in-scene Launcher, Gallery or Browser, and Start or Root return controls across gallery, browser, detail, and opened-content scenes
 - file-browser scene rooted in the configured workspace path
 - direct mode dispatch from the file browser for supported models, text files, and audio files
 - detail plaque scene that exposes the content name before opening it

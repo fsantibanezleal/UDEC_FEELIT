@@ -4,7 +4,7 @@
 
 FeelIT originates from an accessibility project conceived to help people with visual impairment interact with information that is normally delivered as visual shape, texture, or spatial arrangement.
 
-The original university-era effort explored digital-to-Braille conversion and optional haptic interaction. The modern rebuild expands that idea into a broader interaction platform while remaining honest about what the preserved legacy actually confirms.
+The original effort was developed by Felipe Santibanez during his Electronic Engineering studies in Concepcion, Chile, and explored digital-to-Braille conversion with optional haptic interaction. The modern rebuild expands that idea into a broader interaction platform while remaining honest about what the preserved legacy actually confirms.
 
 ## Core Motivation
 

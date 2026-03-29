@@ -16,6 +16,18 @@ This document defines the current system architecture for the modern FeelIT rebu
 
 ![Architecture](svg/architecture.svg)
 
+## Mode Map
+
+![Mode Map](svg/mode_map.svg)
+
+This mode map should always reflect the current shipped route set, current maturity of each route, and the current blind-first interaction contract.
+
+## Braille Runtime Pipeline
+
+![Braille Pipeline](svg/braille_pipeline.svg)
+
+The Braille pipeline diagram should stay aligned with the real reading workflow, including the current scene-native library launcher, segment loading, preview translation, and reading-world controls.
+
 ## Frontend Architecture
 
 The frontend follows the workbench pattern used by the stronger reference repositories.
@@ -169,7 +181,7 @@ Current file:
 10. The Braille reader loads the bundled library catalog, opens a document from a scene-native launcher, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene page, segment, and library-return controls.
 11. Haptic Desktop moves between launcher, gallery, file-browser, detail, and opened-content scenes using workspace-driven payloads.
 12. File-browser entries use kind-specific tactile forms and dispatch supported files directly into the corresponding runtime scene.
-13. Opened desktop scenes expose `Home` for return to the exact origin and `Launcher` for return to the workspace start scene.
+13. Opened desktop scenes expose `Gallery` or `Browser` returns to the exact origin context and `Launcher` for return to the workspace start scene.
 14. Runtime and device status are reflected in the current workspace.
 
 ## Future Extension Points

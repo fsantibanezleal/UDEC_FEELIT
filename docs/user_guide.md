@@ -275,7 +275,6 @@ POST /api/haptic-workspaces/register
 - no physical device bridge is connected yet
 - 3D object staging is currently client-side and focused on `.obj`
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
-- bundled Braille library selection still begins from surrounding web controls rather than a scene-native library launcher
 - workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances
 - desktop actions are limited to models, text, audio, and file browsing rather than full desktop automation
 - haptic material profiles are plausible approximations, not full physical simulation
