@@ -95,6 +95,7 @@ Current use:
 - select the active structured workspace from the left panel
 - load the bundled demo workspace or a registered external workspace
 - use the bundled demo workspace as a full internal-library baseline covering every bundled model, document, and audio sample
+- expect the bundled demo file browser to start at the bundled assets root, exposing `library`, `models`, and `workspaces` branches for controlled exploration
 - start in a tactile launcher with a neutral launcher hub plus entry objects for models, texts, audio, and the workspace file browser
 - enter gallery and file-browser scenes through a neutral `Gallery` or `Browser` hub before moving to individual items
 - move through smaller paginated gallery scenes and a workspace-root file browser where folders, models, texts, audio files, and unsupported files use different tactile 3D shapes

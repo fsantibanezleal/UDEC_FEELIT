@@ -54,16 +54,16 @@ def test_demo_workspace_browser_payload_lists_internal_library_entries() -> None
     payload = haptic_workspace.build_workspace_browser_payload("feelit_demo_workspace")
     entry_titles = {entry["title"] for entry in payload["entries"]}
     assert payload["current_path"] == ""
-    assert "audio" in entry_titles
-    assert "documents" in entry_titles
-    documents_entry = next(entry for entry in payload["entries"] if entry["title"] == "documents")
-    assert documents_entry["kind"] == "directory"
-    assert documents_entry["open_mode"] == "file-browser"
-    assert documents_entry["shape_key"] == "folder_tile"
+    assert "library" in entry_titles
+    assert "models" in entry_titles
+    library_entry = next(entry for entry in payload["entries"] if entry["title"] == "library")
+    assert library_entry["kind"] == "directory"
+    assert library_entry["open_mode"] == "file-browser"
+    assert library_entry["shape_key"] == "folder_tile"
 
 
 def test_demo_workspace_browser_payload_maps_text_files_to_braille_scene() -> None:
-    payload = haptic_workspace.build_workspace_browser_payload("feelit_demo_workspace", "documents")
+    payload = haptic_workspace.build_workspace_browser_payload("feelit_demo_workspace", "library/documents")
     text_entry = next(entry for entry in payload["entries"] if entry["title"] == "alice_in_wonderland.txt")
     assert text_entry["kind"] == "text"
     assert text_entry["open_mode"] == "open-text"
@@ -274,14 +274,14 @@ def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -
         browse_response = client.get("/api/haptic-workspaces/feelit_demo_workspace/browse")
         text_response = client.get(
             "/api/haptic-workspaces/feelit_demo_workspace/text-file",
-            params={"path": "documents/alice_in_wonderland.txt", "offset": 0, "max_chars": 400},
+            params={"path": "library/documents/alice_in_wonderland.txt", "offset": 0, "max_chars": 400},
         )
 
     assert detail_response.status_code == 200
     assert browse_response.status_code == 200
     assert text_response.status_code == 200
     assert detail_response.json()["slug"] == "feelit_demo_workspace"
-    assert any(entry["title"] == "documents" for entry in browse_response.json()["entries"])
+    assert any(entry["title"] == "library" for entry in browse_response.json()["entries"])
     assert "Alice" in text_response.json()["text"]
 
 

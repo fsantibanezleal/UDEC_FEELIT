@@ -65,7 +65,7 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Public port | `8101` |
-| Canonical version | `2.06.001` |
+| Canonical version | `2.06.002` |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
 | Current validation surface | `48` automated tests passing plus browser smoke validation across the `4` routed pages |
 
@@ -75,7 +75,7 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 
 - `3D Object Explorer`: stages bundled or local OBJ geometry, applies tactile material presets, and prepares bounded exploration scenes.
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
-- `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser, detail plaques, and opened scenes for models, text, and audio.
+- `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, and now surfaces registry diagnostics when registered descriptors are missing or invalid.
 
 ### Legacy Boundary
@@ -137,6 +137,8 @@ To refresh the tracked visual baseline and freeze a release snapshot set:
 ```powershell
 python scripts\browser_scene_smoke.py --archive-version <released-version>
 ```
+
+The curated captures are expected to come from a stable canonical state per route so the visual history does not over-report change because of idle animation or leftover post-validation state.
 
 ## Runtime Surface
 

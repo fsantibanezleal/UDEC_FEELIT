@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.06.002 (2026-03-29)
+
+Extend deterministic frontend capture and browser-driven desktop validation for the demo workspace.
+
+Delivered:
+
+- Made curated frontend snapshots deterministic by resetting routed pages into stable canonical capture states before writing the tracked images.
+- Extended Haptic Desktop smoke coverage to open supported text, audio, and model files from the file browser and validate the return path back to the browser scene.
+- Expanded the bundled demo file browser root so the desktop demo can browse models as well as library documents and audio through the same controlled tree.
+
+Rationale:
+
+- Sparse visual history should archive meaningful UI change, not incidental drift from idle animation or leftover test state.
+- The desktop browser contract should be validated through real mode dispatch from the file tree, not only through gallery flows or action labels.
+- The demo workspace should expose a coherent browser path to the same model assets that the desktop claims to support.
+
 ### v2.06.001 (2026-03-29)
 
 Stabilize workspace identity, surface registry diagnostics, and harden release metadata synchronization.

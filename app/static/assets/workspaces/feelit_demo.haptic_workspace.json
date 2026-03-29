@@ -12,7 +12,7 @@
   },
   "file_browser_root": {
     "mode": "app_static_relative",
-    "path": "assets/library"
+    "path": "assets"
   },
   "libraries": {
     "models": [
