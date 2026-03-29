@@ -54,13 +54,16 @@ Route:
 
 Current use:
 
-- load a bundled public-domain document segment or type your own text
+- start from a scene-native 3D library launcher with paged tactile document targets
+- open a bundled public-domain document segment directly from the tactile scene or type your own text
 - adjust the current document segment length for bounded reading sessions
 - choose the number of columns
 - generate a Braille preview layout
 - inspect the 3D Braille world and the auxiliary board together
 - move through the reading surface with the stylus-style pointer proxy
 - activate the scene-native previous and next tactile controls
+- activate scene-native previous and next document-segment controls
+- return from the reading scene to the tactile library launcher without depending on the browser panel
 - optionally select companion audio without replacing the tactile-first workflow
 - inspect per-cell metadata by selecting rendered cells
 
@@ -71,7 +74,7 @@ Current keyboard cues:
 - `Space` or `Enter`: activate the tactile control or current cell under the pointer
 - arrow keys: fallback debug navigation across the generated page
 
-This is the main legacy-aligned operational mode in the current baseline.
+This remains the main legacy-aligned operational mode, but it now has a blind-first scene-native entry path instead of relying exclusively on the surrounding web controls.
 
 Internal library endpoints used by this mode:
 

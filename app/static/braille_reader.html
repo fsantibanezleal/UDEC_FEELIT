@@ -118,10 +118,11 @@
         <div class="panel-heading">
           <div>
             <h2>Braille Workspace</h2>
-            <p class="panel-subtitle">3D tactile reading world plus optional 2D cell map for debugging and teaching.</p>
+            <p class="panel-subtitle">3D tactile library launcher plus reading world, with the 2D board retained as a secondary debug and teaching surface.</p>
           </div>
           <div class="panel-heading-status">
             <span id="reader-runtime-pill" class="status-pill status-pill-green">Reader active</span>
+            <span id="reader-scene-pill" class="status-pill status-pill-cyan">Library launcher</span>
             <span id="reader-page-status" class="status-pill">Waiting</span>
           </div>
         </div>
@@ -146,7 +147,7 @@
         <section class="subsurface-panel">
           <div class="subsurface-header">
             <h3>2D Cell Reference</h3>
-            <span class="subsurface-note">Optional debug view for inspecting the generated page.</span>
+            <span id="braille-board-note" class="subsurface-note">Secondary debug view for the current 3D scene.</span>
           </div>
           <div id="braille-board" class="braille-board braille-scale-standard" aria-live="polite"></div>
         </section>
@@ -162,6 +163,7 @@
             <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
             <div><dt>Port</dt><dd data-runtime="port">Loading</dd></div>
             <div><dt>Backend</dt><dd data-runtime="backend">Loading</dd></div>
+            <div><dt>Scene</dt><dd id="reader-scene-mode">Loading</dd></div>
           </dl>
         </section>
 
@@ -228,10 +230,12 @@
         </p>
         <h3>Current Interaction</h3>
         <ul>
+          <li>Enter the reading workflow through a scene-native 3D library launcher with paged tactile document targets.</li>
           <li>Load bundled public-domain document segments into the tactile reading buffer.</li>
           <li>Generate Braille pages from the current text buffer.</li>
           <li>Move the pointer emulator through the tactile world with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
           <li>Activate scene-native previous and next page controls with `Space` or `Enter`.</li>
+          <li>Return from a reading session to the tactile library launcher without depending on the surrounding browser controls.</li>
           <li>Use the optional audio library as a companion channel without replacing the tactile-first workflow.</li>
           <li>Keep the 2D reference board only as a secondary debugging and teaching view.</li>
         </ul>

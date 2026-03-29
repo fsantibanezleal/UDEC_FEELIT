@@ -314,11 +314,61 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     () => {
                       const documents = document.querySelectorAll('#library-document-select option').length;
                       const title = document.querySelector('#summary-document-title')?.textContent?.trim() ?? '';
-                      return documents > 0 && title !== '' && title !== 'Loading';
+                      const sceneMode = document.querySelector('#reader-scene-mode')?.textContent?.trim() ?? '';
+                      return documents > 0 && title !== '' && title !== 'Loading' && sceneMode !== '' && sceneMode !== 'Loading';
                     }
                     """,
                     timeout=15_000,
                 )
+                scene_mode = (page.locator("#reader-scene-mode").text_content() or "").strip()
+                if scene_mode != "Library launcher":
+                    failures.append(
+                        f"/braille-reader did not boot into the library launcher; scene_mode={scene_mode!r}",
+                    )
+                launcher_target_activated = page.evaluate(
+                    """
+                    async () => {
+                      const debug = window.__feelitBrailleDebug;
+                      if (!debug?.targetIds || !debug?.activateTarget) {
+                        return false;
+                      }
+                      const targetId = debug.targetIds().find((id) => id.startsWith('library-document-'));
+                      if (!targetId) {
+                        return false;
+                      }
+                      return debug.activateTarget(targetId);
+                    }
+                    """,
+                )
+                if not launcher_target_activated:
+                    failures.append("/braille-reader could not activate a scene-native library document target")
+                else:
+                    page.wait_for_function(
+                        """
+                        () => (document.querySelector('#reader-scene-mode')?.textContent?.trim() ?? '') === 'Reading scene'
+                        """,
+                        timeout=15_000,
+                    )
+                    library_return_activated = page.evaluate(
+                        """
+                        async () => {
+                          const debug = window.__feelitBrailleDebug;
+                          if (!debug?.activateTarget) {
+                            return false;
+                          }
+                          return debug.activateTarget('control-library');
+                        }
+                        """,
+                    )
+                    if not library_return_activated:
+                        failures.append("/braille-reader could not activate the library return control")
+                    else:
+                        page.wait_for_function(
+                            """
+                            () => (document.querySelector('#reader-scene-mode')?.textContent?.trim() ?? '') === 'Library launcher'
+                            """,
+                            timeout=15_000,
+                        )
             if scene.route == "/haptic-desktop":
                 persisted_view = {
                     "position": [6.15, 4.05, 2.35],
@@ -609,12 +659,15 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 document_options = page.locator("#library-document-select option").count()
                 audio_options = page.locator("#library-audio-select option").count()
                 document_title = (page.locator("#summary-document-title").text_content() or "").strip()
+                scene_mode = (page.locator("#reader-scene-mode").text_content() or "").strip()
                 if document_options == 0:
                     failures.append("/braille-reader did not populate the internal document library selector")
                 if audio_options == 0:
                     failures.append("/braille-reader did not populate the internal audio library selector")
                 if document_title in {"", "Loading"}:
                     failures.append("/braille-reader did not initialize the active library document summary")
+                if scene_mode not in {"Library launcher", "Reading scene"}:
+                    failures.append(f"/braille-reader reported an invalid scene mode: {scene_mode!r}")
             if scene.route == "/haptic-desktop":
                 workspace_options = page.locator("#desktop-workspace-select option").count()
                 workspace_title = (page.locator("#desktop-workspace-title").text_content() or "").strip()

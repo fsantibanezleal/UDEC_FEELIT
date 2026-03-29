@@ -61,9 +61,11 @@ Implemented:
 
 - bundled public-domain document library with TXT, HTML, and EPUB extraction
 - segmented library loading for bounded Braille sessions
+- scene-native tactile library launcher with paged document targets
 - text-to-Braille conversion and positioned cell layout
 - bounded 3D reading surface with raised dots
 - scene-native previous and next tactile controls
+- scene-native previous and next document-segment controls plus return to the library launcher
 - orientation cues inside the reading world
 - optional companion-audio catalog surfaced alongside the reading workflow
 - auxiliary 2D board for debugging and teaching
@@ -72,7 +74,6 @@ Still limited:
 
 - no compatibility yet for PDF, DOCX, Markdown, or OCR-derived document sources
 - no hardware-calibrated workspace adaptation for a specific haptic device
-- no scene-native library launcher for blind-first document selection
 - no formal tactile reading performance validation yet
 
 ### Haptic Desktop
@@ -154,6 +155,6 @@ Those belong to the modernization path, not to the verified archived implementat
 ## Recommended Near-Term Priorities
 
 1. Build a first native backend integration boundary so the material and workspace models can move beyond visual approximation.
-2. Extend the Braille library with richer compatibility and blind-first scene-native library access.
+2. Extend the Braille library with richer compatibility beyond the current TXT, HTML, and EPUB support.
 3. Extend the 3D asset pipeline with server-side validation and additional formats.
 4. Expand the workspace manager into a richer editor with descriptor validation, asset previews, and safer authoring affordances.

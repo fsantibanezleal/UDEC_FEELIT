@@ -58,9 +58,11 @@ def test_frontend_mode_routes_are_served() -> None:
     assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200
     assert "Braille Reader" in braille_response.text
+    assert "3D tactile library launcher plus reading world" in braille_response.text
     assert "Load Document" in braille_response.text
     assert "Previous Segment" in braille_response.text
     assert "Companion audio" in braille_response.text
+    assert "Library launcher" in braille_response.text
     assert "WASD/QE pointer" in braille_response.text
     assert 'type="module" src="/static/js/braille_reader.js"' in braille_response.text
     assert '/static/js/app.js" defer' not in braille_response.text

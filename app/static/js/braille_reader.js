@@ -9,12 +9,16 @@ import {
 const previewUrl = "/api/braille/preview";
 const documentsUrl = "/api/library/documents";
 const audioUrl = "/api/library/audio";
+const LIBRARY_PAGE_SIZE = 3;
 
 const state = {
   cells: [],
   columns: 8,
   rowsPerPage: 4,
   currentPage: 0,
+  libraryPage: 0,
+  sceneMode: "library-launcher",
+  selectedLibrarySlug: null,
   selectedCellId: null,
   hoveredTargetId: null,
   interactiveGroups: new Map(),
@@ -75,14 +79,83 @@ function populateSelect(select, items, valueField, labelField) {
   });
 }
 
+function setSceneMode(mode) {
+  state.sceneMode = mode;
+  const label = mode === "library-launcher" ? "Library launcher" : "Reading scene";
+  byId("reader-scene-mode").textContent = label;
+  byId("reader-scene-pill").textContent = label;
+  byId("reader-page-status").textContent = label;
+}
+
+function documentBySlug(slug) {
+  return state.libraryDocuments.find((document) => document.slug === slug) ?? null;
+}
+
 function currentDocument() {
-  return state.libraryDocuments.find(
-    (document) => document.slug === byId("library-document-select").value,
-  );
+  return documentBySlug(byId("library-document-select").value);
 }
 
 function currentAudio() {
   return state.libraryAudio.find((audio) => audio.slug === byId("library-audio-select").value);
+}
+
+function selectedLibraryDocument() {
+  return documentBySlug(state.selectedLibrarySlug) ?? currentDocument();
+}
+
+function libraryPageCount() {
+  return Math.max(1, Math.ceil(state.libraryDocuments.length / LIBRARY_PAGE_SIZE));
+}
+
+function libraryPageSlice(page = state.libraryPage) {
+  const safePage = Math.min(Math.max(page, 0), libraryPageCount() - 1);
+  const start = safePage * LIBRARY_PAGE_SIZE;
+  return {
+    page: safePage,
+    pageCount: libraryPageCount(),
+    documents: state.libraryDocuments.slice(start, start + LIBRARY_PAGE_SIZE),
+  };
+}
+
+function libraryPageForSlug(slug) {
+  const index = state.libraryDocuments.findIndex((document) => document.slug === slug);
+  if (index < 0) {
+    return 0;
+  }
+  return Math.floor(index / LIBRARY_PAGE_SIZE);
+}
+
+function clearSelectedCellPanel() {
+  byId("selected-source").textContent = "--";
+  byId("selected-normalized").textContent = "--";
+  byId("selected-mask").textContent = "--";
+  byId("selected-position").textContent = "--";
+  byId("summary-unicode").textContent = "--";
+}
+
+function updateFallbackPageButtons() {
+  const disabled = state.sceneMode !== "reading" || state.cells.length === 0;
+  byId("prev-page").disabled = disabled;
+  byId("next-page").disabled = disabled;
+}
+
+function setSelectedLibraryDocument(slug, options = {}) {
+  const { syncSelect = true, syncAudio = true } = options;
+  const document = documentBySlug(slug);
+  if (!document) {
+    return null;
+  }
+
+  state.selectedLibrarySlug = document.slug;
+  if (syncSelect) {
+    byId("library-document-select").value = document.slug;
+  }
+  updateDocumentPanel(document, state.activeDocumentPayload?.slug === document.slug ? state.activeDocumentPayload : null);
+  if (syncAudio) {
+    syncCompanionAudio(document);
+  }
+  updateAudioPanel();
+  return document;
 }
 
 function getPageCount() {
@@ -112,6 +185,18 @@ function updateSummary(pageCells) {
   byId("summary-columns").textContent = String(state.columns);
   byId("summary-rows").textContent = String(totalRows);
   byId("page-indicator").textContent = `${state.currentPage + 1} / ${getPageCount()}`;
+}
+
+function updateLibrarySummary(pageSlice) {
+  byId("preview-cell-count").textContent = String(pageSlice.documents.length);
+  byId("preview-row-count").textContent = "1";
+  byId("summary-characters").textContent = state.activeDocumentPayload?.slug === state.selectedLibrarySlug
+    ? String(state.activeDocumentPayload.total_characters)
+    : "0";
+  byId("summary-columns").textContent = String(state.columns);
+  byId("summary-rows").textContent = "0";
+  byId("page-indicator").textContent = `Library ${pageSlice.page + 1} / ${pageSlice.pageCount}`;
+  clearSelectedCellPanel();
 }
 
 function updateSelectedCell(cell) {
@@ -192,6 +277,7 @@ function syncCompanionAudio(document) {
 }
 
 function render2DBoard(pageCells) {
+  byId("braille-board-note").textContent = "Secondary debug view for the generated Braille page.";
   const board = byId("braille-board");
   board.innerHTML = "";
   const rows = new Map();
@@ -227,6 +313,48 @@ function render2DBoard(pageCells) {
 
     rows.get(cell.localRow).appendChild(button);
   }
+}
+
+function renderLibraryBoard(pageSlice) {
+  byId("braille-board-note").textContent = "Secondary launcher map for the current library page.";
+  const board = byId("braille-board");
+  board.innerHTML = "";
+
+  const row = document.createElement("div");
+  row.className = "braille-row";
+  board.appendChild(row);
+
+  pageSlice.documents.forEach((libraryDocument) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "braille-cell-button braille-library-card";
+    button.classList.toggle("is-selected", libraryDocument.slug === state.selectedLibrarySlug);
+    button.dataset.documentSlug = libraryDocument.slug;
+
+    const title = document.createElement("strong");
+    title.className = "braille-library-title";
+    title.textContent = libraryDocument.title;
+
+    const meta = document.createElement("span");
+    meta.className = "braille-library-meta";
+    meta.textContent = `${libraryDocument.author} • ${libraryDocument.format.toUpperCase()}`;
+
+    const summary = document.createElement("span");
+    summary.className = "braille-library-summary";
+    summary.textContent = libraryDocument.summary;
+
+    button.appendChild(title);
+    button.appendChild(meta);
+    button.appendChild(summary);
+    button.addEventListener("click", () => {
+      setSelectedLibraryDocument(libraryDocument.slug);
+      loadDocumentSegment(sceneApiRef, 0, { documentSlug: libraryDocument.slug }).catch((error) =>
+        setStatus(error.message, `library-board-${libraryDocument.slug}-error`),
+      );
+    });
+
+    row.appendChild(button);
+  });
 }
 
 function createBrailleCellGroup(cell) {
@@ -280,6 +408,87 @@ function createBrailleCellGroup(cell) {
       position: new THREE.Vector3(x, 0.2, z),
       radius: 0.16,
       cell,
+    },
+  };
+}
+
+function createLibraryDocumentGroup(document, position) {
+  const group = new THREE.Group();
+  group.position.copy(position.clone().setY(0.12));
+
+  const pages = new THREE.Mesh(
+    new THREE.BoxGeometry(0.56, 0.12, 0.38),
+    new THREE.MeshStandardMaterial({
+      color: 0xe5e7eb,
+      roughness: 0.78,
+      metalness: 0.04,
+    }),
+  );
+  pages.position.y = 0.08;
+  pages.userData.kind = "document-pages";
+  group.add(pages);
+
+  const cover = new THREE.Mesh(
+    new THREE.BoxGeometry(0.6, 0.05, 0.42),
+    new THREE.MeshStandardMaterial({
+      color: 0x1a2940,
+      roughness: 0.56,
+      metalness: 0.08,
+      emissive: 0x0a1420,
+    }),
+  );
+  cover.position.y = 0.145;
+  cover.userData.kind = "document-cover";
+  group.add(cover);
+
+  const spine = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.16, 0.42),
+    new THREE.MeshStandardMaterial({
+      color: 0xf2cc60,
+      roughness: 0.34,
+      metalness: 0.04,
+      emissive: 0x4a2d00,
+    }),
+  );
+  spine.position.set(-0.26, 0.1, 0);
+  spine.userData.kind = "document-spine";
+  group.add(spine);
+
+  const badge = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, 0.04, 20),
+    new THREE.MeshStandardMaterial({
+      color: document.companion_audio_slugs.length > 0 ? 0x79c0ff : 0x4b5563,
+      roughness: 0.32,
+      metalness: 0.06,
+      emissive: document.companion_audio_slugs.length > 0 ? 0x163f63 : 0x0f1724,
+    }),
+  );
+  badge.rotation.x = Math.PI / 2;
+  badge.position.set(0.18, 0.18, 0);
+  badge.userData.kind = "document-badge";
+  group.add(badge);
+
+  const label = createLabelSprite(document.title, {
+    background: "rgba(13,17,23,0.86)",
+    fontSize: 17,
+    color: "#f0f6fc",
+  });
+  label.position.set(0, 0.38, 0);
+  group.add(label);
+
+  return {
+    group,
+    target: {
+      id: `library-document-${document.slug}`,
+      type: "library-document",
+      title: document.title,
+      position: position.clone().setY(0.22),
+      radius: 0.32,
+      document,
+      action: async () => {
+        setSelectedLibraryDocument(document.slug);
+        await loadDocumentSegment(sceneApiRef, 0, { documentSlug: document.slug });
+      },
     },
   };
 }
@@ -393,7 +602,7 @@ function buildTactileControlMesh(kind, active) {
       ridge.userData.kind = "control-ridge";
       group.add(ridge);
     });
-  } else {
+  } else if (kind === "next") {
     const dome = new THREE.Mesh(
       new THREE.SphereGeometry(0.072, 20, 16),
       new THREE.MeshStandardMaterial({
@@ -421,21 +630,151 @@ function buildTactileControlMesh(kind, active) {
     arrow.position.set(0.14, 0.1, 0);
     arrow.userData.kind = "control-ridge";
     group.add(arrow);
+  } else if (kind === "library") {
+    [-0.1, 0, 0.1].forEach((offset, index) => {
+      const book = new THREE.Mesh(
+        new THREE.BoxGeometry(0.11, 0.035, 0.2),
+        new THREE.MeshStandardMaterial({
+          color: active ? 0xf2cc60 : 0x52525b,
+          roughness: 0.36,
+          metalness: 0.04,
+          emissive: 0x4a2d00,
+        }),
+      );
+      book.position.set(offset, 0.08 + index * 0.035, 0);
+      book.userData.kind = "control-ridge";
+      group.add(book);
+    });
+  } else if (kind === "segment-previous" || kind === "segment-next") {
+    [-0.08, 0.08].forEach((offset) => {
+      const marker = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.026, 0.026, 0.12, 18),
+        new THREE.MeshStandardMaterial({
+          color: active ? 0x39d2c0 : 0x4b5563,
+          roughness: 0.34,
+          metalness: 0.04,
+          emissive: 0x123129,
+        }),
+      );
+      marker.rotation.z = Math.PI / 2;
+      marker.position.set(offset, 0.095, 0);
+      marker.userData.kind = "control-ridge";
+      group.add(marker);
+    });
+
+    const arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.05, 0.12, 3),
+      new THREE.MeshStandardMaterial({
+        color: active ? 0x39d2c0 : 0x52525b,
+        roughness: 0.34,
+        metalness: 0.04,
+        emissive: 0x123129,
+      }),
+    );
+    arrow.rotation.z = kind === "segment-next" ? -Math.PI / 2 : Math.PI / 2;
+    arrow.position.set(kind === "segment-next" ? 0.15 : -0.15, 0.1, 0);
+    arrow.userData.kind = "control-ridge";
+    group.add(arrow);
+  } else {
+    const hub = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.14, 0.1, 24),
+      new THREE.MeshStandardMaterial({
+        color: active ? 0x39d2c0 : 0x4b5563,
+        roughness: 0.34,
+        metalness: 0.05,
+        emissive: 0x123129,
+      }),
+    );
+    hub.position.y = 0.1;
+    hub.userData.kind = "control-ridge";
+    group.add(hub);
   }
 
   return group;
 }
 
-function createSceneControls() {
-  const controlZ = ((state.rowsPerPage - 1) / 2) * 0.48 + 0.5;
+function createLibraryControls(pageSlice) {
+  const controlZ = 1.44;
   return [
+    {
+      id: "launcher-hub",
+      type: "control",
+      title: "Library launcher hub",
+      kind: "hub",
+      active: true,
+      position: new THREE.Vector3(0, 0.18, controlZ),
+      radius: 0.24,
+      action: () => {
+        const currentDocumentTitle = selectedLibraryDocument()?.title ?? "No bundled document";
+        setStatus(
+          `Library launcher page ${pageSlice.page + 1} of ${pageSlice.pageCount}. Selected document: ${currentDocumentTitle}.`,
+          `launcher-hub-${pageSlice.page}`,
+        );
+      },
+    },
+    {
+      id: "launcher-previous",
+      type: "control",
+      title: "Previous library page control",
+      kind: "previous",
+      active: pageSlice.page > 0,
+      position: new THREE.Vector3(-1.08, 0.18, controlZ),
+      radius: 0.24,
+      action: () => {
+        if (pageSlice.page <= 0) {
+          setStatus("Previous library page tactile control is disabled.", "launcher-prev-disabled");
+          return;
+        }
+        state.libraryPage = pageSlice.page - 1;
+        renderLibraryLauncher(sceneApiRef);
+        setStatus("Moved to previous library page.", "launcher-prev");
+      },
+    },
+    {
+      id: "launcher-next",
+      type: "control",
+      title: "Next library page control",
+      kind: "next",
+      active: pageSlice.page < pageSlice.pageCount - 1,
+      position: new THREE.Vector3(1.08, 0.18, controlZ),
+      radius: 0.24,
+      action: () => {
+        if (pageSlice.page >= pageSlice.pageCount - 1) {
+          setStatus("Next library page tactile control is disabled.", "launcher-next-disabled");
+          return;
+        }
+        state.libraryPage = pageSlice.page + 1;
+        renderLibraryLauncher(sceneApiRef);
+        setStatus("Moved to next library page.", "launcher-next");
+      },
+    },
+  ];
+}
+
+function createReadingControls(boardDepth) {
+  const controlZ = ((state.rowsPerPage - 1) / 2) * 0.48 + 0.56;
+  const segmentZ = -boardDepth / 2 + 0.34;
+  return [
+    {
+      id: "control-library",
+      type: "control",
+      title: "Return to library launcher",
+      kind: "library",
+      active: true,
+      position: new THREE.Vector3(0, 0.18, controlZ),
+      radius: 0.24,
+      action: () => {
+        renderLibraryLauncher(sceneApiRef);
+        setStatus("Returned to the Braille library launcher.", "library-return");
+      },
+    },
     {
       id: "control-previous",
       type: "control",
       title: "Previous page tactile control",
       kind: "previous",
       active: state.currentPage > 0,
-      position: new THREE.Vector3(-0.62, 0.18, controlZ),
+      position: new THREE.Vector3(-1.08, 0.18, controlZ),
       radius: 0.24,
       action: () => {
         if (state.currentPage <= 0) {
@@ -454,7 +793,7 @@ function createSceneControls() {
       title: "Next page tactile control",
       kind: "next",
       active: state.currentPage < getPageCount() - 1,
-      position: new THREE.Vector3(0.62, 0.18, controlZ),
+      position: new THREE.Vector3(1.08, 0.18, controlZ),
       radius: 0.24,
       action: () => {
         if (state.currentPage >= getPageCount() - 1) {
@@ -467,6 +806,42 @@ function createSceneControls() {
         setStatus("Moved to next Braille page.", "page-next");
       },
     },
+    {
+      id: "control-segment-previous",
+      type: "control",
+      title: "Previous document segment control",
+      kind: "segment-previous",
+      active: state.activeDocumentPayload?.previous_offset !== null,
+      position: new THREE.Vector3(-0.9, 0.18, segmentZ),
+      radius: 0.24,
+      action: async () => {
+        const offset = state.activeDocumentPayload?.previous_offset;
+        if (offset === null || offset === undefined) {
+          setStatus("Previous document segment tactile control is disabled.", "segment-prev-disabled");
+          return;
+        }
+        await loadDocumentSegment(sceneApiRef, offset, { documentSlug: state.selectedLibrarySlug });
+        setStatus("Loaded the previous document segment.", `segment-prev-${offset}`);
+      },
+    },
+    {
+      id: "control-segment-next",
+      type: "control",
+      title: "Next document segment control",
+      kind: "segment-next",
+      active: state.activeDocumentPayload?.next_offset !== null,
+      position: new THREE.Vector3(0.9, 0.18, segmentZ),
+      radius: 0.24,
+      action: async () => {
+        const offset = state.activeDocumentPayload?.next_offset;
+        if (offset === null || offset === undefined) {
+          setStatus("Next document segment tactile control is disabled.", "segment-next-disabled");
+          return;
+        }
+        await loadDocumentSegment(sceneApiRef, offset, { documentSlug: state.selectedLibrarySlug });
+        setStatus("Loaded the next document segment.", `segment-next-${offset}`);
+      },
+    },
   ];
 }
 
@@ -477,6 +852,8 @@ function refreshInteractiveVisuals() {
     const target = state.targetById.get(targetId);
     const isHovered = targetId === state.hoveredTargetId;
     const isSelectedCell = target.type === "cell" && targetId === state.selectedCellId;
+    const isSelectedDocument =
+      target.type === "library-document" && target.document.slug === state.selectedLibrarySlug;
 
     group.traverse((node) => {
       if (!node.isMesh) {
@@ -489,6 +866,19 @@ function refreshInteractiveVisuals() {
         }
         if (node.userData.kind === "cell-base") {
           node.material.color.setHex(isHovered || isSelectedCell ? 0x1c2b3f : 0x111827);
+        }
+        return;
+      }
+
+      if (target.type === "library-document") {
+        if (node.userData.kind === "document-cover") {
+          node.material.color.setHex(isHovered || isSelectedDocument ? 0x234165 : 0x1a2940);
+        }
+        if (node.userData.kind === "document-pages") {
+          node.material.color.setHex(isHovered || isSelectedDocument ? 0xf8fafc : 0xe5e7eb);
+        }
+        if (node.userData.kind === "document-spine" || node.userData.kind === "document-badge") {
+          node.material.emissive.setHex(isHovered || isSelectedDocument ? 0x1f6feb : 0x4a2d00);
         }
         return;
       }
@@ -523,7 +913,32 @@ function focusSelectedCell(pageCells) {
   refreshInteractiveVisuals();
 }
 
-function updatePointerTarget(sceneApi, position, pageCells) {
+function focusSelectedLibraryDocument(pageSlice) {
+  document.querySelectorAll(".braille-library-card").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.documentSlug === state.selectedLibrarySlug);
+  });
+
+  const selectedDocument = pageSlice.documents.find((item) => item.slug === state.selectedLibrarySlug);
+  if (!selectedDocument) {
+    refreshInteractiveVisuals();
+    return;
+  }
+
+  const target = state.targetById.get(`library-document-${selectedDocument.slug}`);
+  if (target) {
+    state.pointerController?.setPosition(target.position.clone());
+    state.hoveredTargetId = target.id;
+  }
+  refreshInteractiveVisuals();
+}
+
+function idlePointerMessage() {
+  return state.sceneMode === "library-launcher"
+    ? "Pointer moving across the Braille library launcher."
+    : "Pointer moving over the reading surface.";
+}
+
+function updatePointerTarget(sceneApi, position) {
   let nearestTarget = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
 
@@ -543,7 +958,7 @@ function updatePointerTarget(sceneApi, position, pageCells) {
 
   if (!nearestTarget) {
     sceneApi.setPointerState("idle");
-    setStatus("Pointer moving over the reading surface.", "pointer-surface");
+    setStatus(idlePointerMessage(), `pointer-${state.sceneMode}`);
     return;
   }
 
@@ -562,10 +977,18 @@ function updatePointerTarget(sceneApi, position, pageCells) {
     return;
   }
 
+  if (nearestTarget.type === "library-document") {
+    setStatus(
+      `${nearestTarget.document.title}. Activate to load the tactile reading session.`,
+      nearestTarget.id,
+    );
+    return;
+  }
+
   setStatus(nearestTarget.title, nearestTarget.id);
 }
 
-function activatePointerTarget(sceneApi, pageCells) {
+function activatePointerTarget(sceneApi) {
   const target = state.targetById.get(state.hoveredTargetId);
   if (!target) {
     setStatus("No tactile target is currently under the pointer.", "no-target");
@@ -574,11 +997,13 @@ function activatePointerTarget(sceneApi, pageCells) {
 
   sceneApi.setPointerState("active");
   window.setTimeout(() => {
-    updatePointerTarget(sceneApi, state.pointerController.position, getPageCells());
+    updatePointerTarget(sceneApi, state.pointerController.position);
   }, 180);
 
-  if (target.type === "control") {
-    target.action?.();
+  if (target.type === "control" || target.type === "library-document") {
+    Promise.resolve(target.action?.()).catch((error) => {
+      setStatus(error.message, `activate-error-${target.id}`);
+    });
     return;
   }
 
@@ -586,6 +1011,61 @@ function activatePointerTarget(sceneApi, pageCells) {
     `Selected Braille cell ${target.cell.row + 1}:${target.cell.column + 1}.`,
     `activate-${target.id}`,
   );
+}
+
+function createLibraryWorld(sceneApi, pageSlice) {
+  sceneApi.clearWorld();
+  state.interactiveGroups.clear();
+  state.targetById.clear();
+
+  const width = 5.8;
+  const depth = 4.0;
+  sceneApi.setBoundarySize(new THREE.Vector3(width + 0.7, 1.0, depth + 0.55));
+  sceneApi.applySceneView([4.1, 2.9, 4.9], [0, 0.2, 0.2], {
+    preserveUserView: true,
+  });
+
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(width, 0.12, depth),
+    new THREE.MeshStandardMaterial({ color: 0x16213a, roughness: 0.88, metalness: 0.05 }),
+  );
+  base.position.y = 0.06;
+  sceneApi.world.add(base);
+
+  const frontLip = buildGuideRail(width - 0.2, 0.05, 0.08, 0x111827);
+  frontLip.position.set(0, 0.085, depth / 2 - 0.14);
+  sceneApi.world.add(frontLip);
+
+  const backRail = buildGuideRail(width - 0.2, 0.05, 0.08, 0x111827);
+  backRail.position.set(0, 0.085, -depth / 2 + 0.14);
+  sceneApi.world.add(backRail);
+
+  const titleBridge = buildPageBridge(`Library ${pageSlice.page + 1} / ${pageSlice.pageCount}`, depth);
+  sceneApi.world.add(titleBridge);
+
+  const positions = [
+    new THREE.Vector3(-1.55, 0, -0.08),
+    new THREE.Vector3(0, 0, -0.08),
+    new THREE.Vector3(1.55, 0, -0.08),
+  ];
+  pageSlice.documents.forEach((document, index) => {
+    const { group, target } = createLibraryDocumentGroup(document, positions[index]);
+    state.interactiveGroups.set(target.id, group);
+    state.targetById.set(target.id, target);
+    sceneApi.world.add(group);
+  });
+
+  createLibraryControls(pageSlice).forEach((control) => {
+    const controlGroup = buildTactileControlMesh(control.kind, control.active);
+    controlGroup.position.copy(control.position.clone().setY(0.12));
+    state.interactiveGroups.set(control.id, controlGroup);
+    state.targetById.set(control.id, control);
+    sceneApi.world.add(controlGroup);
+  });
+
+  const minBounds = new THREE.Vector3(-width / 2 + 0.15, 0.14, -depth / 2 + 0.22);
+  const maxBounds = new THREE.Vector3(width / 2 - 0.15, 0.34, depth / 2 - 0.12);
+  state.pointerController?.setBounds(minBounds, maxBounds);
 }
 
 function createBrailleWorld(sceneApi, pageCells) {
@@ -627,7 +1107,7 @@ function createBrailleWorld(sceneApi, pageCells) {
     sceneApi.world.add(group);
   }
 
-  const sceneControls = createSceneControls();
+  const sceneControls = createReadingControls(boardDepth);
   sceneControls.forEach((control) => {
     const controlGroup = buildTactileControlMesh(control.kind, control.active);
     controlGroup.position.copy(control.position.clone().setY(0.12));
@@ -644,11 +1124,44 @@ function createBrailleWorld(sceneApi, pageCells) {
   state.pointerController?.setBounds(minBounds, maxBounds);
 }
 
+function renderLibraryLauncher(sceneApi) {
+  const pageSlice = libraryPageSlice(state.libraryPage);
+  state.libraryPage = pageSlice.page;
+  const fallbackDocument = pageSlice.documents[0] ?? state.libraryDocuments[0] ?? null;
+  if (
+    !selectedLibraryDocument()
+    || !pageSlice.documents.some((document) => document.slug === state.selectedLibrarySlug)
+  ) {
+    setSelectedLibraryDocument((fallbackDocument ?? {}).slug);
+  }
+
+  setSceneMode("library-launcher");
+  updateFallbackPageButtons();
+  updateLibrarySummary(pageSlice);
+  createLibraryWorld(sceneApi, pageSlice);
+  renderLibraryBoard(pageSlice);
+
+  const focusTargetId = state.targetById.has(`library-document-${state.selectedLibrarySlug}`)
+    ? `library-document-${state.selectedLibrarySlug}`
+    : "launcher-hub";
+  state.hoveredTargetId = focusTargetId;
+  if (focusTargetId.startsWith("library-document-")) {
+    focusSelectedLibraryDocument(pageSlice);
+  } else {
+    const target = state.targetById.get(focusTargetId);
+    state.pointerController?.setPosition(target?.position?.clone() ?? new THREE.Vector3(0, 0.22, 0.8));
+    refreshInteractiveVisuals();
+  }
+  updatePointerTarget(sceneApi, state.pointerController.position);
+}
+
 function renderCurrentPage(sceneApi) {
+  setSceneMode("reading");
   const pageCells = getPageCells();
   updateSummary(pageCells);
   createBrailleWorld(sceneApi, pageCells);
   render2DBoard(pageCells);
+  updateFallbackPageButtons();
 
   if (!pageCells.some((cell) => cell.cellId === state.selectedCellId)) {
     state.selectedCellId = pageCells[0]?.cellId ?? null;
@@ -665,7 +1178,7 @@ function renderCurrentPage(sceneApi) {
       ? state.targetById.get(state.selectedCellId).position.clone().setY(0.22)
       : new THREE.Vector3(0, 0.22, 0.2),
   );
-  updatePointerTarget(sceneApi, state.pointerController.position, pageCells);
+  updatePointerTarget(sceneApi, state.pointerController.position);
 }
 
 async function loadPreview(sceneApi) {
@@ -691,12 +1204,14 @@ async function loadPreview(sceneApi) {
   setStatus(`Generated ${payload.cell_count} tactile cells.`, "preview-generated");
 }
 
-async function loadDocumentSegment(sceneApi, offset = 0) {
-  const document = currentDocument();
+async function loadDocumentSegment(sceneApi, offset = 0, options = {}) {
+  const document = documentBySlug(options.documentSlug ?? currentDocument()?.slug ?? state.selectedLibrarySlug);
   if (!document) {
     throw new Error("No bundled document is available.");
   }
 
+  setSelectedLibraryDocument(document.slug);
+  state.libraryPage = libraryPageForSlug(document.slug);
   const maxChars = Number(byId("document-segment-size").value) || document.recommended_excerpt_chars;
   const url = `/api/library/documents/${encodeURIComponent(document.slug)}?offset=${offset}&max_chars=${maxChars}`;
   const payload = await fetchJson(url);
@@ -709,6 +1224,9 @@ async function loadDocumentSegment(sceneApi, offset = 0) {
 }
 
 function moveSelection(deltaRow, deltaColumn) {
+  if (state.sceneMode !== "reading") {
+    return;
+  }
   const pageCells = getPageCells();
   const current = pageCells.find((cell) => cell.cellId === state.selectedCellId) ?? pageCells[0];
   if (!current) {
@@ -756,8 +1274,8 @@ document.addEventListener("DOMContentLoaded", () => {
         boundsMin: new THREE.Vector3(-1.6, 0.14, -1.2),
         boundsMax: new THREE.Vector3(1.6, 0.34, 1.4),
         speed: 1.4,
-        onMove: (position) => updatePointerTarget(sceneApi, position, getPageCells()),
-        onActivate: () => activatePointerTarget(sceneApi, getPageCells()),
+        onMove: (position) => updatePointerTarget(sceneApi, position),
+        onActivate: () => activatePointerTarget(sceneApi),
       });
 
       const [documentPayload, audioPayload] = await Promise.all([
@@ -770,6 +1288,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       populateSelect(byId("library-document-select"), state.libraryDocuments, "slug", "title");
       populateSelect(byId("library-audio-select"), state.libraryAudio, "slug", "title");
+      if (state.libraryDocuments[0]) {
+        setSelectedLibraryDocument(state.libraryDocuments[0].slug);
+        state.libraryPage = 0;
+      }
 
       byId("library-audio-select").addEventListener("change", () => {
         updateAudioPanel();
@@ -802,7 +1324,15 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       byId("library-document-select").addEventListener("change", () => {
-        updateDocumentPanel(currentDocument(), null);
+        const document = setSelectedLibraryDocument(byId("library-document-select").value, { syncAudio: false });
+        if (!document) {
+          return;
+        }
+        state.libraryPage = libraryPageForSlug(document.slug);
+        if (state.sceneMode === "library-launcher") {
+          renderLibraryLauncher(sceneApi);
+          setStatus(`Selected ${document.title} in the Braille library launcher.`, `select-${document.slug}`);
+        }
       });
 
       byId("generate-preview").addEventListener("click", () => {
@@ -811,8 +1341,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       byId("rows-per-page").addEventListener("change", () => {
         state.rowsPerPage = Number(byId("rows-per-page").value) || 4;
-        state.currentPage = 0;
-        renderCurrentPage(sceneApi);
+        if (state.sceneMode === "reading" && state.cells.length > 0) {
+          state.currentPage = 0;
+          renderCurrentPage(sceneApi);
+        }
       });
 
       byId("preview-columns").addEventListener("change", () => {
@@ -828,6 +1360,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       byId("prev-page").addEventListener("click", () => {
+        if (state.sceneMode !== "reading") {
+          setStatus("Fallback page controls are disabled while the library launcher is active.", "fallback-prev-disabled");
+          return;
+        }
         state.currentPage = Math.max(0, state.currentPage - 1);
         state.selectedCellId = null;
         renderCurrentPage(sceneApi);
@@ -835,6 +1371,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       byId("next-page").addEventListener("click", () => {
+        if (state.sceneMode !== "reading") {
+          setStatus("Fallback page controls are disabled while the library launcher is active.", "fallback-next-disabled");
+          return;
+        }
         state.currentPage = Math.min(getPageCount() - 1, state.currentPage + 1);
         state.selectedCellId = null;
         renderCurrentPage(sceneApi);
@@ -855,10 +1395,29 @@ document.addEventListener("DOMContentLoaded", () => {
         if (event.key === "ArrowDown") moveSelection(1, 0);
       });
 
+      window.__feelitBrailleDebug = {
+        getSceneMode: () => state.sceneMode,
+        getSelectedLibrarySlug: () => state.selectedLibrarySlug,
+        getLibraryPage: () => state.libraryPage,
+        targetIds: () => Array.from(state.targetById.keys()),
+        activateTarget: async (targetId) => {
+          const target = state.targetById.get(targetId);
+          if (!target) {
+            return false;
+          }
+          state.hoveredTargetId = targetId;
+          refreshInteractiveVisuals();
+          await Promise.resolve(target.action?.());
+          return true;
+        },
+      };
+
       applyScale("standard");
-      updateDocumentPanel(currentDocument(), null);
+      setSceneMode("library-launcher");
       updateAudioPanel();
-      await loadDocumentSegment(sceneApi);
+      updateFallbackPageButtons();
+      renderLibraryLauncher(sceneApi);
+      setStatus("Braille library launcher ready. Select a document in the 3D world to begin reading.", "launcher-ready");
     },
   );
 });

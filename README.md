@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`2.05.006`
+`2.06.000`
 
 ## Public Port
 
@@ -38,7 +38,7 @@ Dedicated workspace for staging real OBJ models on an exploration plinth, select
 
 ### Braille Reader
 
-Operational workspace that translates text into Braille cells, lays them out on a bounded reading surface, and renders that reading surface as a 3D world with orientation cues, scene-native page controls, and an auxiliary 2D inspection board.
+Operational workspace that now starts from a scene-native 3D library launcher, opens bundled document segments into a bounded Braille reading surface, and renders that surface with orientation cues, scene-native page and segment controls, plus an auxiliary 2D inspection board.
 
 ### Haptic Desktop
 
@@ -151,6 +151,7 @@ python scripts\browser_scene_smoke.py --archive-version <released-version>
 - visible startup diagnostics when a workspace fails to initialize
 - bundled OBJ demo assets plus local OBJ upload for staging
 - bundled public-domain document and audio library for Braille sessions
+- scene-native Braille library launcher with paged tactile document targets and library-return flow
 - tactile material catalog exposed at `GET /api/materials`
 - demo model catalog exposed at `GET /api/demo-models`
 - document library catalog exposed at `GET /api/library/documents`

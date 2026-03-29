@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.06.000 (2026-03-29)
+
+Introduce a scene-native Braille library launcher so tactile reading sessions can begin and return inside the 3D world.
+
+Delivered:
+
+- Added a paged 3D Braille library launcher with tactile document targets as the primary entry path for bundled reading sessions.
+- Extended the Braille reading world with scene-native previous and next segment controls plus a tactile return path back to the library launcher.
+- Exposed route-level Braille debug hooks and expanded browser smoke coverage to validate launcher-to-reading and reading-to-library transitions.
+
+Rationale:
+
+- This release materially expands the Braille workflow rather than only refining an existing surface, so it warrants a minor-version increment.
+- Blind-first access now begins inside the scene itself instead of depending exclusively on surrounding browser controls.
+
 ### v2.05.006 (2026-03-29)
 
 Adopt sparse frontend snapshot history so FeelIT only archives changed route images per version while preserving full current baselines.
