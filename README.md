@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`2.05.003`
+`2.05.004`
 
 ## Public Port
 

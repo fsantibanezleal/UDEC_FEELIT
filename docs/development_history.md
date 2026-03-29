@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.05.004 (2026-03-29)
+
+Compact the shared FeelIT workbench shell so desktop routes fit inside the viewport without document-level vertical scrolling.
+
+Delivered:
+
+- Converted the shared shell into a fixed-height viewport layout with internal panel scrolling instead of page scrolling on desktop.
+- Reduced stage and panel expansion pressure so Object Explorer, Braille Reader, Haptic Desktop, and Workspace Manager all fit the desktop viewport.
+- Extended the browser smoke validator to fail when any routed page overflows vertically beyond the viewport.
+
+Rationale:
+
+- The workbench layout should present the active scene immediately without forcing the user to scroll before reaching the primary interaction surface.
+- Viewport-fit behavior is a frontend contract and needs regression coverage, not just visual spot checks.
+
 ### v2.05.003 (2026-03-29)
 
 Tighten the Haptic Desktop gallery and browser return flow so users land on explicit scene hubs instead of falling back onto a content item.
