@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`0.5.4`
+`0.5.5`
 
 ## Public Port
 
@@ -127,12 +127,18 @@ Open one of the mode routes:
 python -m pytest tests -v
 ```
 
-### 4. Optional browser smoke test for the 3D scenes
+### 4. Optional browser smoke test for the frontend routes
 
 ```powershell
 pip install -e ".[dev]"
 python -m playwright install chromium
 python scripts\browser_scene_smoke.py
+```
+
+To refresh the tracked visual baseline and also freeze a release snapshot set:
+
+```powershell
+python scripts\browser_scene_smoke.py --archive-version <released-version>
 ```
 
 ## Runtime Capabilities
@@ -154,6 +160,7 @@ python scripts\browser_scene_smoke.py
 - bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
 - workspace-driven 3D desktop launcher, galleries, file browser, detail scenes, and opened content scenes
 - bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
+- tracked frontend snapshot archive with a live `current/` baseline and versioned `history/v<version>/` folders under `artifacts/frontend_snapshots/`
 - null haptic backend abstraction for no-device execution
 - shared runtime metadata for version, port, and device state
 
@@ -170,6 +177,7 @@ python scripts\browser_scene_smoke.py
 - [User Guide](docs/user_guide.md)
 - [References](docs/references.md)
 - [Legacy Mapping](docs/legacy_mapping.md)
+- [Artifacts Archive](artifacts/README.md)
 
 ## Version Workflow
 

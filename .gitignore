@@ -162,7 +162,10 @@ venv.bak/
 .pytest_cache/
 .ruff_cache/
 installer/Output/
-artifacts/
+
+# Local-only visual/debug captures
+artifacts/local/
+artifacts/tmp/
 
 # latex
 *.fls 
