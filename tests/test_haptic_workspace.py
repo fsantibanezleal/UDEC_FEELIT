@@ -28,6 +28,12 @@ def test_demo_workspace_payload_resolves_bundled_libraries() -> None:
     assert any(item["kind"] == "model" for item in payload["libraries"]["models"])
     assert any(item["kind"] == "text" for item in payload["libraries"]["texts"])
     assert any(item["kind"] == "audio" for item in payload["libraries"]["audio"])
+    assert all(item["open_mode"] == "open-model" for item in payload["libraries"]["models"])
+    assert all(item["shape_key"] == "polyhedral_model_tile" for item in payload["libraries"]["models"])
+    assert all(item["open_mode"] == "open-text" for item in payload["libraries"]["texts"])
+    assert all(item["shape_key"] == "braille_document_tile" for item in payload["libraries"]["texts"])
+    assert all(item["open_mode"] == "open-audio" for item in payload["libraries"]["audio"])
+    assert all(item["shape_key"] == "speaker_wave_tile" for item in payload["libraries"]["audio"])
 
 
 def test_demo_workspace_payload_covers_all_bundled_assets() -> None:
@@ -50,6 +56,19 @@ def test_demo_workspace_browser_payload_lists_internal_library_entries() -> None
     assert payload["current_path"] == ""
     assert "audio" in entry_titles
     assert "documents" in entry_titles
+    documents_entry = next(entry for entry in payload["entries"] if entry["title"] == "documents")
+    assert documents_entry["kind"] == "directory"
+    assert documents_entry["open_mode"] == "file-browser"
+    assert documents_entry["shape_key"] == "folder_tile"
+
+
+def test_demo_workspace_browser_payload_maps_text_files_to_braille_scene() -> None:
+    payload = haptic_workspace.build_workspace_browser_payload("feelit_demo_workspace", "documents")
+    text_entry = next(entry for entry in payload["entries"] if entry["title"] == "alice_in_wonderland.txt")
+    assert text_entry["kind"] == "text"
+    assert text_entry["open_mode"] == "open-text"
+    assert text_entry["shape_key"] == "braille_document_tile"
+    assert text_entry["open_label"] == "Open in the Braille reading scene"
 
 
 def test_create_workspace_file_auto_populates_supported_assets(tmp_path, monkeypatch) -> None:
@@ -152,3 +171,27 @@ def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -
     assert detail_response.json()["slug"] == "feelit_demo_workspace"
     assert any(entry["title"] == "documents" for entry in browse_response.json()["entries"])
     assert "Alice" in text_response.json()["text"]
+
+
+def test_detect_entry_kind_maps_supported_file_types_to_modes(tmp_path) -> None:
+    model_path = tmp_path / "shape.obj"
+    model_path.write_text("v 0 0 0\n", encoding="utf-8")
+    text_path = tmp_path / "notes.md"
+    text_path.write_text("# sample", encoding="utf-8")
+    audio_path = tmp_path / "clip.ogg"
+    audio_path.write_bytes(b"OggS")
+    unsupported_path = tmp_path / "blob.bin"
+    unsupported_path.write_bytes(b"\x00\x01")
+    folder_path = tmp_path / "folder"
+    folder_path.mkdir()
+
+    assert haptic_workspace.detect_entry_kind(folder_path) == "directory"
+    assert haptic_workspace.build_kind_contract("directory")["open_mode"] == "file-browser"
+    assert haptic_workspace.detect_entry_kind(model_path) == "model"
+    assert haptic_workspace.build_kind_contract("model")["open_mode"] == "open-model"
+    assert haptic_workspace.detect_entry_kind(text_path) == "text"
+    assert haptic_workspace.build_kind_contract("text")["open_mode"] == "open-text"
+    assert haptic_workspace.detect_entry_kind(audio_path) == "audio"
+    assert haptic_workspace.build_kind_contract("audio")["open_mode"] == "open-audio"
+    assert haptic_workspace.detect_entry_kind(unsupported_path) == "unsupported"
+    assert haptic_workspace.build_kind_contract("unsupported")["open_mode"] == "unsupported"

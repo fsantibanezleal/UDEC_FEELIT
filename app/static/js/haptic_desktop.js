@@ -46,10 +46,10 @@ const CATEGORY_META = {
 };
 
 const FILE_KIND_META = {
-  directory: { title: "Folder", color: 0x58a6ff, actionLabel: "Open folder" },
-  model: { title: "3D Model", color: 0x58a6ff, actionLabel: "Inspect item details" },
-  text: { title: "Text", color: 0x7ee787, actionLabel: "Inspect item details" },
-  audio: { title: "Audio", color: 0xf2cc60, actionLabel: "Inspect item details" },
+  directory: { title: "Folder", color: 0x58a6ff, actionLabel: "Open folder in the workspace file browser" },
+  model: { title: "3D Model", color: 0x58a6ff, actionLabel: "Open in the 3D model scene" },
+  text: { title: "Text", color: 0x7ee787, actionLabel: "Open in the Braille reading scene" },
+  audio: { title: "Audio", color: 0xf2cc60, actionLabel: "Open in the audio transport scene" },
   unsupported: {
     title: "Unsupported file",
     color: 0xff7b72,
@@ -938,7 +938,10 @@ function updatePointerHover(position) {
 }
 
 async function activateFocusedTarget(source = "pointer") {
-  const targetId = state.hoveredTargetId ?? state.focusedTargetId;
+  const targetId =
+    source === "pointer"
+      ? state.hoveredTargetId ?? state.focusedTargetId
+      : state.focusedTargetId ?? state.hoveredTargetId;
   const target = state.targets.get(targetId);
   if (!target) {
     publishStatus("No tactile control is currently under the pointer.", "Ready", "no-target");
@@ -1097,10 +1100,20 @@ function galleryTilePositions(count) {
       new THREE.Vector3(1.18, 0.12, 0.02),
     ];
   }
+  if (count <= 3) {
+    return [
+      new THREE.Vector3(-1.48, 0.12, -0.26),
+      new THREE.Vector3(0, 0.12, 0.56),
+      new THREE.Vector3(1.48, 0.12, -0.26),
+    ].slice(0, count);
+  }
   return [
-    new THREE.Vector3(-1.48, 0.12, -0.26),
-    new THREE.Vector3(0, 0.12, 0.56),
-    new THREE.Vector3(1.48, 0.12, -0.26),
+    new THREE.Vector3(-1.48, 0.12, -0.72),
+    new THREE.Vector3(0, 0.12, -0.08),
+    new THREE.Vector3(1.48, 0.12, -0.72),
+    new THREE.Vector3(-1.48, 0.12, 0.62),
+    new THREE.Vector3(0, 0.12, 1.26),
+    new THREE.Vector3(1.48, 0.12, 0.62),
   ].slice(0, count);
 }
 
@@ -1110,6 +1123,22 @@ function resolveItemKind(item) {
 
 function kindMeta(kind) {
   return FILE_KIND_META[kind] ?? FILE_KIND_META.unsupported;
+}
+
+function kindSymbolBuilder(kind) {
+  if (kind === "model") {
+    return buildModelSymbol;
+  }
+  if (kind === "text") {
+    return buildTextSymbol;
+  }
+  if (kind === "audio") {
+    return buildAudioSymbol;
+  }
+  if (kind === "directory") {
+    return buildFolderSymbol;
+  }
+  return buildUnsupportedSymbol;
 }
 
 function itemRawFileUrl(item) {
@@ -1143,6 +1172,19 @@ function detailOriginLabel(origin) {
     return origin.path ? `File browser: ${origin.path}` : "File browser root";
   }
   return "Launcher";
+}
+
+function homeTargetLabel(origin) {
+  if (!origin) {
+    return "the workspace launcher";
+  }
+  if (origin.type === "gallery") {
+    return `${CATEGORY_META[origin.category].title}, page ${origin.page + 1}`;
+  }
+  if (origin.type === "file-browser") {
+    return origin.path ? `the file browser at ${origin.path}` : "the file browser root";
+  }
+  return "the workspace launcher";
 }
 
 function originStartConfig(origin) {
@@ -1182,25 +1224,32 @@ async function navigateToOriginStart(origin) {
   await navigateToLauncher();
 }
 
-function createGalleryItemTarget(item, position, onActivate) {
+async function navigateHome(origin) {
+  if (!origin) {
+    await navigateToLauncher();
+    return;
+  }
+  if (origin.type === "gallery") {
+    await navigateToGallery(origin.category, origin.page);
+    return;
+  }
+  if (origin.type === "file-browser") {
+    await navigateToFileBrowser(origin.path ?? "", origin.page ?? 0);
+    return;
+  }
+  await navigateToLauncher();
+}
+
+function createGalleryItemTarget(item, position, onActivate, actionLabel = null) {
   const kind = resolveItemKind(item);
   const meta = kindMeta(kind);
-  const symbolBuilder =
-    kind === "model"
-      ? buildModelSymbol
-      : kind === "text"
-        ? buildTextSymbol
-        : kind === "audio"
-          ? buildAudioSymbol
-          : kind === "directory"
-            ? buildFolderSymbol
-            : buildUnsupportedSymbol;
+  const symbolBuilder = kindSymbolBuilder(kind);
   const group = buildInteractiveTile(item.title, symbolBuilder, meta.color);
   createTarget({
     id: `item-${item.slug}`,
     title: item.title,
     type: meta.title,
-    actionLabel: meta.actionLabel,
+    actionLabel: actionLabel ?? item.open_label ?? meta.actionLabel,
     group,
     position,
     radius: 0.52,
@@ -1381,8 +1430,11 @@ async function navigateToGallery(category, page = 0) {
 
   const positions = galleryTilePositions(pageSlice.items.length);
   pageSlice.items.forEach((item, index) => {
-    createGalleryItemTarget(item, positions[index], async () =>
-      navigateToDetail(item, { type: "gallery", category, page: pageSlice.page }),
+    createGalleryItemTarget(
+      item,
+      positions[index],
+      async () => navigateToDetail(item, { type: "gallery", category, page: pageSlice.page }),
+      "Inspect item details and continue to the corresponding runtime scene",
     );
   });
   addGallerySummary(category, pageSlice, workspace.libraries[category].length);
@@ -1470,11 +1522,24 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
 
   const positions = galleryTilePositions(pageSlice.items.length);
   pageSlice.items.forEach((entry, index) => {
+    const origin = { type: "file-browser", path: payload.current_path, page: pageSlice.page };
     const onActivate =
       entry.kind === "directory"
         ? async () => navigateToFileBrowser(entry.relative_path, 0)
+        : entry.kind === "unsupported"
+          ? async () =>
+              navigateToDetail(
+                {
+                  ...entry,
+                  source: entry.source ?? {
+                    kind: "workspace_file",
+                    relative_path: entry.relative_path,
+                  },
+                },
+                origin,
+              )
         : async () =>
-            navigateToDetail(
+            openItemScene(
               {
                 ...entry,
                 source: entry.source ?? {
@@ -1482,11 +1547,9 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
                   relative_path: entry.relative_path,
                 },
               },
-              { type: "file-browser", path: payload.current_path, page: pageSlice.page },
+              origin,
             );
     createGalleryItemTarget(entry, positions[index], onActivate);
-    const target = state.targets.get(`item-${entry.slug}`);
-    target.actionLabel = entry.kind === "directory" ? "Open folder" : target.actionLabel;
   });
 
   addControlTarget({
@@ -1555,7 +1618,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
   finishSceneBuild({
     code: "file-browser",
     title: "Workspace File Browser",
-    subtitle: "Directory buttons, supported-file buttons, and unsupported-file placeholders share the same bounded tactile map.",
+    subtitle: "Directory buttons and typed file buttons share one tactile map, while supported files dispatch directly into their corresponding runtime scenes.",
     context: workspace.title,
     path: payload.current_path || payload.current_label,
     pagination: `${pageSlice.page + 1} / ${pageSlice.pageCount}`,
@@ -1569,22 +1632,6 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
 
 function truncateDetailText(text) {
   return text.length > 24 ? `${text.slice(0, 24)}…` : text;
-}
-
-async function navigateBackToOrigin(origin) {
-  if (!origin) {
-    await navigateToLauncher();
-    return;
-  }
-  if (origin.type === "gallery") {
-    await navigateToGallery(origin.category, origin.page);
-    return;
-  }
-  if (origin.type === "file-browser") {
-    await navigateToFileBrowser(origin.path ?? "", origin.page ?? 0);
-    return;
-  }
-  await navigateToLauncher();
 }
 
 async function navigateToDetail(item, origin) {
@@ -1611,14 +1658,7 @@ async function navigateToDetail(item, origin) {
   plaque.position.set(-0.2, 0.12, -0.22);
   state.sceneApi.world.add(plaque);
 
-  const symbolBuilder =
-    kind === "model"
-      ? buildModelSymbol
-      : kind === "text"
-        ? buildTextSymbol
-        : kind === "audio"
-          ? buildAudioSymbol
-          : buildUnsupportedSymbol;
+  const symbolBuilder = kindSymbolBuilder(kind);
   const icon = buildInteractiveTile(meta.title, symbolBuilder, meta.color);
   icon.position.set(1.6, 0.12, -0.2);
   icon.scale.setScalar(0.92);
@@ -1656,20 +1696,20 @@ async function navigateToDetail(item, origin) {
     });
   }
   addControlTarget({
-    id: "detail-back",
-    label: "Back",
+    id: "detail-home",
+    label: "Home",
     type: "Control",
-    actionLabel: `Return to ${detailOriginLabel(origin)}`,
+    actionLabel: `Return to ${homeTargetLabel(origin)}`,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(originStart ? 0.62 : 0, 0.12, 1.42),
-    onActivate: async () => navigateBackToOrigin(origin),
+    onActivate: async () => navigateHome(origin),
   });
   addControlTarget({
     id: "detail-open",
     label: kind === "unsupported" ? "Unavailable" : "Open",
     type: "Control",
-    actionLabel: kind === "unsupported" ? "The selected file is not supported yet" : `Open ${item.title}`,
+    actionLabel: kind === "unsupported" ? "The selected file is not supported yet" : item.open_label ?? `Open ${item.title}`,
     kind: "open",
     color: meta.color,
     position: new THREE.Vector3(originStart ? 1.74 : 1.2, 0.12, 1.42),
@@ -1774,14 +1814,14 @@ async function navigateToModelScene(item, origin) {
     });
   }
   addControlTarget({
-    id: "model-back",
-    label: "Back",
+    id: "model-home",
+    label: "Home",
     type: "Control",
-    actionLabel: `Return to ${detailOriginLabel(origin)}`,
+    actionLabel: `Return to ${homeTargetLabel(origin)}`,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(originStart ? 0.6 : 0, 0.12, 1.7),
-    onActivate: async () => navigateBackToOrigin(origin),
+    onActivate: async () => navigateHome(origin),
   });
 
   state.sceneApi.setBoundarySize(
@@ -1802,13 +1842,13 @@ async function navigateToModelScene(item, origin) {
   finishSceneBuild({
     code: "open-model",
     title: "3D Model Scene",
-    subtitle: "The opened object shares space with tactile launcher, origin-start, and back-return controls.",
+    subtitle: "The opened object shares space with tactile launcher, origin-start, and home-return controls.",
     context: detailOriginLabel(origin),
     path: item.source?.relative_path ?? item.source?.demo_model_slug ?? item.slug,
     pagination: "1 / 1",
     idleMessage: `Pointer moving across the opened 3D model ${item.title}.`,
   });
-  focusTarget("model-back", { source: "scene", movePointer: false });
+  focusTarget("model-home", { source: "scene", movePointer: false });
   publishStatus(`Opened ${item.title} in the model scene.`, "Ready", `open-model-${item.slug}`);
 }
 
@@ -1957,14 +1997,14 @@ function renderTextScene(token = state.sceneBuildToken) {
     });
   }
   addControlTarget({
-    id: "text-back",
-    label: "Back",
+    id: "text-home",
+    label: "Home",
     type: "Control",
-    actionLabel: `Return to ${detailOriginLabel(textScene.origin)}`,
+    actionLabel: `Return to ${homeTargetLabel(textScene.origin)}`,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(0.16, 0.12, 1.78),
-    onActivate: async () => navigateBackToOrigin(textScene.origin),
+    onActivate: async () => navigateHome(textScene.origin),
   });
   addControlTarget({
     id: "text-prev",
@@ -2114,14 +2154,14 @@ function renderAudioScene(token = state.sceneBuildToken) {
     });
   }
   addControlTarget({
-    id: "audio-back",
-    label: "Back",
+    id: "audio-home",
+    label: "Home",
     type: "Control",
-    actionLabel: `Return to ${detailOriginLabel(audioScene.origin)}`,
+    actionLabel: `Return to ${homeTargetLabel(audioScene.origin)}`,
     kind: "back",
     color: 0x58a6ff,
     position: new THREE.Vector3(-0.04, 0.12, 1.46),
-    onActivate: async () => navigateBackToOrigin(audioScene.origin),
+    onActivate: async () => navigateHome(audioScene.origin),
   });
   addControlTarget({
     id: "audio-toggle",
