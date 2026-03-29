@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document separates what FeelIT `0.5.4` demonstrably implements today from what remains partial, planned, or hardware-dependent.
+This document separates what FeelIT `2.05.002` demonstrably implements today from what remains partial, planned, or hardware-dependent.
 
 It is intentionally conservative. If a behavior is not visible in the runtime, testable through the current repo, or clearly encoded in the shipped code path, it is not treated here as delivered.
 
@@ -24,7 +24,7 @@ Implemented:
 
 - FastAPI backend with public metadata, health, mode catalog, material catalog, demo-model catalog, and Braille preview endpoints
 - internal-library document and audio catalog endpoints for bundled public-domain assets
-- canonical semantic version source with synchronized README and Windows packaging metadata
+- canonical padded version source with synchronized README and Windows packaging metadata
 - four-route frontend shell served from the backend on port `8101`
 - shared Three.js scene runtime with bounded workspace, orbit camera, and stylus-style pointer emulator
 - visual fallback execution when no haptic hardware is attached

@@ -13,31 +13,24 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.core.version import APP_VERSION
+from app.core.version import APP_VERSION, VERSION_FORMAT, format_version, parse_version
 
 VERSION_FILE = ROOT / "app" / "core" / "version.py"
 README_FILE = ROOT / "README.md"
 HISTORY_FILE = ROOT / "docs" / "development_history.md"
 
-VERSION_PATTERN = re.compile(r'APP_VERSION = "(\d+\.\d+\.\d+)"')
+VERSION_SOURCE_PATTERN = re.compile(r'APP_VERSION = "(\d+\.\d{2}\.\d{3})"')
 README_VERSION_PATTERN = re.compile(r"(## Current Version\s+`)([^`]+)(`)", re.MULTILINE)
 
-
-def parse_version(value: str) -> tuple[int, int, int]:
-    """Parse a semantic version into a tuple."""
-    major, minor, patch = value.split(".")
-    return int(major), int(minor), int(patch)
-
-
 def bump(value: str, level: str) -> str:
-    """Return a bumped semantic version."""
+    """Return a bumped workspace version using the padded canonical format."""
     major, minor, patch = parse_version(value)
     if level == "major":
-        return f"{major + 1}.0.0"
+        return format_version(major + 1, 0, 0)
     if level == "minor":
-        return f"{major}.{minor + 1}.0"
+        return format_version(major, minor + 1, 0)
     if level == "patch":
-        return f"{major}.{minor}.{patch + 1}"
+        return format_version(major, minor, patch + 1)
     return level
 
 
@@ -50,7 +43,7 @@ def bullet_block(lines: list[str], fallback: str) -> str:
 def update_version_source(new_version: str) -> None:
     """Update the canonical version file."""
     source = VERSION_FILE.read_text(encoding="utf-8")
-    updated = VERSION_PATTERN.sub(f'APP_VERSION = "{new_version}"', source, count=1)
+    updated = VERSION_SOURCE_PATTERN.sub(f'APP_VERSION = "{new_version}"', source, count=1)
     VERSION_FILE.write_text(updated, encoding="utf-8")
 
 
@@ -93,7 +86,10 @@ def update_history_document(
 def main() -> None:
     """Bump FeelIT to the next requested version."""
     parser = argparse.ArgumentParser(description="Bump FeelIT version")
-    parser.add_argument("target", help="major, minor, patch, or an explicit semantic version")
+    parser.add_argument(
+        "target",
+        help=f"major, minor, patch, or an explicit workspace version in {VERSION_FORMAT}",
+    )
     parser.add_argument("--date", default=date.today().isoformat(), dest="release_date")
     parser.add_argument(
         "--summary",
@@ -114,11 +110,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.target not in {"major", "minor", "patch"} and not re.fullmatch(
-        r"\d+\.\d+\.\d+",
-        args.target,
-    ):
-        raise SystemExit("Target must be major, minor, patch, or X.Y.Z")
+    if args.target not in {"major", "minor", "patch"}:
+        try:
+            parse_version(args.target)
+        except ValueError as error:
+            raise SystemExit(
+                f"Target must be major, minor, patch, or {VERSION_FORMAT}",
+            ) from error
 
     new_version = bump(APP_VERSION, args.target)
     update_version_source(new_version)

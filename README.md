@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`0.5.5`
+`2.05.002`
 
 ## Public Port
 
@@ -182,6 +182,8 @@ python scripts\browser_scene_smoke.py --archive-version <released-version>
 ## Version Workflow
 
 The canonical application version lives in `app/core/version.py`.
+
+The canonical workspace version format is `X.XX.XXX`, for example `2.05.002`.
 
 To bump the version and synchronize derived metadata:
 
