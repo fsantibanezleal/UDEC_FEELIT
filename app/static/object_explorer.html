@@ -84,7 +84,7 @@
         <div class="panel-heading">
           <div>
             <h2>3D Object Workspace</h2>
-            <p class="panel-subtitle">Real OBJ assets staged on a tactile exploration plinth inside the bounded world that the haptic pointer will traverse.</p>
+            <p class="panel-subtitle">Scene-native launcher plus bounded exploration world for curated demo models, local OBJ staging, and tactile material inspection.</p>
           </div>
           <div class="panel-heading-status">
             <span id="explorer-stage-pill" class="status-pill status-pill-cyan">Loading assets</span>
@@ -120,6 +120,8 @@
             <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
             <div><dt>Haptics</dt><dd data-runtime="haptics-mode">Loading</dd></div>
             <div><dt>Backend</dt><dd data-runtime="backend">Loading</dd></div>
+            <div><dt>Scene mode</dt><dd id="explorer-scene-mode">Loading</dd></div>
+            <div><dt>Launcher page</dt><dd id="explorer-launcher-page">--</dd></div>
           </dl>
         </section>
 
@@ -166,9 +168,11 @@
         </p>
         <h3>Current Interaction</h3>
         <ul>
-          <li>Load a bundled demo OBJ or a local OBJ file.</li>
+          <li>Begin with a scene-native 3D launcher that pages through curated bundled demo models.</li>
+          <li>Load a bundled demo OBJ from the launcher or stage a local OBJ through the outer controls.</li>
           <li>Apply a haptic material profile grounded in current desktop haptic capabilities.</li>
           <li>Inspect the scene with orbit controls and move the pointer proxy with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
+          <li>Use scene-native Launcher and Material controls inside the 3D world once a model session is open.</li>
           <li>Use `Space` or `Enter` near the object surface to emulate a contact event on the staged model.</li>
         </ul>
       </div>

@@ -52,12 +52,13 @@
   <text x="110" y="308" class="cardTitle">3D Object Explorer</text>
   <text x="110" y="336" class="mono">/object-explorer</text>
   <text x="110" y="382" class="section">PRIMARY ROLE</text>
-  <text x="110" y="410" class="body">Prepare bounded tactile exploration sessions for</text>
-  <text x="110" y="434" class="body">real OBJ geometry, material presets, and scale tuning.</text>
+  <text x="110" y="410" class="body">Start bounded tactile exploration sessions from a</text>
+  <text x="110" y="434" class="body">scene-native launcher for real OBJ geometry and</text>
+  <text x="110" y="458" class="body">material-focused object study.</text>
   <text x="110" y="482" class="section">CURRENT BASELINE</text>
-  <text x="110" y="510" class="body">Bundled model catalog, local OBJ upload, persistent</text>
-  <text x="110" y="534" class="body">camera view, scene pointer traversal, and material</text>
-  <text x="110" y="558" class="body">inspection tied to plausible haptic profiles.</text>
+  <text x="110" y="510" class="body">Paged session launcher, local OBJ staging, persistent</text>
+  <text x="110" y="534" class="body">camera view, scene pointer traversal, and in-world</text>
+  <text x="110" y="558" class="body">material plus launcher return controls.</text>
 
   <circle cx="896" cy="250" r="24" fill="rgba(126,231,135,0.18)" stroke="#7ee787"/>
   <circle cx="889" cy="242" r="3.2" fill="#e6edf3"/>
@@ -132,5 +133,5 @@
   <rect x="78" y="154" width="224" height="26" rx="13" fill="#79c0ff"/>
   <text x="101" y="172" class="badge">ROUTED WORKSPACES</text>
   <rect x="1314" y="154" width="208" height="26" rx="13" fill="rgba(255,255,255,0.10)" stroke="#30363d"/>
-  <text x="1338" y="172" class="legend">Release line: 2.06.002 current baseline</text>
+  <text x="1338" y="172" class="legend">Release line: 2.07.000 current baseline</text>
 </svg>

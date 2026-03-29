@@ -54,6 +54,8 @@ def test_frontend_mode_routes_are_served() -> None:
     assert object_response.status_code == 200
     assert "3D Object Explorer" in object_response.text
     assert "Space activate" in object_response.text
+    assert "Scene-native launcher plus bounded exploration world" in object_response.text
+    assert "Scene mode" in object_response.text
     assert 'type="module" src="/static/js/object_explorer.js"' in object_response.text
     assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200
