@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`2.05.005`
+`2.05.006`
 
 ## Public Port
 
@@ -161,7 +161,7 @@ python scripts\browser_scene_smoke.py --archive-version <released-version>
 - bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
 - workspace-driven 3D desktop launcher, gallery and browser hubs, galleries, file browser, detail scenes, and opened content scenes
 - bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
-- tracked frontend snapshot archive with a live `current/` baseline and versioned `history/v<version>/` folders under `artifacts/frontend_snapshots/`
+- tracked frontend snapshot archive with a full `current/` baseline and sparse `history/v<version>/` folders that only store materially changed routes
 - null haptic backend abstraction for no-device execution
 - shared runtime metadata for version, port, and device state
 

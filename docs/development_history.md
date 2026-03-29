@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.05.006 (2026-03-29)
+
+Adopt sparse frontend snapshot history so FeelIT only archives changed route images per version while preserving full current baselines.
+
+Delivered:
+
+- Updated the browser smoke workflow to archive only materially changed route captures and to preserve per-route provenance in snapshot manifests.
+- Added automated tests for sparse snapshot archiving and redundant-history normalization.
+- Documented the snapshot policy so current baselines stay complete while version history stays visually non-redundant.
+
+Rationale:
+
+- Frontend snapshot history should show meaningful UI evolution rather than repeating identical images in every version folder.
+- Visual evidence still needs traceability, so unchanged routes now inherit the last valid archived baseline through manifest metadata instead of duplicated files.
+
 ### v2.05.005 (2026-03-29)
 
 Preserve the user-adjusted 3D camera viewpoint across scene changes while staying on the same FeelIT route.
