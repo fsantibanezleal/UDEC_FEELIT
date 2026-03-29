@@ -64,6 +64,21 @@ def measure_canvas_colors(image_path: Path) -> int:
     return len(colors) if colors else 10_000_000
 
 
+def focused_label(page) -> str:
+    """Return the current fallback-focus label from the desktop inspector."""
+    return (page.locator("#desktop-focus-label").text_content() or "").strip()
+
+
+def cycle_focus_to(page, label: str, *, max_steps: int = 12) -> bool:
+    """Move the fallback focus until the requested label is active."""
+    for _ in range(max_steps):
+        if focused_label(page) == label:
+            return True
+        page.locator("#focus-next").click()
+        page.wait_for_timeout(80)
+    return focused_label(page) == label
+
+
 def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
     """Validate that each workspace loads and produces a non-trivial canvas image."""
     screenshot_dir.mkdir(parents=True, exist_ok=True)
@@ -125,6 +140,55 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
+                if not cycle_focus_to(page, "Next"):
+                    failures.append("/haptic-desktop could not focus the gallery Next control")
+                else:
+                    page.locator("#focus-activate").click()
+                    page.wait_for_function(
+                        """
+                        () => {
+                          const pagination = document.querySelector('#desktop-pagination')?.textContent?.trim() ?? '';
+                          return pagination.startsWith('2 /');
+                        }
+                        """,
+                        timeout=15_000,
+                    )
+                if not cycle_focus_to(page, "Start"):
+                    failures.append("/haptic-desktop could not focus the gallery Start control")
+                else:
+                    page.locator("#focus-activate").click()
+                    page.wait_for_function(
+                        """
+                        () => {
+                          const pagination = document.querySelector('#desktop-pagination')?.textContent?.trim() ?? '';
+                          return pagination.startsWith('1 /');
+                        }
+                        """,
+                        timeout=15_000,
+                    )
+                if not cycle_focus_to(page, "Launcher"):
+                    failures.append("/haptic-desktop could not focus the gallery Launcher control")
+                else:
+                    page.locator("#focus-activate").click()
+                    page.wait_for_function(
+                        """
+                        () => {
+                          const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                          return sceneCode === 'launcher';
+                        }
+                        """,
+                        timeout=15_000,
+                    )
+                    page.locator("#focus-activate").click()
+                    page.wait_for_function(
+                        """
+                        () => {
+                          const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                          return sceneCode === 'models-gallery';
+                        }
+                        """,
+                        timeout=15_000,
+                    )
             page.wait_for_timeout(1_200)
 
             screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
