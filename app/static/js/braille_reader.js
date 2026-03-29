@@ -7,6 +7,8 @@ import {
 } from "./three_scene_common.js";
 
 const previewUrl = "/api/braille/preview";
+const documentsUrl = "/api/library/documents";
+const audioUrl = "/api/library/audio";
 
 const state = {
   cells: [],
@@ -19,6 +21,9 @@ const state = {
   targetById: new Map(),
   pointerController: null,
   lastStatusKey: "",
+  libraryDocuments: [],
+  libraryAudio: [],
+  activeDocumentPayload: null,
 };
 
 function byId(id) {
@@ -32,6 +37,15 @@ function setStatus(message, key = message) {
   state.lastStatusKey = key;
   byId("reader-status-bar").textContent = message;
   byId("reader-page-status").textContent = message;
+}
+
+function fetchJson(url) {
+  return fetch(url).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Request failed: ${url}`);
+    }
+    return response.json();
+  });
 }
 
 function buildDot(active) {
@@ -49,6 +63,26 @@ function applyScale(scale) {
   );
   board.classList.add(`braille-scale-${scale}`);
   byId("reader-scale-label").textContent = scale[0].toUpperCase() + scale.slice(1);
+}
+
+function populateSelect(select, items, valueField, labelField) {
+  select.innerHTML = "";
+  items.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item[valueField];
+    option.textContent = item[labelField];
+    select.appendChild(option);
+  });
+}
+
+function currentDocument() {
+  return state.libraryDocuments.find(
+    (document) => document.slug === byId("library-document-select").value,
+  );
+}
+
+function currentAudio() {
+  return state.libraryAudio.find((audio) => audio.slug === byId("library-audio-select").value);
 }
 
 function getPageCount() {
@@ -91,7 +125,73 @@ function updateSelectedCell(cell) {
   byId("summary-unicode").textContent = cell.unicode_cell;
 }
 
-function render2DBoard(sceneApi, pageCells) {
+function updateDocumentPanel(document, payload = null) {
+  if (!document) {
+    return;
+  }
+  const effectivePayload =
+    payload ??
+    (state.activeDocumentPayload?.slug === document.slug ? state.activeDocumentPayload : null);
+  const audioTitles = document.companion_audio_slugs
+    .map((slug) => state.libraryAudio.find((audio) => audio.slug === slug)?.title ?? slug)
+    .join(", ");
+  byId("library-document-author").textContent = document.author;
+  byId("library-document-format").textContent = document.format.toUpperCase();
+  byId("library-document-summary").textContent = document.summary;
+  byId("summary-document-title").textContent = document.title;
+  byId("summary-document-source").textContent = document.source_name;
+  byId("summary-document-audio").textContent =
+    document.companion_audio_slugs.length > 0 ? audioTitles : "No paired track";
+
+  if (effectivePayload) {
+    const start = effectivePayload.loaded_characters
+      ? effectivePayload.offset + 1
+      : effectivePayload.offset;
+    const end = effectivePayload.offset + effectivePayload.loaded_characters;
+    byId("library-document-range").textContent = `${start} - ${end} / ${effectivePayload.total_characters}`;
+    byId("summary-document-characters").textContent = String(effectivePayload.total_characters);
+    byId("load-previous-segment").disabled = effectivePayload.previous_offset === null;
+    byId("load-next-segment").disabled = effectivePayload.next_offset === null;
+    return;
+  }
+
+  byId("library-document-range").textContent = "0 - 0";
+  byId("summary-document-characters").textContent = "0";
+  byId("load-previous-segment").disabled = true;
+  byId("load-next-segment").disabled = true;
+}
+
+function updateAudioPanel(audio = currentAudio()) {
+  const player = byId("library-audio-player");
+  if (!audio) {
+    player.removeAttribute("src");
+    player.load();
+    byId("library-audio-summary").textContent =
+      "Optional audio references remain secondary to tactile reading.";
+    return;
+  }
+
+  player.src = audio.file_url;
+  player.load();
+  byId("library-audio-summary").textContent =
+    `${audio.title} by ${audio.creator}. Source: ${audio.source_name}.`;
+}
+
+function syncCompanionAudio(document) {
+  if (!document || document.companion_audio_slugs.length === 0) {
+    return;
+  }
+  const preferredAudio = document.companion_audio_slugs.find((slug) =>
+    state.libraryAudio.some((audio) => audio.slug === slug),
+  );
+  if (!preferredAudio) {
+    return;
+  }
+  byId("library-audio-select").value = preferredAudio;
+  updateAudioPanel();
+}
+
+function render2DBoard(pageCells) {
   const board = byId("braille-board");
   board.innerHTML = "";
   const rows = new Map();
@@ -122,7 +222,7 @@ function render2DBoard(sceneApi, pageCells) {
     button.addEventListener("click", () => {
       state.selectedCellId = cell.cellId;
       state.hoveredTargetId = cell.cellId;
-      focusSelectedCell(sceneApi, pageCells);
+      focusSelectedCell(pageCells);
     });
 
     rows.get(cell.localRow).appendChild(button);
@@ -132,7 +232,7 @@ function render2DBoard(sceneApi, pageCells) {
 function createBrailleCellGroup(cell) {
   const cellGroup = new THREE.Group();
   const x = (cell.column - (state.columns - 1) / 2) * 0.34;
-  const z = (cell.localRow - ((state.rowsPerPage - 1) / 2)) * 0.48 - 0.18;
+  const z = cell.localRow * 0.48 - ((state.rowsPerPage - 1) * 0.24) - 0.18;
   cellGroup.position.set(x, 0.121, z);
 
   const cellBase = new THREE.Mesh(
@@ -326,7 +426,7 @@ function buildTactileControlMesh(kind, active) {
   return group;
 }
 
-function createSceneControls(sceneApi) {
+function createSceneControls() {
   const controlZ = ((state.rowsPerPage - 1) / 2) * 0.48 + 0.5;
   return [
     {
@@ -344,7 +444,7 @@ function createSceneControls(sceneApi) {
         }
         state.currentPage -= 1;
         state.selectedCellId = null;
-        renderCurrentPage(sceneApi);
+        renderCurrentPage(sceneApiRef);
         setStatus("Moved to previous Braille page.", "page-prev");
       },
     },
@@ -363,12 +463,14 @@ function createSceneControls(sceneApi) {
         }
         state.currentPage += 1;
         state.selectedCellId = null;
-        renderCurrentPage(sceneApi);
+        renderCurrentPage(sceneApiRef);
         setStatus("Moved to next Braille page.", "page-next");
       },
     },
   ];
 }
+
+let sceneApiRef = null;
 
 function refreshInteractiveVisuals() {
   state.interactiveGroups.forEach((group, targetId) => {
@@ -393,11 +495,7 @@ function refreshInteractiveVisuals() {
 
       if (node.userData.kind === "control-base") {
         node.material.color.setHex(
-          !target.active
-            ? 0x1a1f28
-            : isHovered
-              ? 0x1f3855
-              : 0x20324a,
+          !target.active ? 0x1a1f28 : isHovered ? 0x1f3855 : 0x20324a,
         );
       }
       if (node.userData.kind === "control-ridge") {
@@ -407,7 +505,7 @@ function refreshInteractiveVisuals() {
   });
 }
 
-function focusSelectedCell(sceneApi, pageCells) {
+function focusSelectedCell(pageCells) {
   document.querySelectorAll(".braille-cell-button").forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.cellId === state.selectedCellId);
   });
@@ -419,7 +517,7 @@ function focusSelectedCell(sceneApi, pageCells) {
   }
 
   const x = (selected.column - (state.columns - 1) / 2) * 0.34;
-  const z = (selected.localRow - ((state.rowsPerPage - 1) / 2)) * 0.48 - 0.18;
+  const z = selected.localRow * 0.48 - ((state.rowsPerPage - 1) * 0.24) - 0.18;
   state.pointerController?.setPosition(new THREE.Vector3(x, 0.22, z));
   updateSelectedCell(selected);
   refreshInteractiveVisuals();
@@ -528,7 +626,7 @@ function createBrailleWorld(sceneApi, pageCells) {
     sceneApi.world.add(group);
   }
 
-  const sceneControls = createSceneControls(sceneApi);
+  const sceneControls = createSceneControls();
   sceneControls.forEach((control) => {
     const controlGroup = buildTactileControlMesh(control.kind, control.active);
     controlGroup.position.copy(control.position.clone().setY(0.12));
@@ -549,14 +647,14 @@ function renderCurrentPage(sceneApi) {
   const pageCells = getPageCells();
   updateSummary(pageCells);
   createBrailleWorld(sceneApi, pageCells);
-  render2DBoard(sceneApi, pageCells);
+  render2DBoard(pageCells);
 
   if (!pageCells.some((cell) => cell.cellId === state.selectedCellId)) {
     state.selectedCellId = pageCells[0]?.cellId ?? null;
   }
   state.hoveredTargetId = state.selectedCellId;
   if (state.selectedCellId) {
-    focusSelectedCell(sceneApi, pageCells);
+    focusSelectedCell(pageCells);
   } else {
     refreshInteractiveVisuals();
   }
@@ -592,7 +690,24 @@ async function loadPreview(sceneApi) {
   setStatus(`Generated ${payload.cell_count} tactile cells.`, "preview-generated");
 }
 
-function moveSelection(sceneApi, deltaRow, deltaColumn) {
+async function loadDocumentSegment(sceneApi, offset = 0) {
+  const document = currentDocument();
+  if (!document) {
+    throw new Error("No bundled document is available.");
+  }
+
+  const maxChars = Number(byId("document-segment-size").value) || document.recommended_excerpt_chars;
+  const url = `/api/library/documents/${encodeURIComponent(document.slug)}?offset=${offset}&max_chars=${maxChars}`;
+  const payload = await fetchJson(url);
+  state.activeDocumentPayload = payload;
+  byId("preview-text").value = payload.text;
+  updateDocumentPanel(document, payload);
+  syncCompanionAudio(document);
+  await loadPreview(sceneApi);
+  setStatus(`Loaded ${document.title} segment into the tactile buffer.`, `library-${document.slug}-${payload.offset}`);
+}
+
+function moveSelection(deltaRow, deltaColumn) {
   const pageCells = getPageCells();
   const current = pageCells.find((cell) => cell.cellId === state.selectedCellId) ?? pageCells[0];
   if (!current) {
@@ -604,7 +719,7 @@ function moveSelection(sceneApi, deltaRow, deltaColumn) {
   if (next) {
     state.selectedCellId = next.cellId;
     state.hoveredTargetId = next.cellId;
-    focusSelectedCell(sceneApi, pageCells);
+    focusSelectedCell(pageCells);
   }
 }
 
@@ -632,6 +747,7 @@ document.addEventListener("DOMContentLoaded", () => {
         target: [0, 0.18, 0.08],
         boundarySize: new THREE.Vector3(3.6, 0.95, 3.2),
       });
+      sceneApiRef = sceneApi;
 
       state.pointerController = attachPointerEmulation(sceneApi, {
         initialPosition: new THREE.Vector3(0, 0.22, 0.2),
@@ -642,14 +758,53 @@ document.addEventListener("DOMContentLoaded", () => {
         onActivate: () => activatePointerTarget(sceneApi, getPageCells()),
       });
 
-      byId("generate-preview").addEventListener("click", () => {
-        loadPreview(sceneApi).catch((error) => setStatus(error.message, "preview-error"));
+      const [documentPayload, audioPayload] = await Promise.all([
+        fetchJson(documentsUrl),
+        fetchJson(audioUrl),
+      ]);
+
+      state.libraryDocuments = documentPayload.documents;
+      state.libraryAudio = audioPayload.audio;
+
+      populateSelect(byId("library-document-select"), state.libraryDocuments, "slug", "title");
+      populateSelect(byId("library-audio-select"), state.libraryAudio, "slug", "title");
+
+      byId("library-audio-select").addEventListener("change", () => {
+        updateAudioPanel();
       });
 
-      byId("load-sample-text").addEventListener("click", () => {
-        byId("preview-text").value =
-          "Braille reading should remain tactile, spatial, and independent from the audio channel when needed.";
-        loadPreview(sceneApi).catch((error) => setStatus(error.message, "sample-error"));
+      byId("load-library-document").addEventListener("click", () => {
+        loadDocumentSegment(sceneApi).catch((error) => setStatus(error.message, "document-load-error"));
+      });
+
+      byId("load-previous-segment").addEventListener("click", () => {
+        const offset = state.activeDocumentPayload?.previous_offset;
+        if (offset === null || offset === undefined) {
+          setStatus("The current document is already at the first segment.", "document-prev-disabled");
+          return;
+        }
+        loadDocumentSegment(sceneApi, offset).catch((error) =>
+          setStatus(error.message, "document-prev-error"),
+        );
+      });
+
+      byId("load-next-segment").addEventListener("click", () => {
+        const offset = state.activeDocumentPayload?.next_offset;
+        if (offset === null || offset === undefined) {
+          setStatus("The current document is already at the last bundled segment.", "document-next-disabled");
+          return;
+        }
+        loadDocumentSegment(sceneApi, offset).catch((error) =>
+          setStatus(error.message, "document-next-error"),
+        );
+      });
+
+      byId("library-document-select").addEventListener("change", () => {
+        updateDocumentPanel(currentDocument(), null);
+      });
+
+      byId("generate-preview").addEventListener("click", () => {
+        loadPreview(sceneApi).catch((error) => setStatus(error.message, "preview-error"));
       });
 
       byId("rows-per-page").addEventListener("change", () => {
@@ -685,17 +840,23 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       document.addEventListener("keydown", (event) => {
-        if (event.target.tagName === "TEXTAREA" || event.target.tagName === "INPUT") {
+        if (
+          event.target.tagName === "TEXTAREA" ||
+          event.target.tagName === "INPUT" ||
+          event.target.tagName === "SELECT"
+        ) {
           return;
         }
-        if (event.key === "ArrowLeft") moveSelection(sceneApi, 0, -1);
-        if (event.key === "ArrowRight") moveSelection(sceneApi, 0, 1);
-        if (event.key === "ArrowUp") moveSelection(sceneApi, -1, 0);
-        if (event.key === "ArrowDown") moveSelection(sceneApi, 1, 0);
+        if (event.key === "ArrowLeft") moveSelection(0, -1);
+        if (event.key === "ArrowRight") moveSelection(0, 1);
+        if (event.key === "ArrowUp") moveSelection(-1, 0);
+        if (event.key === "ArrowDown") moveSelection(1, 0);
       });
 
       applyScale("standard");
-      await loadPreview(sceneApi);
+      updateDocumentPanel(currentDocument(), null);
+      updateAudioPanel();
+      await loadDocumentSegment(sceneApi);
     },
   );
 });

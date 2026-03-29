@@ -28,13 +28,44 @@
       <aside class="control-panel">
         <section class="panel-section">
           <div class="section-header">
-            <h2>Text Input</h2>
+            <h2>Reading Source</h2>
+          </div>
+          <label for="library-document-select">Internal document library</label>
+          <select id="library-document-select"></select>
+          <div class="status-stack">
+            <div class="status-card">
+              <span class="status-label">Author</span>
+              <span id="library-document-author" class="status-value">Loading</span>
+            </div>
+            <div class="status-card">
+              <span class="status-label">Format</span>
+              <span id="library-document-format" class="status-value">--</span>
+            </div>
+            <div class="status-card">
+              <span class="status-label">Segment</span>
+              <span id="library-document-range" class="status-value">0 - 0</span>
+            </div>
+          </div>
+          <label for="document-segment-size">Segment size (characters)</label>
+          <input id="document-segment-size" type="number" min="250" max="4000" value="1200">
+          <div class="button-row">
+            <button id="load-library-document" class="btn btn-primary" type="button">Load Document</button>
+            <button id="load-previous-segment" class="btn btn-secondary" type="button">Previous Segment</button>
+            <button id="load-next-segment" class="btn btn-secondary" type="button">Next Segment</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Text Buffer</h2>
           </div>
           <label for="preview-text">Text to render</label>
-          <textarea id="preview-text" rows="9">FeelIT creates tactile access.</textarea>
+          <textarea id="preview-text" rows="10"></textarea>
+          <p class="panel-text" id="library-document-summary">
+            Loading bundled public-domain document metadata.
+          </p>
           <div class="button-row">
             <button id="generate-preview" class="btn btn-primary" type="button">Generate Layout</button>
-            <button id="load-sample-text" class="btn btn-secondary" type="button">Load Sample</button>
           </div>
         </section>
 
@@ -135,6 +166,18 @@
 
         <section class="panel-section">
           <div class="section-header">
+            <h2>Library Segment</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Title</dt><dd id="summary-document-title">Loading</dd></div>
+            <div><dt>Source</dt><dd id="summary-document-source">Loading</dd></div>
+            <div><dt>Characters</dt><dd id="summary-document-characters">0</dd></div>
+            <div><dt>Audio</dt><dd id="summary-document-audio">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
             <h2>Layout Summary</h2>
           </div>
           <dl class="info-grid">
@@ -143,6 +186,16 @@
             <div><dt>Rows</dt><dd id="summary-rows">0</dd></div>
             <div><dt>Unicode</dt><dd id="summary-unicode">--</dd></div>
           </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Audio Library</h2>
+          </div>
+          <label for="library-audio-select">Companion audio</label>
+          <select id="library-audio-select"></select>
+          <audio id="library-audio-player" class="audio-player" controls preload="none"></audio>
+          <p id="library-audio-summary" class="panel-text">Optional audio references remain secondary to tactile reading.</p>
         </section>
 
         <section class="panel-section">
@@ -174,9 +227,11 @@
         </p>
         <h3>Current Interaction</h3>
         <ul>
-          <li>Generate Braille pages from text input.</li>
+          <li>Load bundled public-domain document segments into the tactile reading buffer.</li>
+          <li>Generate Braille pages from the current text buffer.</li>
           <li>Move the pointer emulator through the tactile world with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
           <li>Activate scene-native previous and next page controls with `Space` or `Enter`.</li>
+          <li>Use the optional audio library as a companion channel without replacing the tactile-first workflow.</li>
           <li>Keep the 2D reference board only as a secondary debugging and teaching view.</li>
         </ul>
       </div>

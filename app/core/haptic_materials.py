@@ -154,10 +154,51 @@ MATERIAL_PROFILES: tuple[HapticMaterialProfile, ...] = (
             "texture and friction cues supported by current haptic stacks."
         ),
     ),
+    HapticMaterialProfile(
+        slug="coated_paper",
+        title="Coated Paper",
+        category="thin_sheet",
+        summary="Thin rigid sheet with light drag and very shallow grain for document-like contact.",
+        stiffness_n_per_mm=0.82,
+        damping=0.18,
+        static_friction=0.24,
+        dynamic_friction=0.18,
+        texture_amplitude_mm=0.015,
+        texture_spacing_mm=1.1,
+        vibration_hz=110,
+        viscosity=0.05,
+        visual_color="#e9dec6",
+        visual_roughness=0.42,
+        visual_metalness=0.0,
+        capability_note=(
+            "Paper-like contact can be suggested with light stiffness, shallow microtexture, "
+            "and subtle friction, even though sheet flex is still only approximate."
+        ),
+    ),
+    HapticMaterialProfile(
+        slug="glazed_ceramic",
+        title="Glazed Ceramic",
+        category="rigid_smooth",
+        summary="Rigid smooth surface with low texture amplitude and slightly higher damping than metal.",
+        stiffness_n_per_mm=2.2,
+        damping=0.14,
+        static_friction=0.16,
+        dynamic_friction=0.12,
+        texture_amplitude_mm=0.01,
+        texture_spacing_mm=2.8,
+        vibration_hz=32,
+        viscosity=0.04,
+        visual_color="#d7dde8",
+        visual_roughness=0.22,
+        visual_metalness=0.06,
+        capability_note=(
+            "Ceramic-like contact is practical on current desktop haptics through rigid response, "
+            "limited texture, and a smoother drag profile than stone."
+        ),
+    ),
 )
 
 
 def build_material_catalog() -> list[dict[str, object]]:
     """Return the public material catalog."""
     return [asdict(profile) for profile in MATERIAL_PROFILES]
-

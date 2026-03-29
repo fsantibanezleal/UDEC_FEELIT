@@ -109,6 +109,16 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 failures.append(f"{scene.route} API status slot did not initialize: {api_status_text!r}")
             if error_overlay_count:
                 failures.append(f"{scene.route} rendered a visible stage boot error overlay")
+            if scene.route == "/braille-reader":
+                document_options = page.locator("#library-document-select option").count()
+                audio_options = page.locator("#library-audio-select option").count()
+                document_title = (page.locator("#summary-document-title").text_content() or "").strip()
+                if document_options == 0:
+                    failures.append("/braille-reader did not populate the internal document library selector")
+                if audio_options == 0:
+                    failures.append("/braille-reader did not populate the internal audio library selector")
+                if document_title in {"", "Loading"}:
+                    failures.append("/braille-reader did not initialize the active library document summary")
 
             print(
                 f"{scene.route}: unique_colors={unique_colors} "

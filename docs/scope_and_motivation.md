@@ -112,6 +112,8 @@ The current baseline already delivers:
 - a shared backend and frontend application spine
 - dedicated pages for the three major workspaces
 - a working Braille translation workflow
+- a bundled internal library of public-domain documents and companion audio samples
+- first-format document ingestion for TXT, HTML, and EPUB sources
 - real 3D workspace rendering for object, Braille, and desktop modes
 - stylus-style pointer emulation for no-device execution
 - scene-native tactile controls inside the Braille reading world
@@ -123,7 +125,8 @@ The current baseline does not yet deliver:
 
 - physical haptic bridge integration
 - full desktop action execution model
-- rich document ingestion beyond direct text input
+- full-document compatibility beyond the current TXT, HTML, and EPUB baseline
+- scene-native library selection for blind-first document session launch
 - force-feedback realization of the material profiles
 
 ## Success Criteria

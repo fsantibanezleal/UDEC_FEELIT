@@ -54,12 +54,14 @@ Route:
 
 Current use:
 
-- type or paste text
+- load a bundled public-domain document segment or type your own text
+- adjust the current document segment length for bounded reading sessions
 - choose the number of columns
 - generate a Braille preview layout
 - inspect the 3D Braille world and the auxiliary board together
 - move through the reading surface with the stylus-style pointer proxy
 - activate the scene-native previous and next tactile controls
+- optionally select companion audio without replacing the tactile-first workflow
 - inspect per-cell metadata by selecting rendered cells
 
 Current keyboard cues:
@@ -70,6 +72,12 @@ Current keyboard cues:
 - arrow keys: fallback debug navigation across the generated page
 
 This is the main legacy-aligned operational mode in the current baseline.
+
+Internal library endpoints used by this mode:
+
+- `GET /api/library/documents`
+- `GET /api/library/documents/{slug}`
+- `GET /api/library/audio`
 
 ### 3. Haptic Desktop
 
@@ -173,10 +181,29 @@ Example payload:
 }
 ```
 
+### Document Library Catalog
+
+```text
+GET /api/library/documents
+```
+
+### Document Segment Loader
+
+```text
+GET /api/library/documents/{slug}?offset=0&max_chars=1200
+```
+
+### Audio Library Catalog
+
+```text
+GET /api/library/audio
+```
+
 ## Current Limitations
 
 - no physical device bridge is connected yet
 - 3D object staging is currently client-side and focused on `.obj`
-- no document parser beyond direct text input is active yet
+- document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
+- bundled document selection still happens through the surrounding web controls rather than a scene-native library launcher
 - desktop actions are still frontend-level prototypes
 - haptic material profiles are plausible approximations, not full physical simulation

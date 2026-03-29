@@ -84,6 +84,9 @@ Current responsibilities:
 - mode catalog
 - material profile catalog
 - demo model catalog
+- bundled document library catalog
+- bundled document segment loading
+- bundled audio library catalog
 - haptic backend status
 - Braille preview translation
 
@@ -104,6 +107,8 @@ Current responsibilities:
 - Braille preview layout
 - haptic material profiles
 - bundled demo asset catalog
+- bundled public-domain document and audio catalogs
+- plain-text, HTML, and EPUB extraction for the internal reading library
 
 Current files:
 
@@ -113,6 +118,7 @@ Current files:
 - `app/core/braille.py`
 - `app/core/haptic_materials.py`
 - `app/core/demo_assets.py`
+- `app/core/library_assets.py`
 
 ## Haptic Runtime Layer
 
@@ -149,11 +155,12 @@ Current file:
 3. The user opens one of the dedicated mode routes.
 4. The shared frontend shell requests `/api/health` and `/api/meta`.
 5. The object explorer additionally calls `/api/materials` and `/api/demo-models`.
-6. Each workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
-7. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
-8. The Braille reader calls `/api/braille/preview` and realizes the response as a 3D tactile board with in-scene controls.
-9. The desktop mode instantiates a bounded desktop scene from its local interaction model.
-10. Runtime and device status are reflected in the current workspace.
+6. The Braille reader additionally calls `/api/library/documents` and `/api/library/audio`.
+7. Each workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
+8. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
+9. The Braille reader loads a bundled document segment, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene controls.
+10. The desktop mode instantiates a bounded desktop scene from its local interaction model.
+11. Runtime and device status are reflected in the current workspace.
 
 ## Future Extension Points
 
@@ -179,14 +186,17 @@ Next additions:
 Current baseline:
 
 - Braille translation API
+- internal public-domain library with TXT, HTML, and EPUB extraction
+- segmented document loading for bounded reading sessions
 - page slicing and 3D Braille board rendering
 - scene-native previous and next tactile controls
 - orientation rail and origin marker inside the reading world
+- optional companion audio catalog surfaced beside the reading workflow
 - selected-cell inspection and auxiliary 2D board
 
 Next additions:
 
-- document ingestion service for richer formats
+- richer document compatibility beyond the first supported formats
 - richer layout constraints tied to device workspace assumptions
 
 ### Haptic Desktop

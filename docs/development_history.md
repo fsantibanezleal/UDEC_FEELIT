@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.4.0 (2026-03-29)
+
+Release focused on the internal public-domain reading library, expanded demo assets, and stronger asset-validation coverage.
+
+Delivered:
+
+- Added a bundled public-domain document and audio library with TXT, HTML, and EPUB support plus segmented loading for the Braille Reader.
+- Expanded the bundled OBJ catalog with additional lightweight demo models and extended the material profile set with paper and ceramic approximations.
+- Hardened local execution and validation through a launcher regression fix, per-file asset-size tests, and richer browser smoke checks for the Braille workspace.
+
+Rationale:
+
+- Make the Braille Reader immediately demonstrable with curated internal content instead of ad hoc sample text.
+- Increase tactile exploration variety without inflating the repository or exceeding the 60 MB per-file asset threshold.
+- Treat asset provenance, runtime reliability, and regression coverage as part of the delivered product surface.
+
 ### v0.3.1 (2026-03-29)
 
 Release focused on reliable frontend bootstrap, visible startup diagnostics, and regression coverage for runtime placeholders.
@@ -107,7 +123,8 @@ Rationale:
 
 ### v0.4.x
 
-- richer Braille document ingestion
+- richer Braille document compatibility beyond TXT, HTML, and EPUB
+- scene-native library launch for blind-first reading sessions
 - improved layout constraints tied to device workspace assumptions
 
 ### v0.5.x

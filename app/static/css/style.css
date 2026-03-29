@@ -345,6 +345,11 @@ input[type="range"] {
   background: rgba(88, 166, 255, 0.22);
 }
 
+.btn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
 .inline-value-row {
   display: flex;
   justify-content: space-between;
@@ -686,6 +691,12 @@ input[type="range"] {
   color: var(--text-primary);
   font-size: 0.86rem;
   line-height: 1.5;
+}
+
+.audio-player {
+  width: 100%;
+  margin: 6px 0 10px;
+  filter: saturate(0.82) brightness(0.92);
 }
 
 .modal {
