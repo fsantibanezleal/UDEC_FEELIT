@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import socket
@@ -34,6 +35,14 @@ class SceneSpec:
     canvas_selector: str
     min_unique_colors: int
     wait_until: str = "domcontentloaded"
+
+
+@dataclass(frozen=True)
+class SnapshotReference:
+    """Track the most recent archived snapshot that represents one route."""
+
+    version: str
+    path: Path
 
 
 SCENES: tuple[SceneSpec, ...] = (
@@ -154,28 +163,108 @@ def assert_view_state_close(
         )
 
 
+def snapshot_image_name(scene: SceneSpec | str) -> str:
+    """Return the canonical image filename for one routed frontend surface."""
+    route = scene.route if isinstance(scene, SceneSpec) else scene
+    return f"{route.strip('/').replace('-', '_')}.png"
+
+
+def version_sort_key(version_label: str) -> tuple[int, ...]:
+    """Return a sortable numeric key for legacy and padded workspace versions."""
+    raw = version_label[1:] if version_label.startswith("v") else version_label
+    return tuple(int(part) for part in raw.split("."))
+
+
+def history_root_dir() -> Path:
+    """Return the tracked directory used for archived frontend snapshots."""
+    return ROOT / "artifacts" / "frontend_snapshots" / "history"
+
+
+def iter_history_versions(history_root: Path) -> list[tuple[str, Path]]:
+    """Return the archived snapshot directories sorted by semantic version order."""
+    if not history_root.exists():
+        return []
+
+    versions: list[tuple[str, Path]] = []
+    for path in history_root.iterdir():
+        if path.is_dir() and path.name.startswith("v"):
+            versions.append((path.name[1:], path))
+    versions.sort(key=lambda item: version_sort_key(item[0]))
+    return versions
+
+
+def file_digest(path: Path) -> str:
+    """Return a stable digest for comparing curated snapshot payloads."""
+    digest = hashlib.sha256()
+    digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def same_file_content(left: Path, right: Path) -> bool:
+    """Return True when two snapshot files carry identical bytes."""
+    return file_digest(left) == file_digest(right)
+
+
+def build_current_manifest_entries(routes: tuple[SceneSpec, ...]) -> list[dict[str, object]]:
+    """Describe the fully populated `current/` snapshot baseline."""
+    return [
+        {
+            "route": scene.route,
+            "image": snapshot_image_name(scene),
+            "archived": True,
+            "visual_source_version": None,
+        }
+        for scene in routes
+    ]
+
+
+def build_history_manifest_entries(
+    version: str,
+    version_dir: Path,
+    routes: tuple[SceneSpec, ...],
+    latest_refs: dict[str, SnapshotReference],
+) -> list[dict[str, object]]:
+    """Describe a sparse archived version directory with per-route provenance."""
+    entries: list[dict[str, object]] = []
+    for scene in routes:
+        image_name = snapshot_image_name(scene)
+        image_path = version_dir / image_name
+        active_ref = latest_refs.get(image_name)
+        entries.append(
+            {
+                "route": scene.route,
+                "image": image_name,
+                "archived": image_path.exists(),
+                "visual_source_version": version if image_path.exists() else active_ref.version if active_ref else None,
+            },
+        )
+    return entries
+
+
 def write_snapshot_manifest(
     target_dir: Path,
     *,
     base_url: str,
     routes: tuple[SceneSpec, ...],
     version: str,
+    route_entries: list[dict[str, object]] | None = None,
+    history_policy: str | None = None,
 ) -> None:
     """Write a small manifest describing one captured visual snapshot set."""
     target_dir.mkdir(parents=True, exist_ok=True)
+    entries = route_entries or build_current_manifest_entries(routes)
     manifest = {
         "app": "FeelIT",
         "version": version,
         "base_url": base_url,
         "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
-        "routes": [
-            {
-                "route": scene.route,
-                "image": f"{scene.route.strip('/').replace('-', '_')}.png",
-            }
-            for scene in routes
-        ],
+        "routes": entries,
     }
+    if history_policy:
+        manifest["history_policy"] = history_policy
+        manifest["changed_routes"] = [
+            entry["route"] for entry in entries if entry.get("archived")
+        ]
     (target_dir / "snapshot_manifest.json").write_text(
         json.dumps(manifest, indent=2),
         encoding="utf-8",
@@ -571,21 +660,94 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
         base_url="local_smoke_capture",
         routes=SCENES,
         version=APP_VERSION,
+        route_entries=build_current_manifest_entries(SCENES),
     )
 
 
-def archive_snapshot_set(current_dir: Path, archive_version: str) -> Path:
-    """Copy the current snapshot set into a versioned history folder."""
-    archive_dir = ROOT / "artifacts" / "frontend_snapshots" / "history" / f"v{archive_version}"
+def normalize_sparse_history(
+    history_root: Path,
+    routes: tuple[SceneSpec, ...] = SCENES,
+) -> None:
+    """Retrofit sparse history manifests and remove redundant archived route images."""
+    latest_refs: dict[str, SnapshotReference] = {}
+
+    for version, version_dir in iter_history_versions(history_root):
+        for scene in routes:
+            image_name = snapshot_image_name(scene)
+            image_path = version_dir / image_name
+            previous_ref = latest_refs.get(image_name)
+            if not image_path.exists():
+                continue
+            if previous_ref and same_file_content(image_path, previous_ref.path):
+                image_path.unlink()
+                continue
+            latest_refs[image_name] = SnapshotReference(version=version, path=image_path)
+
+        write_snapshot_manifest(
+            version_dir,
+            base_url="archived_release_snapshot",
+            routes=routes,
+            version=version,
+            route_entries=build_history_manifest_entries(version, version_dir, routes, latest_refs),
+            history_policy="sparse_changed_routes_only",
+        )
+
+
+def archive_snapshot_set(
+    current_dir: Path,
+    archive_version: str,
+    *,
+    routes: tuple[SceneSpec, ...] = SCENES,
+    history_root: Path | None = None,
+) -> Path:
+    """Freeze only the route snapshots that changed relative to prior archived baselines."""
+    resolved_history_root = history_root or history_root_dir()
+    archive_dir = resolved_history_root / f"v{archive_version}"
     prepare_snapshot_dir(archive_dir)
-    for file_path in current_dir.iterdir():
-        if file_path.is_file():
-            shutil.copy2(file_path, archive_dir / file_path.name)
+
+    latest_refs: dict[str, SnapshotReference] = {}
+    for version, version_dir in iter_history_versions(resolved_history_root):
+        if version == archive_version:
+            continue
+        for scene in routes:
+            image_name = snapshot_image_name(scene)
+            image_path = version_dir / image_name
+            if image_path.exists():
+                latest_refs[image_name] = SnapshotReference(version=version, path=image_path)
+
+    for scene in routes:
+        image_name = snapshot_image_name(scene)
+        current_image = current_dir / image_name
+        if not current_image.exists():
+            continue
+        previous_ref = latest_refs.get(image_name)
+        if previous_ref and same_file_content(current_image, previous_ref.path):
+            continue
+        shutil.copy2(current_image, archive_dir / image_name)
+
+    normalize_sparse_history(resolved_history_root, routes)
+    refreshed_refs = {
+        image_name: ref
+        for image_name, ref in latest_refs.items()
+    }
+    for scene in routes:
+        image_name = snapshot_image_name(scene)
+        image_path = archive_dir / image_name
+        if image_path.exists():
+            refreshed_refs[image_name] = SnapshotReference(version=archive_version, path=image_path)
+
     write_snapshot_manifest(
         archive_dir,
         base_url="archived_release_snapshot",
-        routes=SCENES,
+        routes=routes,
         version=archive_version,
+        route_entries=build_history_manifest_entries(
+            archive_version,
+            archive_dir,
+            routes,
+            refreshed_refs,
+        ),
+        history_policy="sparse_changed_routes_only",
     )
     return archive_dir
 
@@ -603,6 +765,11 @@ def main() -> None:
         "--archive-version",
         default="",
         help="Optional canonical workspace version used to also archive the captured screenshots under artifacts/frontend_snapshots/history/v<version>.",
+    )
+    parser.add_argument(
+        "--normalize-history",
+        action="store_true",
+        help="Normalize the tracked frontend history into sparse changed-route archives after capturing the current baseline.",
     )
     parser.add_argument(
         "--no-launch",
@@ -631,6 +798,9 @@ def main() -> None:
         if args.archive_version:
             archive_dir = archive_snapshot_set(Path(args.screenshot_dir), args.archive_version)
             print(f"Archived snapshot set at {archive_dir}")
+        elif args.normalize_history:
+            normalize_sparse_history(history_root_dir(), SCENES)
+            print(f"Normalized sparse snapshot history at {history_root_dir()}")
         print("Browser smoke test passed.")
     finally:
         if server_process is not None:
