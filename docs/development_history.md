@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v0.5.1 (2026-03-29)
+
+Patch release focused on full bundled gallery coverage in the demo workspace, clearer Haptic Desktop pagination, and isolated browser smoke validation.
+
+Delivered:
+
+- Merged the bundled demo workspace with the full internal model, text, and audio catalogs so every bundled asset appears in Haptic Desktop galleries.
+- Reduced gallery density per page and reworked gallery framing so multiple tactile items are clearly staged in the 3D scene at once.
+- Hardened the browser smoke test to launch FeelIT on an isolated temporary port and verify real gallery pagination.
+
+Rationale:
+
+- Keep the default demo workspace aligned with the actual internal library instead of drifting into a partial subset.
+- Make the gallery scene visually and operationally communicate that users are moving through a real paginated collection, not a single-item showcase.
+- Prevent false regression results caused by stale local servers already occupying the default application port.
+
 ### v0.5.0 (2026-03-29)
 
 Release focused on workspace-driven Haptic Desktop scenes, structured haptic_workspace descriptors, and the first external-workspace management flow.

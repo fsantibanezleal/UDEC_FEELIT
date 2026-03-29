@@ -6,7 +6,9 @@ import json
 
 from fastapi.testclient import TestClient
 
+from app.core.demo_assets import build_demo_model_catalog
 from app.core import haptic_workspace
+from app.core.library_assets import build_audio_catalog, build_document_catalog
 from app.main import app
 
 
@@ -15,9 +17,9 @@ def test_demo_workspace_catalog_exposes_bundled_workspace() -> None:
     demo = next((workspace for workspace in catalog if workspace["slug"] == "feelit_demo_workspace"), None)
     assert demo is not None
     assert demo["is_default"] is True
-    assert demo["category_counts"]["models"] >= 3
-    assert demo["category_counts"]["texts"] >= 3
-    assert demo["category_counts"]["audio"] >= 2
+    assert demo["category_counts"]["models"] == len(build_demo_model_catalog())
+    assert demo["category_counts"]["texts"] == len(build_document_catalog())
+    assert demo["category_counts"]["audio"] == len(build_audio_catalog())
 
 
 def test_demo_workspace_payload_resolves_bundled_libraries() -> None:
@@ -26,6 +28,20 @@ def test_demo_workspace_payload_resolves_bundled_libraries() -> None:
     assert any(item["kind"] == "model" for item in payload["libraries"]["models"])
     assert any(item["kind"] == "text" for item in payload["libraries"]["texts"])
     assert any(item["kind"] == "audio" for item in payload["libraries"]["audio"])
+
+
+def test_demo_workspace_payload_covers_all_bundled_assets() -> None:
+    payload = haptic_workspace.build_haptic_workspace_payload("feelit_demo_workspace")
+
+    assert {item["source"]["ref"] for item in payload["libraries"]["models"]} == {
+        item["slug"] for item in build_demo_model_catalog()
+    }
+    assert {item["source"]["ref"] for item in payload["libraries"]["texts"]} == {
+        item["slug"] for item in build_document_catalog()
+    }
+    assert {item["source"]["ref"] for item in payload["libraries"]["audio"]} == {
+        item["slug"] for item in build_audio_catalog()
+    }
 
 
 def test_demo_workspace_browser_payload_lists_internal_library_entries() -> None:

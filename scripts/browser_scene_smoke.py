@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import socket
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from PIL import Image
 from playwright.sync_api import sync_playwright
@@ -29,6 +31,13 @@ SCENES: tuple[SceneSpec, ...] = (
     SceneSpec(route="/braille-reader", canvas_selector="#braille-canvas", min_unique_colors=1500),
     SceneSpec(route="/haptic-desktop", canvas_selector="#desktop-canvas", min_unique_colors=1500),
 )
+
+
+def reserve_free_local_port() -> int:
+    """Return an available localhost TCP port for temporary test launches."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
 
 
 def wait_for_server(process: subprocess.Popen[str], timeout_seconds: int) -> None:
@@ -105,6 +114,17 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
+                page.locator("#focus-activate").click()
+                page.wait_for_function(
+                    """
+                    () => {
+                      const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                      const pagination = document.querySelector('#desktop-pagination')?.textContent?.trim() ?? '';
+                      return sceneCode === 'models-gallery' && pagination !== '' && pagination !== '--';
+                    }
+                    """,
+                    timeout=15_000,
+                )
             page.wait_for_timeout(1_200)
 
             screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
@@ -147,10 +167,15 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 workspace_options = page.locator("#desktop-workspace-select option").count()
                 workspace_title = (page.locator("#desktop-workspace-title").text_content() or "").strip()
                 scene_code = (page.locator("#desktop-scene-code").text_content() or "").strip()
+                pagination = (page.locator("#desktop-pagination").text_content() or "").strip()
                 if workspace_options == 0:
                     failures.append("/haptic-desktop did not populate the workspace selector")
                 if workspace_title in {"", "Loading", "No workspace"}:
                     failures.append("/haptic-desktop did not initialize the active workspace summary")
+                if scene_code != "models-gallery":
+                    failures.append("/haptic-desktop did not navigate from launcher into the models gallery")
+                if pagination in {"", "--", "1 / 1"}:
+                    failures.append("/haptic-desktop models gallery did not expose real pagination")
                 if scene_code in {"", "--", "Loading"}:
                     failures.append("/haptic-desktop did not initialize the scene code")
 
@@ -184,10 +209,15 @@ def main() -> None:
     args = parser.parse_args()
 
     server_process: subprocess.Popen[str] | None = None
+    base_url = args.base_url
     try:
         if not args.no_launch:
+            parsed = urlparse(args.base_url)
+            host = parsed.hostname or "127.0.0.1"
+            port = reserve_free_local_port()
+            base_url = f"http://{host}:{port}"
             server_process = subprocess.Popen(
-                [sys.executable, "run_app.py", "--no-browser"],
+                [sys.executable, "run_app.py", "--no-browser", "--host", host, "--port", str(port)],
                 cwd=ROOT,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -195,7 +225,7 @@ def main() -> None:
             )
             wait_for_server(server_process, timeout_seconds=30)
 
-        run_browser_smoke(args.base_url, Path(args.screenshot_dir))
+        run_browser_smoke(base_url, Path(args.screenshot_dir))
         print("Browser smoke test passed.")
     finally:
         if server_process is not None:

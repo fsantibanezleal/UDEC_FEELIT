@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document separates what FeelIT `0.5.0` demonstrably implements today from what remains partial, planned, or hardware-dependent.
+This document separates what FeelIT `0.5.1` demonstrably implements today from what remains partial, planned, or hardware-dependent.
 
 It is intentionally conservative. If a behavior is not visible in the runtime, testable through the current repo, or clearly encoded in the shipped code path, it is not treated here as delivered.
 
@@ -83,6 +83,7 @@ Implemented:
 - dedicated workspace-manager route for creating and registering workspaces rooted in external folders
 - launcher scene for curated models, texts, audio, and workspace file browsing
 - paginated gallery scenes backed by workspace payloads
+- bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
 - file-browser scene rooted in the configured workspace path
 - detail plaque scene that exposes the content name before opening it
 - opened scenes for 3D models, Braille reading, and audio transport
