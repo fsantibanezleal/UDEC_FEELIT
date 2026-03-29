@@ -26,7 +26,8 @@ def test_parse_version_recovers_numeric_segments() -> None:
 
 
 def test_package_version_uses_normalized_numeric_segments() -> None:
-    assert PACKAGE_VERSION == "2.5.2"
+    major, minor, patch = parse_version(APP_VERSION)
+    assert PACKAGE_VERSION == f"{major}.{minor}.{patch}"
 
 
 def test_windows_file_version_helpers_keep_display_and_numeric_forms() -> None:
