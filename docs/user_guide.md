@@ -29,11 +29,12 @@ Route:
 
 Current use:
 
-- choose a bundled OBJ model or local OBJ file
-- stage the current object in the live 3D workspace
-- select a tactile material profile
+- start from a scene-native 3D launcher with paged demo-model session targets
+- open a bundled demo object directly from the 3D world or stage a local OBJ file from the outer controls
+- select a tactile material profile or cycle materials from the in-scene controls once a session is open
 - adjust bounded workspace scale
 - move the stylus-style pointer proxy with keyboard support
+- use the in-scene `Launcher` control to return to the object-session launcher on the current page
 - emulate a surface contact on the staged object
 
 Current keyboard cues:
@@ -42,7 +43,7 @@ Current keyboard cues:
 - `Q`, `E`: move vertically
 - `Space` or `Enter`: emulate contact near the current object surface
 
-This workspace currently focuses on visual staging and tactile context preparation ahead of native haptic contact rendering.
+This workspace now has a blind-first entry path for curated demo models, but local uploads and broader asset-format support remain secondary to that launcher flow.
 
 ### 2. Braille Reader
 

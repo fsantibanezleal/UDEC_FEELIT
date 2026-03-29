@@ -15,6 +15,23 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.07.000 (2026-03-29)
+
+Add a scene-native object-session launcher and blind-first session flow to the 3D Object Explorer.
+
+Delivered:
+
+- Rebuilt Object Explorer around a paged scene-native launcher for curated demo-model sessions instead of booting directly into one preloaded object.
+- Added in-scene Launcher plus material-cycling controls so a session can open, evolve, and return without depending only on the surrounding browser panel.
+- Extended browser smoke validation to prove launcher pagination, launcher-driven model entry, exploration-scene opening, and return to the originating launcher page.
+- Froze a new sparse visual baseline for the route under the `v2.07.000` archive after the launcher redesign.
+
+Rationale:
+
+- The Explorer needed the same blind-first interaction standard already established in Braille Reader and Haptic Desktop.
+- Curated demo sessions should begin from tactile scene targets inside the 3D world, not only from form controls outside it.
+- Launcher-driven validation is necessary so the regression suite protects the real interaction contract rather than only API availability.
+
 ### v2.06.002 (2026-03-29)
 
 Extend deterministic frontend capture and browser-driven desktop validation for the demo workspace.

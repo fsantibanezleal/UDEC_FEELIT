@@ -28,7 +28,7 @@ Implemented:
 - four-route frontend shell served from the backend on port `8101`
 - shared Three.js scene runtime with bounded workspace, orbit camera, and stylus-style pointer emulator
 - visual fallback execution when no haptic hardware is attached
-- browser smoke validation for the three primary 3D scenes with desktop workspace bootstrap checks
+- browser smoke validation for the three primary 3D scenes with launcher or scene-transition checks plus desktop workspace bootstrap checks
 
 Notable evidence:
 
@@ -43,9 +43,11 @@ Notable evidence:
 Implemented:
 
 - bundled local OBJ demo catalog exposed through the API
+- scene-native paged launcher for curated demo-model sessions
 - local OBJ upload and in-browser parsing
 - haptic material profile selection grounded in plausible current-device approximations
 - visible exploration plinth and adaptive scene bounds
+- in-scene Launcher plus material-cycling controls inside the exploration world
 - pointer hover and activation feedback in the rendered scene
 
 Still limited:
@@ -54,6 +56,7 @@ Still limited:
 - no support beyond OBJ
 - no native force model tied to real haptic hardware
 - no persistent model metadata or saved exploration sessions
+- local upload still enters through the surrounding web controls rather than a scene-native intake path
 
 ### Braille Reader
 

@@ -148,27 +148,67 @@ def desktop_activate_matching_target(
     )
 
 
+def object_explorer_activate_matching_target(
+    page,
+    *,
+    title: str | None = None,
+    type_name: str | None = None,
+) -> bool:
+    """Activate one Object Explorer target selected by title or type through the debug API."""
+    return bool(
+        page.evaluate(
+            """
+            async (criteria) => {
+              const debug = window.__feelitObjectExplorerDebug;
+              if (!debug?.targets || !debug?.activateTarget) {
+                return false;
+              }
+              const target = debug.targets().find((item) => {
+                if (criteria.title && item.title !== criteria.title) {
+                  return false;
+                }
+                if (criteria.type_name && item.type !== criteria.type_name) {
+                  return false;
+                }
+                return !item.disabled;
+              });
+              if (!target) {
+                return false;
+              }
+              return debug.activateTarget(target.id);
+            }
+            """,
+            {
+                "title": title,
+                "type_name": type_name,
+            },
+        ),
+    )
+
+
 def stabilize_scene_for_capture(page, route: str) -> None:
     """Reset one routed frontend surface into a deterministic capture state."""
     if route == "/object-explorer":
         stabilized = page.evaluate(
             """
-            () => {
-              const debug = window.__feelitSceneDebug?.["object-explorer"];
-              if (!debug?.resetCamera || !debug?.setIdleAnimationEnabled || !debug?.resetIdleAnimatedObjects || !debug?.renderNow) {
+            async () => {
+              const debug = window.__feelitObjectExplorerDebug;
+              if (!debug?.stabilizeForCapture) {
                 return false;
               }
-              debug.clearPersistedViewState?.();
-              debug.resetCamera();
-              debug.setIdleAnimationEnabled(false);
-              debug.resetIdleAnimatedObjects();
-              debug.renderNow();
+              await debug.stabilizeForCapture();
               return true;
             }
             """,
         )
         if not stabilized:
             raise SystemExit("Object Explorer capture stabilization failed.")
+        page.wait_for_function(
+            """
+            () => (document.querySelector('#explorer-scene-mode')?.textContent?.trim() ?? '') === 'Scene launcher'
+            """,
+            timeout=15_000,
+        )
         page.wait_for_timeout(150)
         return
 
@@ -427,6 +467,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
         for scene in SCENES:
             console_messages: list[str] = []
             page_errors: list[str] = []
+            object_launcher_loaded = False
+            object_launcher_paginated = False
+            object_model_loaded = False
+            object_launcher_returned = False
             desktop_gallery_loaded = False
             desktop_gallery_paginated = False
             page = browser.new_page(viewport={"width": 1600, "height": 1000}, device_scale_factor=1)
@@ -445,6 +489,84 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
 
             page.goto(f"{base_url}{scene.route}", wait_until=scene.wait_until, timeout=30_000)
             page.wait_for_selector(scene.canvas_selector, state="visible", timeout=15_000)
+            if scene.route == "/object-explorer":
+                page.wait_for_function(
+                    """
+                    () => {
+                      const sceneMode = document.querySelector('#explorer-scene-mode')?.textContent?.trim() ?? '';
+                      const launcherPage = document.querySelector('#explorer-launcher-page')?.textContent?.trim() ?? '';
+                      const modelName = document.querySelector('#inspector-model-name')?.textContent?.trim() ?? '';
+                      return sceneMode !== '' && sceneMode !== 'Loading' && launcherPage !== '' && launcherPage !== '--' && modelName !== '' && modelName !== '--';
+                    }
+                    """,
+                    timeout=15_000,
+                )
+                scene_mode = (page.locator("#explorer-scene-mode").text_content() or "").strip()
+                if scene_mode != "Scene launcher":
+                    failures.append(
+                        f"/object-explorer did not boot into the scene launcher; scene_mode={scene_mode!r}",
+                    )
+                else:
+                    object_launcher_loaded = True
+                page_two_loaded = page.evaluate(
+                    """
+                    async () => {
+                      const debug = window.__feelitObjectExplorerDebug;
+                      if (!debug?.activateTarget || !debug?.targetIds) {
+                        return false;
+                      }
+                      if (!debug.targetIds().includes('launcher-next-page')) {
+                        return false;
+                      }
+                      await debug.activateTarget('launcher-next-page');
+                      return true;
+                    }
+                    """,
+                )
+                if not page_two_loaded:
+                    failures.append("/object-explorer could not activate the launcher next-page control")
+                else:
+                    page.wait_for_function(
+                        """
+                        () => (document.querySelector('#explorer-launcher-page')?.textContent?.trim() ?? '').startsWith('2 /')
+                        """,
+                        timeout=15_000,
+                    )
+                    object_launcher_paginated = True
+                if not object_explorer_activate_matching_target(page, title="Female Figure"):
+                    failures.append("/object-explorer could not activate a page-2 launcher model target")
+                else:
+                    page.wait_for_function(
+                        """
+                        () => (document.querySelector('#explorer-scene-mode')?.textContent?.trim() ?? '') === 'Exploration scene'
+                        """,
+                        timeout=15_000,
+                    )
+                    object_model_loaded = True
+                    if not page.evaluate(
+                        """
+                        async () => {
+                          const debug = window.__feelitObjectExplorerDebug;
+                          if (!debug?.activateTarget) {
+                            return false;
+                          }
+                          return debug.activateTarget('exploration-launcher');
+                        }
+                        """,
+                    ):
+                        failures.append("/object-explorer could not activate the exploration Launcher control")
+                    else:
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneMode = document.querySelector('#explorer-scene-mode')?.textContent?.trim() ?? '';
+                              const launcherPage = document.querySelector('#explorer-launcher-page')?.textContent?.trim() ?? '';
+                              return sceneMode === 'Scene launcher' && launcherPage.startsWith('2 /');
+                            }
+                            """,
+                            timeout=15_000,
+                        )
+                        object_launcher_returned = True
             if scene.route == "/braille-reader":
                 page.wait_for_function(
                     """
@@ -970,6 +1092,24 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     f"bodyScrollHeight={overflow_metrics['bodyScrollHeight']} "
                     f"innerHeight={overflow_metrics['innerHeight']}",
                 )
+            if scene.route == "/object-explorer":
+                scene_mode = (page.locator("#explorer-scene-mode").text_content() or "").strip()
+                launcher_page = (page.locator("#explorer-launcher-page").text_content() or "").strip()
+                model_name = (page.locator("#inspector-model-name").text_content() or "").strip()
+                if scene_mode != "Scene launcher":
+                    failures.append(f"/object-explorer did not settle back on the scene launcher: {scene_mode!r}")
+                if launcher_page in {"", "--"}:
+                    failures.append("/object-explorer did not initialize the launcher page indicator")
+                if model_name in {"", "--"}:
+                    failures.append("/object-explorer did not initialize the selected model summary")
+                if not object_launcher_loaded:
+                    failures.append("/object-explorer did not boot into the scene launcher")
+                if not object_launcher_paginated:
+                    failures.append("/object-explorer did not expose real launcher pagination")
+                if not object_model_loaded:
+                    failures.append("/object-explorer did not open a scene-native model session from the launcher")
+                if not object_launcher_returned:
+                    failures.append("/object-explorer did not return from the exploration scene back to the launcher page")
             if scene.route == "/braille-reader":
                 document_options = page.locator("#library-document-select option").count()
                 audio_options = page.locator("#library-audio-select option").count()

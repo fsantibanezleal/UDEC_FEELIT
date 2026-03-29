@@ -13,7 +13,7 @@ The current repository is not a single long web page. It is a multi-workspace ap
 - `/haptic-desktop`
 - `/haptic-workspace-manager`
 
-The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, and a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries.
+The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, and a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries.
 
 ## Problem Framing
 
@@ -65,15 +65,15 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Public port | `8101` |
-| Canonical version | `2.06.002` |
+| Canonical version | `2.07.000` |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `48` automated tests passing plus browser smoke validation across the `4` routed pages |
+| Current validation surface | `49` automated tests passing plus browser smoke validation across the `4` routed pages |
 
 ## Scope And Current Status
 
 ### Current Workspaces
 
-- `3D Object Explorer`: stages bundled or local OBJ geometry, applies tactile material presets, and prepares bounded exploration scenes.
+- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local OBJ geometry, and exposes tactile material cycling inside the 3D world.
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, and now surfaces registry diagnostics when registered descriptors are missing or invalid.

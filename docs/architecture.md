@@ -71,6 +71,7 @@ This avoids collapsing incompatible workflows into one long page.
 The object explorer, Braille reader, and haptic desktop each render an actual 3D world as the main pane:
 
 - the object explorer stages real OBJ meshes inside a bounded scene
+- the object explorer now begins from a scene-native object-session launcher and then opens exploration scenes with in-world launcher and material controls
 - the Braille reader starts from a scene-native tactile library launcher and then renders the tactile board as raised 3D geometry with scene-native navigation controls
 - the desktop mode renders a workspace-driven launcher, galleries, a typed file browser, detail plaques, and opened content scenes
 - the shared pointer emulator behaves as a stylus-like proxy when no hardware device is attached
@@ -177,7 +178,7 @@ Current file:
 6. The Braille reader additionally calls `/api/library/documents` and `/api/library/audio`.
 7. Haptic Desktop calls `/api/haptic-workspaces` and resolves the selected `haptic_workspace`.
 8. Each spatial workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
-9. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
+9. The object explorer resolves the bundled demo-model catalog into a scene-native object-session launcher, then stages the selected OBJ mesh plus tactile material context on a visible exploration plinth.
 10. The Braille reader loads the bundled library catalog, opens a document from a scene-native launcher, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene page, segment, and library-return controls.
 11. Haptic Desktop moves between launcher, gallery, file-browser, detail, and opened-content scenes using workspace-driven payloads.
 12. File-browser entries use kind-specific tactile forms and dispatch supported files directly into the corresponding runtime scene.
@@ -192,9 +193,10 @@ Current baseline:
 
 - real OBJ loading from local bundled assets
 - local OBJ upload and client-side parsing
+- scene-native paged launcher for curated demo-model sessions
 - bounded 3D scene with stylus-like pointer proxy
 - visible exploration plinth and adaptive scene bounds
-- tactile material preset selection
+- tactile material preset selection plus in-scene material cycling and launcher return controls
 
 Next additions:
 

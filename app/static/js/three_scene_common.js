@@ -378,6 +378,12 @@ export function createWorkspaceScene(canvas, options = {}) {
     return idleAnimationEnabled;
   }
 
+  function setDampingEnabled(enabled) {
+    controls.enableDamping = Boolean(enabled);
+    controls.update();
+    return controls.enableDamping;
+  }
+
   function resetIdleAnimatedObjects() {
     world.children.forEach((child) => {
       if (child.userData.rotateOnIdle) {
@@ -441,6 +447,7 @@ export function createWorkspaceScene(canvas, options = {}) {
     setPointerPosition,
     setPointerState,
     setPointerVisible,
+    setDampingEnabled,
     setIdleAnimationEnabled,
     resetIdleAnimatedObjects,
   };
