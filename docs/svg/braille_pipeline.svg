@@ -151,5 +151,5 @@
 
   <rect x="78" y="836" width="1444" height="94" rx="22" fill="#111827" stroke="#30363d"/>
   <text x="110" y="872" class="cardTitle">Operational Baseline</text>
-  <text x="110" y="904" class="legend">Blue connectors represent the verified runtime path already implemented in FeelIT 2.06.000. The green connector marks the future extension where the same Braille model can later feed a native haptic backend.</text>
+  <text x="110" y="904" class="legend">Blue connectors represent the verified runtime path already implemented in FeelIT 2.06.001. The green connector marks the future extension where the same Braille model can later feed a native haptic backend.</text>
 </svg>

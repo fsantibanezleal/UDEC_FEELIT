@@ -82,6 +82,7 @@ Implemented:
 
 - structured `haptic_workspace` descriptor format with bundled demo workspace
 - dedicated workspace-manager route for creating and registering workspaces rooted in external folders
+- explicit registry diagnostics for missing or invalid registered workspace descriptors
 - launcher scene with a neutral launcher hub plus curated entry points for models, texts, audio, and workspace file browsing
 - paginated gallery scenes backed by workspace payloads
 - bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.core.demo_assets import build_demo_model_catalog
 from app.core import haptic_workspace
-from app.core.library_assets import build_audio_catalog, build_document_catalog
+from app.core.library_assets import build_audio_catalog, build_document_catalog, build_text_payload_from_path
 from app.main import app
 
 
@@ -99,6 +99,63 @@ def test_create_workspace_file_auto_populates_supported_assets(tmp_path, monkeyp
     assert any(item["kind"] == "audio" for item in payload["libraries"]["audio"])
 
 
+def test_workspace_auto_populate_generates_collision_safe_library_slugs(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "a-b.txt").write_text("one", encoding="utf-8")
+    (workspace_root / "a_b.txt").write_text("two", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="Collision Safe Workspace",
+        slug="collision_safe_workspace",
+        description="Temporary workspace for collision testing.",
+        root_path=str(workspace_root),
+        auto_populate=True,
+    )
+
+    workspace_payload = haptic_workspace.build_haptic_workspace_payload("collision_safe_workspace")
+    browser_payload = haptic_workspace.build_workspace_browser_payload("collision_safe_workspace")
+
+    library_slugs = [item["slug"] for item in workspace_payload["libraries"]["texts"]]
+    browser_slugs = [
+        entry["slug"]
+        for entry in browser_payload["entries"]
+        if entry["title"] in {"a-b.txt", "a_b.txt"}
+    ]
+
+    assert len(library_slugs) == len(set(library_slugs))
+    assert len(browser_slugs) == len(set(browser_slugs))
+
+
+def test_workspace_text_payload_uses_collision_safe_slug_seed(tmp_path) -> None:
+    document_a = tmp_path / "a" / "sample.txt"
+    document_b = tmp_path / "b" / "sample.txt"
+    document_a.parent.mkdir()
+    document_b.parent.mkdir()
+    document_a.write_text("hello", encoding="utf-8")
+    document_b.write_text("world", encoding="utf-8")
+
+    payload_a = build_text_payload_from_path(
+        document_a,
+        title="Sample A",
+        source_name="Workspace file",
+        source_url="a/sample.txt",
+        slug_seed="a/sample.txt",
+    )
+    payload_b = build_text_payload_from_path(
+        document_b,
+        title="Sample B",
+        source_name="Workspace file",
+        source_url="b/sample.txt",
+        slug_seed="b/sample.txt",
+    )
+
+    assert payload_a["slug"] != payload_b["slug"]
+
+
 def test_haptic_workspace_create_and_register_endpoints_use_external_registry(tmp_path, monkeypatch) -> None:
     registry_file = tmp_path / "registry.json"
     monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
@@ -154,6 +211,61 @@ def test_haptic_workspace_create_and_register_endpoints_use_external_registry(tm
     payload = catalog_response.json()
     assert any(workspace["slug"] == "created_workspace" for workspace in payload["workspaces"])
     assert any(workspace["slug"] == "registered_workspace" for workspace in payload["workspaces"])
+
+
+def test_workspace_manager_payload_surfaces_invalid_registered_descriptors(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    valid_root = tmp_path / "valid_workspace"
+    valid_root.mkdir()
+    valid_descriptor = valid_root / "valid_workspace.haptic_workspace.json"
+    valid_descriptor.write_text(
+        json.dumps(
+            {
+                "format": haptic_workspace.WORKSPACE_FORMAT,
+                "format_version": 1,
+                "slug": "valid_workspace",
+                "title": "Valid Workspace",
+                "description": "",
+                "is_default": False,
+                "content_root": {"mode": "absolute", "path": str(valid_root)},
+                "file_browser_root": {"mode": "absolute", "path": str(valid_root)},
+                "libraries": {"models": [], "texts": [], "audio": []},
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    invalid_root = tmp_path / "invalid_workspace"
+    invalid_root.mkdir()
+    invalid_descriptor = invalid_root / "invalid_workspace.haptic_workspace.json"
+    invalid_descriptor.write_text('{"format":"broken"}', encoding="utf-8")
+    missing_descriptor = tmp_path / "missing_workspace.haptic_workspace.json"
+
+    registry_file.write_text(
+        json.dumps(
+            {
+                "workspace_files": [
+                    str(valid_descriptor),
+                    str(invalid_descriptor),
+                    str(missing_descriptor),
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    payload = haptic_workspace.build_workspace_manager_payload()
+
+    assert any(workspace["slug"] == "valid_workspace" for workspace in payload["workspaces"])
+    assert len(payload["invalid_workspaces"]) == 2
+    assert {entry["error_code"] for entry in payload["invalid_workspaces"]} == {
+        "invalid_descriptor",
+        "missing_file",
+    }
 
 
 def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import posixpath
 import re
 import zipfile
@@ -404,6 +405,7 @@ def build_text_payload_from_path(
     title: str,
     source_name: str,
     source_url: str,
+    slug_seed: str | None = None,
     offset: int = 0,
     max_chars: int = 1200,
 ) -> dict[str, object]:
@@ -411,7 +413,7 @@ def build_text_payload_from_path(
     text = extract_document_text_from_path(path)
     excerpt, start, end = _clip_excerpt(text, offset, max_chars)
     return {
-        "slug": _slugify_path(path),
+        "slug": _slugify_path(path, slug_seed=slug_seed),
         "title": title,
         "author": "Unknown",
         "format": path.suffix.lower().lstrip("."),
@@ -433,9 +435,12 @@ def build_text_payload_from_path(
     }
 
 
-def _slugify_path(path: Path) -> str:
-    """Convert a filesystem path into a stable slug."""
-    return re.sub(r"[^a-z0-9]+", "_", path.stem.lower()).strip("_") or "document"
+def _slugify_path(path: Path, *, slug_seed: str | None = None) -> str:
+    """Convert a filesystem path into a stable collision-resistant slug."""
+    seed = slug_seed or path.as_posix()
+    base = re.sub(r"[^a-z0-9]+", "_", path.stem.lower()).strip("_") or "document"
+    digest = hashlib.sha1(seed.encode("utf-8")).hexdigest()[:8]
+    return f"{base}_{digest}"
 
 
 def build_document_payload(slug: str, *, offset: int = 0, max_chars: int | None = None) -> dict[str, object]:

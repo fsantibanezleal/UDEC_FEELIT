@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -71,6 +72,14 @@ def _slugify(value: str) -> str:
     """Normalize a user-facing name into a filesystem-safe slug."""
     slug = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
     return slug or "workspace"
+
+
+def _stable_slug(value: str, *, prefix: str | None = None) -> str:
+    """Return a collision-resistant slug derived from one source identity."""
+    normalized = _slugify(value)
+    digest = hashlib.sha1(value.encode("utf-8")).hexdigest()[:8]
+    parts = [part for part in (prefix, normalized, digest) if part]
+    return "_".join(parts)
 
 
 def _ensure_registry_file() -> None:
@@ -256,9 +265,10 @@ def _load_workspace_record(path: Path, *, registry_source: str) -> dict[str, Any
     }
 
 
-def _workspace_records() -> list[dict[str, Any]]:
-    """Return all known workspaces, including the bundled demo workspace."""
+def _workspace_registry_snapshot() -> dict[str, list[dict[str, Any]]]:
+    """Return valid and invalid workspace registry entries with diagnostics."""
     records: list[dict[str, Any]] = []
+    invalid_records: list[dict[str, Any]] = []
     seen_paths: set[Path] = set()
     demo_path = DEMO_WORKSPACE_FILE.resolve()
     if demo_path.exists():
@@ -268,14 +278,40 @@ def _workspace_records() -> list[dict[str, Any]]:
     registry_payload = _load_registry_payload()
     for raw_path in registry_payload.get("workspace_files", []):
         path = Path(raw_path).expanduser().resolve()
-        if path in seen_paths or not path.exists():
+        if path in seen_paths:
+            continue
+        if not path.exists():
+            invalid_records.append(
+                {
+                    "workspace_file_path": str(path),
+                    "registry_source": "user_registered",
+                    "error_code": "missing_file",
+                    "error": "Registered workspace file does not exist.",
+                },
+            )
             continue
         try:
             records.append(_load_workspace_record(path, registry_source="user_registered"))
             seen_paths.add(path)
-        except ValueError:
+        except ValueError as error:
+            invalid_records.append(
+                {
+                    "workspace_file_path": str(path),
+                    "registry_source": "user_registered",
+                    "error_code": "invalid_descriptor",
+                    "error": str(error),
+                },
+            )
             continue
-    return records
+    return {
+        "records": records,
+        "invalid_records": invalid_records,
+    }
+
+
+def _workspace_records() -> list[dict[str, Any]]:
+    """Return all valid known workspaces, including the bundled demo workspace."""
+    return _workspace_registry_snapshot()["records"]
 
 
 def _workspace_record_by_slug(slug: str) -> dict[str, Any]:
@@ -436,7 +472,7 @@ def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[
         child_relative = child.relative_to(record["file_browser_root"]).as_posix()
         kind = detect_entry_kind(child)
         entry = {
-            "slug": _slugify(child_relative),
+            "slug": _stable_slug(child_relative, prefix="entry"),
             "title": child.name,
             "summary": f"{kind.title()} entry in the configured workspace root.",
             "kind": kind,
@@ -494,6 +530,7 @@ def build_workspace_text_payload(slug: str, relative_path: str, *, offset: int =
         title=file_path.name,
         source_name="Workspace file",
         source_url=file_path.as_posix(),
+        slug_seed=relative_path,
         offset=offset,
         max_chars=max_chars,
     )
@@ -539,7 +576,7 @@ def _auto_collect_workspace_items(root_path: Path, kind: str) -> list[dict[str, 
         relative_path = path.relative_to(root_path).as_posix()
         items.append(
             {
-                "slug": _slugify(relative_path),
+                "slug": _stable_slug(relative_path, prefix=kind[:-1]),
                 "title": path.stem.replace("_", " ").replace("-", " ").title(),
                 "summary": f"Auto-discovered {kind[:-1]} from the workspace root.",
                 "source": {"kind": "workspace_file", "relative_path": relative_path},
@@ -587,8 +624,10 @@ def create_workspace_file(
 
 def build_workspace_manager_payload() -> dict[str, Any]:
     """Return workspace-manager metadata for the frontend page."""
+    snapshot = _workspace_registry_snapshot()
     return {
         "workspace_suffix": WORKSPACE_SUFFIX,
         "registry_file_path": str(REGISTRY_FILE),
         "workspaces": build_haptic_workspace_catalog(),
+        "invalid_workspaces": snapshot["invalid_records"],
     }

@@ -132,5 +132,5 @@
   <rect x="78" y="154" width="224" height="26" rx="13" fill="#79c0ff"/>
   <text x="101" y="172" class="badge">ROUTED WORKSPACES</text>
   <rect x="1314" y="154" width="208" height="26" rx="13" fill="rgba(255,255,255,0.10)" stroke="#30363d"/>
-  <text x="1338" y="172" class="legend">Release line: 2.06.000 baseline</text>
+  <text x="1338" y="172" class="legend">Release line: 2.06.001 current baseline</text>
 </svg>
