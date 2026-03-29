@@ -12,6 +12,7 @@ from pathlib import Path
 import uvicorn
 
 from app.core.config import APP_HOST, APP_NAME, APP_PORT
+from app.main import app as feelit_app
 
 
 def executable_directory() -> Path:
@@ -35,7 +36,7 @@ def main() -> None:
     if not args.no_browser:
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()
 
-    uvicorn.run("app.main:app", host=args.host, port=args.port, reload=False)
+    uvicorn.run(feelit_app, host=args.host, port=args.port, reload=False)
 
 
 if __name__ == "__main__":

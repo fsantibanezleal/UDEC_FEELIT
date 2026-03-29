@@ -52,6 +52,20 @@ These profiles are not claims of perfect material simulation. They are pragmatic
 - stable friction profile
 - useful for engineered surfaces and generic demo figures
 
+### Coated Paper
+
+- light stiffness
+- subtle drag
+- very shallow surface grain
+- useful for books, document stacks, and Braille-adjacent reading props
+
+### Glazed Ceramic
+
+- rigid smooth response
+- low texture amplitude
+- cleaner drag profile than stone
+- useful for vessels and other polished household objects
+
 ## Parameter Families
 
 Each profile currently exposes:

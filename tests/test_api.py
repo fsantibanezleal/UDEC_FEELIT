@@ -56,7 +56,9 @@ def test_frontend_mode_routes_are_served() -> None:
     assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200
     assert "Braille Reader" in braille_response.text
-    assert "Previous Page (Fallback)" in braille_response.text
+    assert "Load Document" in braille_response.text
+    assert "Previous Segment" in braille_response.text
+    assert "Companion audio" in braille_response.text
     assert "WASD/QE pointer" in braille_response.text
     assert 'type="module" src="/static/js/braille_reader.js"' in braille_response.text
     assert '/static/js/app.js" defer' not in braille_response.text
@@ -92,7 +94,7 @@ def test_demo_model_endpoint_exposes_local_obj_assets() -> None:
         response = client.get("/api/demo-models")
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload["models"]) >= 4
+    assert len(payload["models"]) >= 9
     assert all(model["file_url"].endswith(".obj") for model in payload["models"])
 
 
@@ -118,3 +120,34 @@ def test_braille_preview_returns_positioned_cells() -> None:
     assert payload["cell_count"] == 6
     assert payload["cells"][0]["row"] == 0
     assert payload["cells"][3]["row"] == 1
+
+
+def test_library_document_catalog_endpoint_exposes_bundled_formats() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/library/documents")
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload["supported_formats"]) == {"txt", "html", "epub"}
+    assert len(payload["documents"]) >= 5
+    assert all(document["file_size_bytes"] < 60 * 1024 * 1024 for document in payload["documents"])
+
+
+def test_library_document_payload_endpoint_returns_segmented_text() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/library/documents/alice_in_wonderland_txt?offset=0&max_chars=900")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["title"] == "Alice's Adventures in Wonderland"
+    assert "Alice" in payload["text"]
+    assert payload["loaded_characters"] <= 900
+    assert payload["next_offset"] is not None
+
+
+def test_library_audio_catalog_endpoint_exposes_tracks() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/library/audio")
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["audio"]) >= 4
+    assert all(track["file_url"].endswith(".mp3") for track in payload["audio"])
+    assert all(track["file_size_bytes"] < 60 * 1024 * 1024 for track in payload["audio"])

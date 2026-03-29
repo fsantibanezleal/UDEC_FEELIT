@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document separates what FeelIT `0.3.1` demonstrably implements today from what remains partial, planned, or hardware-dependent.
+This document separates what FeelIT `0.4.0` demonstrably implements today from what remains partial, planned, or hardware-dependent.
 
 It is intentionally conservative. If a behavior is not visible in the runtime, testable through the current repo, or clearly encoded in the shipped code path, it is not treated here as delivered.
 
@@ -23,6 +23,7 @@ This audit is based on:
 Implemented:
 
 - FastAPI backend with public metadata, health, mode catalog, material catalog, demo-model catalog, and Braille preview endpoints
+- internal-library document and audio catalog endpoints for bundled public-domain assets
 - canonical semantic version source with synchronized README and Windows packaging metadata
 - three-mode frontend shell served from the backend on port `8101`
 - shared Three.js scene runtime with bounded workspace, orbit camera, and stylus-style pointer emulator
@@ -58,16 +59,20 @@ Still limited:
 
 Implemented:
 
+- bundled public-domain document library with TXT, HTML, and EPUB extraction
+- segmented library loading for bounded Braille sessions
 - text-to-Braille conversion and positioned cell layout
 - bounded 3D reading surface with raised dots
 - scene-native previous and next tactile controls
 - orientation cues inside the reading world
+- optional companion-audio catalog surfaced alongside the reading workflow
 - auxiliary 2D board for debugging and teaching
 
 Still limited:
 
-- no richer document ingestion beyond direct text input
+- no compatibility yet for PDF, DOCX, Markdown, or OCR-derived document sources
 - no hardware-calibrated workspace adaptation for a specific haptic device
+- no scene-native library launcher for blind-first document selection
 - no formal tactile reading performance validation yet
 
 ### Haptic Desktop
@@ -116,7 +121,7 @@ The repository does not yet deliver:
 
 - a native haptic backend beside the null backend
 - runtime device capability detection beyond the null fallback report
-- rich document ingestion for the Braille reader
+- full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side import and validation for 3D assets
 - real desktop action execution semantics
 - hardware-backed tactile realization of the material profiles
@@ -140,6 +145,6 @@ Those belong to the modernization path, not to the verified archived implementat
 ## Recommended Near-Term Priorities
 
 1. Build a first native backend integration boundary so the material and workspace models can move beyond visual approximation.
-2. Add richer document ingestion for the Braille reader while preserving the scene-native control model.
+2. Extend the Braille library with richer compatibility and blind-first scene-native library access.
 3. Extend the 3D asset pipeline with server-side validation and additional formats.
 4. Replace the desktop prototype labels and actions with a real content graph plus audio-assisted activation outcomes.

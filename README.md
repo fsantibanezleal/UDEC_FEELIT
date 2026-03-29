@@ -12,11 +12,11 @@ FeelIT is a modernization of a university-era accessibility project focused on g
 - `/braille-reader`
 - `/haptic-desktop`
 
-The current implementation provides real 3D workspace rendering across all three modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
+The current implementation provides real 3D workspace rendering across all three modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, a bundled public-domain reading and audio library, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
 
 ## Current Version
 
-`0.3.1`
+`0.4.0`
 
 ## Public Port
 
@@ -52,8 +52,30 @@ FeelIT now ships local OBJ demo assets for exploratory testing:
 - `male02.obj`
 - `female02.obj`
 - `Cerberus.obj`
+- `ninjaHead_Low.obj`
+- `closed_book.obj`
+- `open_book.obj`
+- `terrain_peak.obj`
+- `vase_lowpoly.obj`
 
 These are exposed through `GET /api/demo-models` and documented in [Asset Sources](docs/asset_sources.md).
+
+## Internal Reading Library
+
+The Braille Reader now bundles an internal public-domain library with segmented loading support:
+
+- `txt`: Alice's Adventures in Wonderland, Pride and Prejudice, Feeding the Mind
+- `html`: The Raven
+- `epub`: Pride and Prejudice
+- companion audio: curated LibriVox / Project Gutenberg tracks
+
+These are exposed through:
+
+- `GET /api/library/documents`
+- `GET /api/library/documents/{slug}`
+- `GET /api/library/audio`
+
+See [Library Catalog](docs/library_catalog.md) and [Asset Sources](docs/asset_sources.md).
 
 ## Quick Start
 
@@ -99,8 +121,12 @@ python scripts\browser_scene_smoke.py
 - stylus-style pointer emulation with hover and activation feedback
 - visible startup diagnostics when a workspace fails to initialize
 - bundled OBJ demo assets plus local OBJ upload for staging
+- bundled public-domain document and audio library for Braille sessions
 - tactile material catalog exposed at `GET /api/materials`
 - demo model catalog exposed at `GET /api/demo-models`
+- document library catalog exposed at `GET /api/library/documents`
+- document segment loading exposed at `GET /api/library/documents/{slug}`
+- audio catalog exposed at `GET /api/library/audio`
 - Braille preview API at `POST /api/braille/preview`
 - bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
 - prototype 3D desktop scene with distinct tactile object families
@@ -113,6 +139,7 @@ python scripts\browser_scene_smoke.py
 - [Architecture](docs/architecture.md)
 - [Implementation Gap Audit](docs/implementation_gap_audit.md)
 - [Material Profiles](docs/material_profiles.md)
+- [Library Catalog](docs/library_catalog.md)
 - [Asset Sources](docs/asset_sources.md)
 - [Theory](docs/theory.md)
 - [Development History](docs/development_history.md)
