@@ -17,7 +17,7 @@ The current implementation provides real 3D workspace rendering across the spati
 
 ## Current Version
 
-`2.05.004`
+`2.05.005`
 
 ## Public Port
 
@@ -146,6 +146,7 @@ python scripts\browser_scene_smoke.py --archive-version <released-version>
 - FastAPI backend on port `8101`
 - four-page frontend shell aligned to the reference workbench style
 - real 3D workspace rendering in all three user modes
+- per-route camera viewpoint persistence across scene changes until the user resets or leaves the page
 - stylus-style pointer emulation with hover and activation feedback
 - visible startup diagnostics when a workspace fails to initialize
 - bundled OBJ demo assets plus local OBJ upload for staging

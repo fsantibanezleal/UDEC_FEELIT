@@ -245,9 +245,7 @@ function bindAudioPlayer() {
 }
 
 function setCamera(position, target) {
-  state.sceneApi.camera.position.set(...position);
-  state.sceneApi.controls.target.set(...target);
-  state.sceneApi.controls.update();
+  state.sceneApi.applySceneView(position, target, { preserveUserView: true });
 }
 
 function normalizePage(page, pageCount) {
@@ -2440,6 +2438,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cameraPosition: [4.9, 3.2, 5.1],
         target: [0, 0.28, 0.08],
         boundarySize: new THREE.Vector3(6, 1.8, 5),
+        debugKey: "haptic-desktop",
       });
 
       state.pointerController = attachPointerEmulation(state.sceneApi, {

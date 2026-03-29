@@ -94,6 +94,7 @@ export function createWorkspaceScene(canvas, options = {}) {
   const pointerColor = options.pointerColor ?? 0xf2cc60;
   const boundarySize = options.boundarySize ?? new THREE.Vector3(4, 2.8, 4);
   const frameCallbacks = new Set();
+  const debugKey = options.debugKey ?? document.body?.dataset?.page ?? window.location.pathname;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(background);
@@ -106,11 +107,93 @@ export function createWorkspaceScene(canvas, options = {}) {
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.01, 100);
   camera.position.set(...cameraPosition);
+  const defaultViewState = {
+    position: [...cameraPosition],
+    target: [...target],
+    zoom: camera.zoom,
+  };
+  let persistedViewState = null;
+  let suppressViewTracking = 0;
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.target.set(...target);
   controls.update();
+
+  function getViewState() {
+    return {
+      position: camera.position.toArray(),
+      target: controls.target.toArray(),
+      zoom: camera.zoom,
+    };
+  }
+
+  function withSuppressedViewTracking(callback) {
+    suppressViewTracking += 1;
+    try {
+      callback();
+    } finally {
+      suppressViewTracking -= 1;
+    }
+  }
+
+  function applyRawViewState(viewState) {
+    camera.position.set(...viewState.position);
+    controls.target.set(...viewState.target);
+    if (typeof viewState.zoom === "number" && camera.zoom !== viewState.zoom) {
+      camera.zoom = viewState.zoom;
+      camera.updateProjectionMatrix();
+    }
+    controls.update();
+  }
+
+  function persistViewState() {
+    persistedViewState = getViewState();
+    return persistedViewState;
+  }
+
+  function clearPersistedViewState() {
+    persistedViewState = null;
+  }
+
+  function hasPersistedViewState() {
+    return persistedViewState !== null;
+  }
+
+  function applySceneView(nextPosition, nextTarget, options = {}) {
+    const { preserveUserView = true } = options;
+    const desiredViewState = {
+      position: [...nextPosition],
+      target: [...nextTarget],
+      zoom: defaultViewState.zoom,
+    };
+
+    withSuppressedViewTracking(() => {
+      if (preserveUserView && persistedViewState) {
+        applyRawViewState(persistedViewState);
+        return;
+      }
+      applyRawViewState(desiredViewState);
+    });
+  }
+
+  function setViewState(viewState, options = {}) {
+    const { persist = false } = options;
+    withSuppressedViewTracking(() => {
+      applyRawViewState(viewState);
+    });
+    if (persist) {
+      persistedViewState = getViewState();
+    }
+    return getViewState();
+  }
+
+  controls.addEventListener("change", () => {
+    if (suppressViewTracking > 0) {
+      return;
+    }
+    persistViewState();
+  });
 
   scene.add(new THREE.HemisphereLight(0xdde7ff, 0x0b1220, 1.1));
   const keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
@@ -277,15 +360,16 @@ export function createWorkspaceScene(canvas, options = {}) {
   function frameObject(object, distance = 4.8) {
     const box = new THREE.Box3().setFromObject(object);
     const center = box.getCenter(new THREE.Vector3());
-    controls.target.copy(center);
-    camera.position.set(center.x + distance * 0.62, center.y + distance * 0.54, center.z + distance);
-    controls.update();
+    applySceneView(
+      [center.x + distance * 0.62, center.y + distance * 0.54, center.z + distance],
+      center.toArray(),
+      { preserveUserView: true },
+    );
   }
 
   function resetCamera() {
-    camera.position.set(...cameraPosition);
-    controls.target.set(...target);
-    controls.update();
+    clearPersistedViewState();
+    applySceneView(defaultViewState.position, defaultViewState.target, { preserveUserView: false });
   }
 
   function animate() {
@@ -306,7 +390,7 @@ export function createWorkspaceScene(canvas, options = {}) {
   animate();
   window.addEventListener("resize", resizeRenderer);
 
-  return {
+  const api = {
     THREE,
     scene,
     world,
@@ -322,6 +406,12 @@ export function createWorkspaceScene(canvas, options = {}) {
     frameObject,
     resetCamera,
     resizeRenderer,
+    getViewState,
+    setViewState,
+    applySceneView,
+    persistViewState,
+    clearPersistedViewState,
+    hasPersistedViewState,
     registerFrameCallback(callback) {
       frameCallbacks.add(callback);
       return () => frameCallbacks.delete(callback);
@@ -333,6 +423,11 @@ export function createWorkspaceScene(canvas, options = {}) {
     setPointerState,
     setPointerVisible,
   };
+
+  window.__feelitSceneDebug ??= {};
+  window.__feelitSceneDebug[debugKey] = api;
+
+  return api;
 }
 
 export function attachPointerEmulation(sceneApi, options = {}) {
