@@ -129,6 +129,7 @@ Current use:
 - auto-populate model, text, and audio libraries from supported files already present in that root
 - register an existing `.haptic_workspace.json` descriptor file
 - review the current workspace catalog before opening a workspace inside Haptic Desktop
+- inspect registry diagnostics when a previously registered workspace file is missing or its descriptor is invalid
 
 ## Runtime Information
 

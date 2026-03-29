@@ -20,7 +20,27 @@ README_FILE = ROOT / "README.md"
 HISTORY_FILE = ROOT / "docs" / "development_history.md"
 
 VERSION_SOURCE_PATTERN = re.compile(r'APP_VERSION = "(\d+\.\d{2}\.\d{3})"')
-README_VERSION_PATTERN = re.compile(r"(## Current Version\s+`)([^`]+)(`)", re.MULTILINE)
+README_HEADING_VERSION_PATTERN = re.compile(r"(## Current Version\s+`)([^`]+)(`)", re.MULTILINE)
+README_TABLE_VERSION_PATTERN = re.compile(r"(\| Canonical version \| `)([^`]+)(` \|)", re.MULTILINE)
+
+
+def replace_once_or_fail(
+    pattern: re.Pattern[str],
+    source: str,
+    replacement: str,
+    *,
+    file_label: str,
+    anchor_label: str,
+) -> str:
+    """Replace one required anchor and fail fast when it is missing or duplicated."""
+    updated, replacement_count = pattern.subn(replacement, source, count=1)
+    if replacement_count != 1:
+        raise SystemExit(
+            f"Unable to update {anchor_label} in {file_label}. "
+            "Expected exactly one matching anchor.",
+        )
+    return updated
+
 
 def bump(value: str, level: str) -> str:
     """Return a bumped workspace version using the padded canonical format."""
@@ -43,14 +63,39 @@ def bullet_block(lines: list[str], fallback: str) -> str:
 def update_version_source(new_version: str) -> None:
     """Update the canonical version file."""
     source = VERSION_FILE.read_text(encoding="utf-8")
-    updated = VERSION_SOURCE_PATTERN.sub(f'APP_VERSION = "{new_version}"', source, count=1)
+    updated = replace_once_or_fail(
+        VERSION_SOURCE_PATTERN,
+        source,
+        f'APP_VERSION = "{new_version}"',
+        file_label=str(VERSION_FILE),
+        anchor_label="APP_VERSION",
+    )
     VERSION_FILE.write_text(updated, encoding="utf-8")
 
 
 def update_readme_version(new_version: str) -> None:
     """Update the README current-version anchor."""
     source = README_FILE.read_text(encoding="utf-8")
-    updated = README_VERSION_PATTERN.sub(rf"\g<1>{new_version}\g<3>", source, count=1)
+    patterns = (
+        (README_HEADING_VERSION_PATTERN, "README current version heading"),
+        (README_TABLE_VERSION_PATTERN, "README canonical version row"),
+    )
+    updated = None
+    for pattern, anchor_label in patterns:
+        if pattern.search(source):
+            updated = replace_once_or_fail(
+                pattern,
+                source,
+                rf"\g<1>{new_version}\g<3>",
+                file_label=str(README_FILE),
+                anchor_label=anchor_label,
+            )
+            break
+    if updated is None:
+        raise SystemExit(
+            f"Unable to update the README version anchor in {README_FILE}. "
+            "Expected either the current-version heading or the canonical-version table row.",
+        )
     README_FILE.write_text(updated, encoding="utf-8")
 
 

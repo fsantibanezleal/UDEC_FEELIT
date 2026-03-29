@@ -10,6 +10,7 @@ function byId(id) {
 
 const state = {
   workspaces: [],
+  invalidWorkspaces: [],
   selectedSlug: null,
 };
 
@@ -76,6 +77,43 @@ function renderWorkspaceList() {
   });
 }
 
+function renderInvalidWorkspaceList() {
+  const container = byId("invalid-workspace-list");
+  container.innerHTML = "";
+
+  if (state.invalidWorkspaces.length === 0) {
+    const message = document.createElement("p");
+    message.className = "panel-text";
+    message.textContent = "No invalid registered workspace descriptors were detected.";
+    container.appendChild(message);
+    return;
+  }
+
+  state.invalidWorkspaces.forEach((workspace) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-invalid";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = workspace.error_code === "missing_file" ? "Missing workspace file" : "Invalid workspace descriptor";
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = workspace.error;
+
+    const meta = document.createElement("span");
+    meta.className = "workspace-card-meta";
+    meta.textContent = workspace.registry_source;
+
+    const path = document.createElement("span");
+    path.className = "workspace-card-path";
+    path.textContent = workspace.workspace_file_path;
+
+    card.append(title, description, meta, path);
+    container.appendChild(card);
+  });
+}
+
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
@@ -88,16 +126,24 @@ async function fetchJson(url, options = {}) {
 async function refreshCatalog() {
   const payload = await fetchJson(workspaceCatalogUrl);
   state.workspaces = payload.workspaces;
+  state.invalidWorkspaces = payload.invalid_workspaces || [];
   state.selectedSlug = state.selectedSlug || payload.workspaces[0]?.slug || null;
   byId("workspace-count").textContent = String(payload.workspaces.length);
+  byId("invalid-workspace-count").textContent = String(state.invalidWorkspaces.length);
   byId("workspace-suffix").textContent = payload.workspace_suffix;
   byId("workspace-registry-path").textContent = payload.registry_file_path;
   renderWorkspaceList();
+  renderInvalidWorkspaceList();
   renderSelectedWorkspace(
     state.workspaces.find((workspace) => workspace.slug === state.selectedSlug) ?? state.workspaces[0],
   );
   byId("manager-runtime-pill").textContent = "Registry ready";
-  setStatus("Workspace registry loaded.", "Ready");
+  setStatus(
+    state.invalidWorkspaces.length > 0
+      ? `Workspace registry loaded with ${state.invalidWorkspaces.length} invalid descriptor(s).`
+      : "Workspace registry loaded.",
+    state.invalidWorkspaces.length > 0 ? "Warning" : "Ready",
+  );
 }
 
 async function createWorkspace() {

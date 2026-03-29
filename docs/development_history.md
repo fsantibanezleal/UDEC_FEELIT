@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.06.001 (2026-03-29)
+
+Stabilize workspace identity, surface registry diagnostics, and harden release metadata synchronization.
+
+Delivered:
+
+- Made workspace browser entries, auto-populated workspace items, and arbitrary text payloads use collision-resistant stable slugs derived from source identity.
+- Surfaced invalid registered haptic workspaces through the manager payload and frontend diagnostics instead of silently dropping them.
+- Made the version bump helper fail fast when required source or README anchors are missing, and added regression tests for those failure modes.
+
+Rationale:
+
+- Distinct files must not collapse onto the same logical target inside Haptic Desktop scenes or arbitrary text ingestion flows.
+- Workspace management should expose repairable registry problems instead of hiding them from the user and the maintainer.
+- Release tooling should fail explicitly when synchronization anchors drift, so documentation and packaging metadata cannot silently go stale.
+
 ### v2.06.000 (2026-03-29)
 
 Introduce a scene-native Braille library launcher so tactile reading sessions can begin and return inside the 3D world.
