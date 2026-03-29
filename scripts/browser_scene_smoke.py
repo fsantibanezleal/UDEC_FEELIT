@@ -86,6 +86,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
             screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
             page.locator(scene.canvas_selector).screenshot(path=str(screenshot_path))
             unique_colors = measure_canvas_colors(screenshot_path)
+            version_text = (page.locator('[data-runtime="version"]').first.text_content() or "").strip()
+            api_status_text = (page.locator('[data-runtime="api-status"]').first.text_content() or "").strip()
+            error_overlay_count = page.locator(".stage-error-overlay").count()
 
             error_logs = [
                 line for line in console_messages
@@ -100,8 +103,18 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     f"{scene.route} canvas looks under-rendered: "
                     f"{unique_colors} unique colors < {scene.min_unique_colors}",
                 )
+            if version_text in {"", "v--", "Loading", "Error"}:
+                failures.append(f"{scene.route} runtime version slot did not initialize: {version_text!r}")
+            if api_status_text in {"", "Loading", "error"}:
+                failures.append(f"{scene.route} API status slot did not initialize: {api_status_text!r}")
+            if error_overlay_count:
+                failures.append(f"{scene.route} rendered a visible stage boot error overlay")
 
-            print(f"{scene.route}: unique_colors={unique_colors} screenshot={screenshot_path}")
+            print(
+                f"{scene.route}: unique_colors={unique_colors} "
+                f"version={version_text} api_status={api_status_text} "
+                f"screenshot={screenshot_path}",
+            )
             page.close()
 
         browser.close()

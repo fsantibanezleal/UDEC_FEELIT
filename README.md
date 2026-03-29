@@ -12,11 +12,11 @@ FeelIT is a modernization of a university-era accessibility project focused on g
 - `/braille-reader`
 - `/haptic-desktop`
 
-The current implementation provides real 3D workspace rendering across all three modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, bundled OBJ demo assets, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
+The current implementation provides real 3D workspace rendering across all three modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, tactile material presets grounded in current desktop-haptics capabilities, and a null-hardware-safe runtime foundation for future physical device integration.
 
 ## Current Version
 
-`0.3.0`
+`0.3.1`
 
 ## Public Port
 
@@ -97,6 +97,7 @@ python scripts\browser_scene_smoke.py
 - multi-page frontend shell aligned to the reference workbench style
 - real 3D workspace rendering in all three user modes
 - stylus-style pointer emulation with hover and activation feedback
+- visible startup diagnostics when a workspace fails to initialize
 - bundled OBJ demo assets plus local OBJ upload for staging
 - tactile material catalog exposed at `GET /api/materials`
 - demo model catalog exposed at `GET /api/demo-models`

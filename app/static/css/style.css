@@ -259,6 +259,12 @@ a {
   background: rgba(194, 151, 255, 0.12);
 }
 
+.status-pill-danger {
+  color: #ff7b72;
+  border-color: rgba(255, 123, 114, 0.38);
+  background: rgba(255, 123, 114, 0.12);
+}
+
 label,
 .panel-text {
   color: var(--text-secondary);
@@ -501,6 +507,38 @@ input[type="range"] {
   background: rgba(13, 17, 23, 0.84);
   color: var(--accent-cyan);
   font-size: 0.78rem;
+}
+
+.stage-error-overlay {
+  position: absolute;
+  inset: 22px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid rgba(255, 123, 114, 0.36);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(13, 17, 23, 0.52), rgba(13, 17, 23, 0.92)),
+    radial-gradient(circle at top left, rgba(255, 123, 114, 0.18), transparent 36%);
+  pointer-events: none;
+}
+
+.stage-error-title {
+  color: #ff7b72;
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stage-error-body {
+  margin: 0;
+  max-width: 560px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 0.88rem;
 }
 
 .subsurface-panel {

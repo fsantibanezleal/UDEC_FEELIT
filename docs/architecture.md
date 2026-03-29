@@ -30,6 +30,8 @@ All user workspaces share:
 - help modal pattern
 - dark technical visual language
 - a real 3D scene as the primary workspace for spatial modes
+- module-based frontend bootstrap through the shared shell helper
+- visible boot diagnostics when runtime initialization fails
 
 Current shared files:
 
