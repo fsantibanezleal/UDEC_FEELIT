@@ -114,6 +114,7 @@ export function createWorkspaceScene(canvas, options = {}) {
   };
   let persistedViewState = null;
   let suppressViewTracking = 0;
+  let idleAnimationEnabled = true;
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
@@ -372,17 +373,34 @@ export function createWorkspaceScene(canvas, options = {}) {
     applySceneView(defaultViewState.position, defaultViewState.target, { preserveUserView: false });
   }
 
+  function setIdleAnimationEnabled(enabled) {
+    idleAnimationEnabled = Boolean(enabled);
+    return idleAnimationEnabled;
+  }
+
+  function resetIdleAnimatedObjects() {
+    world.children.forEach((child) => {
+      if (child.userData.rotateOnIdle) {
+        child.rotation.y = 0;
+      }
+    });
+  }
+
+  function renderNow() {
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
   function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
     world.children.forEach((child) => {
-      if (child.userData.rotateOnIdle) {
+      if (idleAnimationEnabled && child.userData.rotateOnIdle) {
         child.rotation.y += delta * 0.18;
       }
     });
     frameCallbacks.forEach((callback) => callback(delta));
-    controls.update();
-    renderer.render(scene, camera);
+    renderNow();
   }
 
   resizeRenderer();
@@ -405,6 +423,7 @@ export function createWorkspaceScene(canvas, options = {}) {
     normalizeObject,
     frameObject,
     resetCamera,
+    renderNow,
     resizeRenderer,
     getViewState,
     setViewState,
@@ -422,6 +441,8 @@ export function createWorkspaceScene(canvas, options = {}) {
     setPointerPosition,
     setPointerState,
     setPointerVisible,
+    setIdleAnimationEnabled,
+    resetIdleAnimatedObjects,
   };
 
   window.__feelitSceneDebug ??= {};

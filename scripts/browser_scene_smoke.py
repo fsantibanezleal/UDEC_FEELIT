@@ -105,6 +105,132 @@ def cycle_focus_to(page, label: str, *, max_steps: int = 20) -> bool:
     return focused_label(page) == label
 
 
+def desktop_activate_matching_target(
+    page,
+    *,
+    title: str | None = None,
+    type_name: str | None = None,
+    title_suffix: str | None = None,
+) -> bool:
+    """Activate one Haptic Desktop target selected by title or type through the debug API."""
+    return bool(
+        page.evaluate(
+            """
+            async (criteria) => {
+              const debug = window.__feelitDesktopDebug;
+              if (!debug?.targets || !debug?.activateTarget) {
+                return false;
+              }
+              const target = debug.targets().find((item) => {
+                if (criteria.title && item.title !== criteria.title) {
+                  return false;
+                }
+                if (criteria.type_name && item.type !== criteria.type_name) {
+                  return false;
+                }
+                if (criteria.title_suffix && !item.title.endsWith(criteria.title_suffix)) {
+                  return false;
+                }
+                return !item.disabled;
+              });
+              if (!target) {
+                return false;
+              }
+              return debug.activateTarget(target.id);
+            }
+            """,
+            {
+                "title": title,
+                "type_name": type_name,
+                "title_suffix": title_suffix,
+            },
+        ),
+    )
+
+
+def stabilize_scene_for_capture(page, route: str) -> None:
+    """Reset one routed frontend surface into a deterministic capture state."""
+    if route == "/object-explorer":
+        stabilized = page.evaluate(
+            """
+            () => {
+              const debug = window.__feelitSceneDebug?.["object-explorer"];
+              if (!debug?.resetCamera || !debug?.setIdleAnimationEnabled || !debug?.resetIdleAnimatedObjects || !debug?.renderNow) {
+                return false;
+              }
+              debug.clearPersistedViewState?.();
+              debug.resetCamera();
+              debug.setIdleAnimationEnabled(false);
+              debug.resetIdleAnimatedObjects();
+              debug.renderNow();
+              return true;
+            }
+            """,
+        )
+        if not stabilized:
+            raise SystemExit("Object Explorer capture stabilization failed.")
+        page.wait_for_timeout(150)
+        return
+
+    if route == "/braille-reader":
+        stabilized = page.evaluate(
+            """
+            async () => {
+              const brailleDebug = window.__feelitBrailleDebug;
+              if (brailleDebug?.getSceneMode?.() === "reading") {
+                await brailleDebug.activateTarget?.("control-library");
+              }
+              const debug = window.__feelitSceneDebug?.["braille-reader"];
+              if (!debug?.clearPersistedViewState || !debug?.setViewState || !debug?.renderNow) {
+                return false;
+              }
+              debug.clearPersistedViewState();
+              debug.setViewState(
+                { position: [4.1, 2.9, 4.9], target: [0, 0.2, 0.2], zoom: 1 },
+                { persist: false },
+              );
+              debug.setIdleAnimationEnabled?.(false);
+              debug.resetIdleAnimatedObjects?.();
+              debug.renderNow();
+              return true;
+            }
+            """,
+        )
+        if not stabilized:
+            raise SystemExit("Braille Reader capture stabilization failed.")
+        page.wait_for_function(
+            """
+            () => (document.querySelector('#reader-scene-mode')?.textContent?.trim() ?? '') === 'Library launcher'
+            """,
+            timeout=15_000,
+        )
+        page.wait_for_timeout(150)
+        return
+
+    if route == "/haptic-desktop":
+        stabilized = page.evaluate(
+            """
+            async () => {
+              const debug = window.__feelitDesktopDebug;
+              if (!debug?.stabilizeForCapture) {
+                return false;
+              }
+              await debug.stabilizeForCapture();
+              return true;
+            }
+            """,
+        )
+        if not stabilized:
+            raise SystemExit("Haptic Desktop capture stabilization failed.")
+        page.wait_for_function(
+            """
+            () => (document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '') === 'launcher'
+            """,
+            timeout=15_000,
+        )
+        page.wait_for_timeout(150)
+
+
 def viewport_overflow_metrics(page) -> dict[str, float]:
     """Return document-vs-viewport sizing metrics for overflow checks."""
     return page.evaluate(
@@ -257,7 +383,6 @@ def write_snapshot_manifest(
         "app": "FeelIT",
         "version": version,
         "base_url": base_url,
-        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "routes": entries,
     }
     if history_policy:
@@ -265,10 +390,22 @@ def write_snapshot_manifest(
         manifest["changed_routes"] = [
             entry["route"] for entry in entries if entry.get("archived")
         ]
-    (target_dir / "snapshot_manifest.json").write_text(
-        json.dumps(manifest, indent=2),
-        encoding="utf-8",
-    )
+    manifest_path = target_dir / "snapshot_manifest.json"
+    existing_manifest: dict[str, object] | None = None
+    if manifest_path.exists():
+        existing_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    comparable_manifest = dict(manifest)
+    existing_comparable_manifest = None
+    if existing_manifest is not None:
+        existing_comparable_manifest = dict(existing_manifest)
+        existing_comparable_manifest.pop("generated_at_utc", None)
+        if existing_comparable_manifest == comparable_manifest:
+            manifest["generated_at_utc"] = existing_manifest.get("generated_at_utc")
+            return
+
+    manifest["generated_at_utc"] = datetime.now(UTC).replace(microsecond=0).isoformat()
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
 def prepare_snapshot_dir(target_dir: Path) -> None:
@@ -375,6 +512,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     "target": [0.4, 0.52, -0.28],
                     "zoom": 1,
                 }
+                desktop_browser_text_loaded = False
+                desktop_browser_audio_loaded = False
+                desktop_browser_model_loaded = False
                 page.wait_for_function(
                     """
                     () => {
@@ -554,8 +694,8 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         failures.append(
                             f"/haptic-desktop entered the file browser with focus on {focused_label(page)!r} instead of 'Browser'",
                         )
-                    if not cycle_focus_to(page, "documents"):
-                        failures.append("/haptic-desktop could not focus the documents folder from the file browser root")
+                    if not cycle_focus_to(page, "library"):
+                        failures.append("/haptic-desktop could not focus the library folder from the file browser root")
                     else:
                         if not cycle_focus_to(page, "Launcher"):
                             failures.append("/haptic-desktop could not focus the file-browser Launcher control")
@@ -579,21 +719,35 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         else:
                             page.locator("#focus-activate").click()
                             page.wait_for_timeout(1_000)
-                        if not cycle_focus_to(page, "documents"):
-                            failures.append("/haptic-desktop could not refocus the documents folder from the file browser root")
+                        if not cycle_focus_to(page, "library"):
+                            failures.append("/haptic-desktop could not refocus the library folder from the file browser root")
                         else:
                             page.locator("#focus-activate").click()
                             page.wait_for_timeout(1_200)
-                            scene_in_documents = (page.locator("#desktop-scene-code").text_content() or "").strip()
-                            path_in_documents = (page.locator("#desktop-scene-path").text_content() or "").strip()
-                            if scene_in_documents != "file-browser" or "documents" not in path_in_documents:
+                            scene_in_library = (page.locator("#desktop-scene-code").text_content() or "").strip()
+                            path_in_library = (page.locator("#desktop-scene-path").text_content() or "").strip()
+                            if scene_in_library != "file-browser" or "library" not in path_in_library:
                                 failures.append(
-                                    f"/haptic-desktop did not enter the documents folder correctly; scene={scene_in_documents!r} path={path_in_documents!r}",
+                                    f"/haptic-desktop did not enter the library folder correctly; scene={scene_in_library!r} path={path_in_library!r}",
                                 )
                             if focused_label(page) != "Browser":
                                 failures.append(
-                                    f"/haptic-desktop did not land on the browser hub after entering documents; focus={focused_label(page)!r}",
+                                    f"/haptic-desktop did not land on the browser hub after entering library; focus={focused_label(page)!r}",
                                 )
+                    if not cycle_focus_to(page, "documents"):
+                        failures.append("/haptic-desktop could not focus the documents folder from the library root")
+                    else:
+                        page.locator("#focus-activate").click()
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                              const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                              return sceneCode === 'file-browser' && scenePath.includes('library/documents');
+                            }
+                            """,
+                            timeout=15_000,
+                        )
                     if not cycle_focus_to(page, "alice_in_wonderland.txt"):
                         failures.append("/haptic-desktop could not focus a supported text file inside documents")
                     else:
@@ -602,6 +756,165 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             failures.append(
                                 f"/haptic-desktop supported text file did not advertise the Braille reading scene action; action={focus_action!r}",
                             )
+                        else:
+                            page.locator("#focus-activate").click()
+                            page.wait_for_function(
+                                """
+                                () => {
+                                  const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                                  const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                                  return sceneCode === 'open-text' && scenePath.includes('alice_in_wonderland.txt');
+                                }
+                                """,
+                                timeout=15_000,
+                            )
+                            desktop_browser_text_loaded = True
+                            if not cycle_focus_to(page, "Browser"):
+                                failures.append("/haptic-desktop could not focus the file-browser return control from the text scene")
+                            else:
+                                page.locator("#focus-activate").click()
+                                page.wait_for_function(
+                                    """
+                                    () => {
+                                      const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                                      const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                                      return sceneCode === 'file-browser' && scenePath.includes('library/documents');
+                                    }
+                                    """,
+                                    timeout=15_000,
+                                )
+                    if not cycle_focus_to(page, "Root"):
+                        failures.append("/haptic-desktop could not focus the file-browser Root control from the documents folder")
+                    else:
+                        page.locator("#focus-activate").click()
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                              const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                              return sceneCode === 'file-browser' && scenePath === 'assets';
+                            }
+                            """,
+                            timeout=15_000,
+                        )
+                    if not cycle_focus_to(page, "library"):
+                        failures.append("/haptic-desktop could not refocus the library folder from the file browser root")
+                    else:
+                        page.locator("#focus-activate").click()
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                              const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                              return sceneCode === 'file-browser' && scenePath.includes('library');
+                            }
+                            """,
+                            timeout=15_000,
+                        )
+                        if not cycle_focus_to(page, "audio"):
+                            failures.append("/haptic-desktop could not focus the audio folder from the library root")
+                        else:
+                            page.locator("#focus-activate").click()
+                            page.wait_for_function(
+                                """
+                                () => {
+                                  const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                                  const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                                  return sceneCode === 'file-browser' && scenePath.includes('library/audio');
+                                }
+                                """,
+                                timeout=15_000,
+                            )
+                            if not desktop_activate_matching_target(page, type_name="Audio"):
+                                failures.append("/haptic-desktop could not activate a supported audio file from the file browser")
+                            else:
+                                page.wait_for_function(
+                                    """
+                                    () => (document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '') === 'open-audio'
+                                    """,
+                                    timeout=15_000,
+                                )
+                                desktop_browser_audio_loaded = True
+                                if not cycle_focus_to(page, "Browser"):
+                                    failures.append("/haptic-desktop could not focus the file-browser return control from the audio scene")
+                                else:
+                                    page.locator("#focus-activate").click()
+                                    page.wait_for_function(
+                                        """
+                                        () => {
+                                          const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                                          const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                                          return sceneCode === 'file-browser' && scenePath.includes('library/audio');
+                                        }
+                                        """,
+                                        timeout=15_000,
+                                    )
+                    if not cycle_focus_to(page, "Root"):
+                        failures.append("/haptic-desktop could not refocus the file-browser Root control from the audio folder")
+                    else:
+                        page.locator("#focus-activate").click()
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                              const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                              return sceneCode === 'file-browser' && scenePath === 'assets';
+                            }
+                            """,
+                            timeout=15_000,
+                        )
+                    if not cycle_focus_to(page, "models"):
+                        failures.append("/haptic-desktop could not focus the models folder from the file browser root")
+                    else:
+                        page.locator("#focus-activate").click()
+                        page.wait_for_function(
+                            """
+                            () => {
+                              const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                              const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                              return sceneCode === 'file-browser' && scenePath.includes('models');
+                            }
+                            """,
+                            timeout=15_000,
+                        )
+                        if not cycle_focus_to(page, "demo"):
+                            failures.append("/haptic-desktop could not focus the demo folder from the models root")
+                        else:
+                            page.locator("#focus-activate").click()
+                            page.wait_for_function(
+                                """
+                                () => {
+                                  const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                                  const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                                  return sceneCode === 'file-browser' && scenePath.includes('models/demo');
+                                }
+                                """,
+                                timeout=15_000,
+                            )
+                            if not desktop_activate_matching_target(page, type_name="3D Model"):
+                                failures.append("/haptic-desktop could not activate a supported model file from the file browser")
+                            else:
+                                page.wait_for_function(
+                                    """
+                                    () => (document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '') === 'open-model'
+                                    """,
+                                    timeout=15_000,
+                                )
+                                desktop_browser_model_loaded = True
+                                if not cycle_focus_to(page, "Browser"):
+                                    failures.append("/haptic-desktop could not focus the file-browser return control from the model scene")
+                                else:
+                                    page.locator("#focus-activate").click()
+                                    page.wait_for_function(
+                                        """
+                                        () => {
+                                          const sceneCode = document.querySelector('#desktop-scene-code')?.textContent?.trim() ?? '';
+                                          const scenePath = document.querySelector('#desktop-scene-path')?.textContent?.trim() ?? '';
+                                          return sceneCode === 'file-browser' && scenePath.includes('models/demo');
+                                        }
+                                        """,
+                                        timeout=15_000,
+                                    )
             if scene.route == "/haptic-workspace-manager":
                 page.wait_for_function(
                     """
@@ -614,6 +927,8 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
+            if scene.route != "/haptic-workspace-manager":
+                stabilize_scene_for_capture(page, scene.route)
             page.wait_for_timeout(1_200)
             overflow_metrics = viewport_overflow_metrics(page)
 
@@ -680,6 +995,12 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-desktop did not navigate from launcher into the models gallery")
                 if not desktop_gallery_paginated:
                     failures.append("/haptic-desktop models gallery did not expose real pagination")
+                if not desktop_browser_text_loaded:
+                    failures.append("/haptic-desktop did not open a text file from the file browser into the reading scene")
+                if not desktop_browser_audio_loaded:
+                    failures.append("/haptic-desktop did not open an audio file from the file browser into the audio scene")
+                if not desktop_browser_model_loaded:
+                    failures.append("/haptic-desktop did not open a model file from the file browser into the model scene")
                 if scene_code in {"", "--", "Loading"}:
                     failures.append("/haptic-desktop did not initialize the scene code")
             if scene.route == "/haptic-workspace-manager":

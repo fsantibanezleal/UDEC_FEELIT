@@ -2416,6 +2416,49 @@ function bindFallbackControls() {
   });
 }
 
+function desktopDebugTargets() {
+  return Array.from(state.targets.values()).map((target) => ({
+    id: target.id,
+    title: target.title,
+    type: target.type,
+    actionLabel: target.actionLabel,
+    disabled: target.disabled,
+  }));
+}
+
+async function activateDebugTarget(targetId) {
+  const target = state.targets.get(targetId);
+  if (!target) {
+    return false;
+  }
+  state.hoveredTargetId = targetId;
+  focusTarget(targetId, { source: "scene", movePointer: false, announceFocus: false });
+  await activateFocusedTarget("fallback");
+  return true;
+}
+
+async function stabilizeDesktopForCapture() {
+  state.speechEnabled = false;
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+  await navigateToLauncher();
+  state.sceneApi.clearPersistedViewState();
+  state.sceneApi.setIdleAnimationEnabled(false);
+  state.sceneApi.resetIdleAnimatedObjects();
+  state.sceneApi.setViewState(
+    {
+      position: [4.9, 3.2, 5.1],
+      target: [0, 0.28, 0.08],
+      zoom: 1,
+    },
+    { persist: false },
+  );
+  focusTarget("launcher-hub", { source: "scene", movePointer: false, announceFocus: false });
+  state.sceneApi.renderNow();
+  return true;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   bootWorkspace(
     {
@@ -2460,6 +2503,23 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSceneSummary();
       await loadWorkspaceCatalog();
       await loadWorkspaceBySlug(currentSelectedWorkspaceSlug());
+      window.__feelitDesktopDebug = {
+        currentScene: () => state.currentScene,
+        targetIds: () => Array.from(state.targets.keys()),
+        targets: () => desktopDebugTargets(),
+        focusTarget: (targetId) => {
+          if (!state.targets.has(targetId)) {
+            return false;
+          }
+          focusTarget(targetId, { source: "scene", movePointer: false, announceFocus: false });
+          return true;
+        },
+        activateTarget: async (targetId) => activateDebugTarget(targetId),
+        navigateToLauncher: async () => navigateToLauncher(),
+        navigateToFileBrowser: async (relativePath = "", page = 0) =>
+          navigateToFileBrowser(relativePath, page),
+        stabilizeForCapture: async () => stabilizeDesktopForCapture(),
+      };
     },
   );
 });

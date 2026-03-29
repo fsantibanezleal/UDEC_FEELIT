@@ -31,6 +31,7 @@ artifacts/
 
 - `current/` must represent the latest shipped or working baseline that the repository claims to document across the frontend routes.
 - `current/` remains a full baseline and should keep one curated image per tracked frontend route.
+- Curated route captures should be taken from a deterministic canonical state for that route, not from an arbitrary post-test frame or transient animation phase.
 - `history/v<version>/` stores sparse release evidence aligned to shipped versions and should only include route images whose visible UI changed materially relative to the previous archived baseline.
 - Unchanged routes still belong in the history manifest, but their provenance should point back to the most recent archived version that still represents that route visually.
 - Curated visual artifacts are intentionally tracked in git and must not be blanket-ignored.
@@ -47,3 +48,5 @@ python scripts\browser_scene_smoke.py --archive-version <released-version>
 This refreshes `current/` as the full active baseline and writes a sparse release record under `history/v<released-version>/`.
 
 If an already tracked route did not change visually, the archived version directory may contain only the routes that did change plus a manifest that documents which older version still supplies the visual baseline for the unchanged pages.
+
+The smoke workflow is also expected to reset each route to a stable canonical capture state before writing the curated screenshots, so idle animation or test-navigation leftovers do not create false visual history churn.

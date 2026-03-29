@@ -8,8 +8,10 @@ from pathlib import Path
 from scripts.browser_scene_smoke import (
     SceneSpec,
     archive_snapshot_set,
+    build_current_manifest_entries,
     normalize_sparse_history,
     snapshot_image_name,
+    write_snapshot_manifest,
 )
 
 TEST_ROUTES = (
@@ -96,3 +98,31 @@ def test_normalize_sparse_history_prunes_redundant_route_images(tmp_path: Path) 
     assert object_entry["visual_source_version"] == "2.05.004"
     assert braille_entry["archived"] is True
     assert braille_entry["visual_source_version"] == "2.05.005"
+
+
+def test_write_snapshot_manifest_preserves_existing_timestamp_when_content_is_unchanged(
+    tmp_path: Path,
+) -> None:
+    target_dir = tmp_path / "current"
+    routes = build_current_manifest_entries(TEST_ROUTES)
+
+    write_snapshot_manifest(
+        target_dir,
+        base_url="local_smoke_capture",
+        routes=TEST_ROUTES,
+        version="2.06.002",
+        route_entries=routes,
+    )
+    manifest_path = target_dir / "snapshot_manifest.json"
+    first_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    write_snapshot_manifest(
+        target_dir,
+        base_url="local_smoke_capture",
+        routes=TEST_ROUTES,
+        version="2.06.002",
+        route_entries=routes,
+    )
+    second_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert second_manifest == first_manifest
