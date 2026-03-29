@@ -1264,6 +1264,23 @@ async function navigateToLauncher() {
     "Scene 1: tactile launcher with direct access to curated galleries and file browsing.",
   );
 
+  addControlTarget({
+    id: "launcher-hub",
+    label: "Launcher",
+    type: "Launcher",
+    actionLabel: "Stay at the main launcher and survey the available entry points",
+    kind: "home",
+    color: 0x39d2c0,
+    position: new THREE.Vector3(0, 0.12, 0.12),
+    onActivate: async () => {
+      publishStatus(
+        `Main launcher. Models ${workspace.libraries.models.length}, texts ${workspace.libraries.texts.length}, audio ${workspace.libraries.audio.length}, plus workspace file browsing.`,
+        "Ready",
+        "launcher-hub",
+      );
+    },
+  });
+
   [
     {
       id: "launcher-models",
@@ -1335,7 +1352,7 @@ async function navigateToLauncher() {
     new THREE.Vector3(-2.2, 0.14, -1.6),
     new THREE.Vector3(2.2, 1.1, 1.8),
   );
-  state.pointerController.setPosition(new THREE.Vector3(-1.25, 0.36, -0.4));
+  state.pointerController.setPosition(new THREE.Vector3(0, 0.36, 0.18));
   assertSceneToken(token);
   finishSceneBuild({
     code: "launcher",
@@ -1346,7 +1363,7 @@ async function navigateToLauncher() {
     pagination: "1 / 1",
     idleMessage: "Pointer moving across the launcher scene.",
   });
-  focusTarget("launcher-models", { source: "scene", movePointer: false });
+  focusTarget("launcher-hub", { source: "scene", movePointer: false });
 }
 
 async function navigateToGallery(category, page = 0) {
@@ -1785,7 +1802,7 @@ async function navigateToModelScene(item, origin) {
   finishSceneBuild({
     code: "open-model",
     title: "3D Model Scene",
-    subtitle: "The opened object shares space with tactile home and gallery-return controls.",
+    subtitle: "The opened object shares space with tactile launcher, origin-start, and back-return controls.",
     context: detailOriginLabel(origin),
     path: item.source?.relative_path ?? item.source?.demo_model_slug ?? item.slug,
     pagination: "1 / 1",

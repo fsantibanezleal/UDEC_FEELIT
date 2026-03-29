@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document separates what FeelIT `0.5.2` demonstrably implements today from what remains partial, planned, or hardware-dependent.
+This document separates what FeelIT `0.5.3` demonstrably implements today from what remains partial, planned, or hardware-dependent.
 
 It is intentionally conservative. If a behavior is not visible in the runtime, testable through the current repo, or clearly encoded in the shipped code path, it is not treated here as delivered.
 
@@ -81,7 +81,7 @@ Implemented:
 
 - structured `haptic_workspace` descriptor format with bundled demo workspace
 - dedicated workspace-manager route for creating and registering workspaces rooted in external folders
-- launcher scene for curated models, texts, audio, and workspace file browsing
+- launcher scene with a neutral launcher hub plus curated entry points for models, texts, audio, and workspace file browsing
 - paginated gallery scenes backed by workspace payloads
 - bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
 - explicit in-scene Launcher plus Start or Root return controls across gallery, browser, detail, and opened-content scenes
