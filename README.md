@@ -1,110 +1,99 @@
 # FeelIT
 
-Modern accessibility-centered haptic application for tactile 3D object exploration, Braille reading, and future haptic desktop interaction.
-
-![FeelIT architecture](docs/svg/architecture.svg)
+Modern accessibility-centered haptic application for tactile 3D object exploration, Braille reading, and controlled desktop-style interaction.
 
 ## Overview
 
-FeelIT is a modernization of an accessibility project originally developed by Felipe Santibanez during his Electronic Engineering studies in Concepcion, Chile. It focuses on giving people with visual impairment a richer way to access shape, texture, and text through bounded haptic interaction. The modern repository is organized as a multi-workspace application with four dedicated routes rather than a single scrolling page:
+FeelIT is a modernization of an accessibility project originally developed by Felipe Santibanez during his Electronic Engineering studies in Concepcion, Chile. The project focuses on giving people with visual impairment a richer way to access shape, texture, spatial structure, and text through bounded tactile interaction rather than relying only on visual interfaces or audio narration.
+
+The current repository is not a single long web page. It is a multi-workspace application with four dedicated routes:
 
 - `/object-explorer`
 - `/braille-reader`
 - `/haptic-desktop`
 - `/haptic-workspace-manager`
 
-The current implementation provides real 3D workspace rendering across the spatial modes, a stylus-style pointer emulator for no-device execution, scene-native tactile controls in the Braille world, visible startup diagnostics for failed workspace boot, bundled OBJ demo assets, a bundled public-domain reading and audio library, a structured `haptic_workspace` format with a Workspace Manager route, and a null-hardware-safe runtime foundation for future physical device integration.
+The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, and a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries.
 
-## Interaction Diagrams
+## Problem Framing
+
+![FeelIT problem framing](docs/svg/problem_framing.svg)
+
+The core problem is not only that some information is visual. It is that many relevant objects, surfaces, and workflows are physically inaccessible, too large, too distant, too fragile, or too dependent on visual metaphors. FeelIT responds by converting those inaccessible domains into bounded tactile interaction worlds that can later be connected to real haptic hardware.
+
+## Motivation
+
+- Many objects worth understanding cannot be directly touched: landmarks, terrain, animals, cultural artifacts, and scaled structures.
+- Audio helps, but audio alone does not preserve tactile agency for users who want to read, inspect shape, or navigate structured content through touch.
+- Braille reading should remain possible without monopolizing the audio channel.
+- Desktop interaction for blind users should not depend only on flat visual UI metaphors or voice prompts when a tactile scene could provide a more structured access path.
+- A modern rebuild also needs methodological honesty: the verified legacy baseline was strongest in Braille, while the richer 3D explorer and haptic desktop are deliberate modernization work.
+
+## Process And Interaction Flow
 
 ![FeelIT mode map](docs/svg/mode_map.svg)
 
+The mode map shows the four routed workspaces and how each one owns a different part of the accessibility problem: 3D object staging, Braille reading, haptic desktop interaction, and workspace authoring.
+
 ![FeelIT Braille pipeline](docs/svg/braille_pipeline.svg)
 
-## Current Version
+The Braille pipeline shows a representative runtime path that is already implemented today: a scene-native library launcher selects content, the API clips a bounded segment, the Braille translator generates positioned cells, and the browser realizes them as a tactile 3D reading world with in-scene controls.
 
-`2.06.000`
+## Architecture
 
-## Public Port
+![FeelIT architecture](docs/svg/architecture.svg)
 
-`8101`
+FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-safe haptic abstraction boundary, and route-specific frontend modules. The architecture is intentionally release-governed: diagrams, README content, help text, and methodological history are all expected to move with the real shipped state rather than drifting behind it.
 
-## Legacy Baseline
+## KPI Targets
 
-The preserved legacy project in `legacy/Registro Software` demonstrates a text-file to Braille workflow with optional haptic interaction using a Novint Falcon-class device and `hdl.dll`. That recoverable baseline is documented in:
+- Blind-first operability: major interaction paths should be available from scene-native tactile targets rather than only from surrounding browser controls.
+- Tactile reading continuity: document sessions should support bounded reading, page movement, segment movement, and reliable return paths inside the same 3D world.
+- No-device viability: the application should remain runnable, inspectable, and testable without a physical haptic device attached.
+- Workspace coherence: galleries, file browser scenes, and opened-content scenes should preserve clear return semantics and stable viewpoint behavior.
+- Asset accessibility breadth: the bundled demo content should cover multiple object, text, and audio examples without violating repository-size constraints.
+- Modernization traceability: the repository should clearly separate verified legacy behavior from new engineering scope, with current docs and SVGs always matching the runtime.
 
-- [Legacy Mapping](docs/legacy_mapping.md)
-- [Development History](docs/development_history.md)
+## Current Measured State
 
-## Current Workspaces
+| Indicator | Current State |
+|---|---|
+| Routed workspaces | `4` |
+| Spatial routes with a real 3D primary pane | `3` |
+| Bundled OBJ demo models | `10` |
+| Bundled public-domain documents | `5` |
+| Bundled public-domain audio samples | `4` |
+| Bundled reading-source formats | `txt`, `html`, `epub` |
+| Public port | `8101` |
+| Canonical version | `2.06.000` |
+| Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
+| Current validation surface | `41` automated tests passing plus browser smoke validation across the `4` routed pages |
 
-### 3D Object Explorer
+## Scope And Current Status
 
-Dedicated workspace for staging real OBJ models on an exploration plinth, selecting tactile material presets, and preparing a bounded exploration context in a live 3D scene.
+### Current Workspaces
 
-### Braille Reader
+- `3D Object Explorer`: stages bundled or local OBJ geometry, applies tactile material presets, and prepares bounded exploration scenes.
+- `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
+- `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser, detail plaques, and opened scenes for models, text, and audio.
+- `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders so large user assets do not need to live inside the repository.
 
-Operational workspace that now starts from a scene-native 3D library launcher, opens bundled document segments into a bounded Braille reading surface, and renders that surface with orientation cues, scene-native page and segment controls, plus an auxiliary 2D inspection board.
+### Legacy Boundary
 
-### Haptic Desktop
+The preserved legacy archive in `legacy/Registro Software` most strongly verifies the Braille reading lineage: text-file loading, character-level Braille conversion, OpenGL-based visualization, and optional Falcon-class haptic interaction. The current object explorer, haptic desktop, and multi-route browser workbench are modernization work, not claims about a fully preserved legacy implementation.
 
-Workspace-driven tactile desktop that now transitions through a launcher, paginated galleries with a neutral gallery hub, a typed file browser with a browser hub, item detail plaques, and opened scenes for models, text, and audio. The bundled demo workspace mirrors the full internal demo library so the gallery flow covers every bundled model, document, and audio sample. The file browser uses distinct tactile 3D shapes for folders, models, texts, audio files, and unsupported files, and supported files dispatch directly into their corresponding runtime scene.
+![FeelIT legacy to modern mapping](docs/svg/legacy_to_modern.svg)
 
-### Haptic Workspace Manager
+### Current Boundaries
 
-Dedicated management route for creating and registering structured `haptic_workspace` descriptors rooted in external folders on the user's machine.
+- no native physical haptic backend is attached yet
+- 3D asset import is still centered on OBJ and local staging
+- document compatibility is currently limited to bundled `txt`, `html`, and `epub`
+- the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite
+- the desktop flow already opens models, text, and audio, but it is not yet a full desktop automation environment
+- the current metrics are mostly engineering and delivery metrics, not yet a formal user-study outcome set
 
-## Bundled Demo Assets
-
-FeelIT now ships local OBJ demo assets for exploratory testing:
-
-- `WaltHead.obj`
-- `tree.obj`
-- `male02.obj`
-- `female02.obj`
-- `Cerberus.obj`
-- `ninjaHead_Low.obj`
-- `closed_book.obj`
-- `open_book.obj`
-- `terrain_peak.obj`
-- `vase_lowpoly.obj`
-
-These are exposed through `GET /api/demo-models` and documented in [Asset Sources](docs/asset_sources.md).
-
-## Internal Reading Library
-
-The Braille Reader now bundles an internal public-domain library with segmented loading support:
-
-- `txt`: Alice's Adventures in Wonderland, Pride and Prejudice, Feeding the Mind
-- `html`: The Raven
-- `epub`: Pride and Prejudice
-- companion audio: curated LibriVox / Project Gutenberg tracks
-
-These are exposed through:
-
-- `GET /api/library/documents`
-- `GET /api/library/documents/{slug}`
-- `GET /api/library/audio`
-
-See [Library Catalog](docs/library_catalog.md) and [Asset Sources](docs/asset_sources.md).
-
-## Haptic Workspace System
-
-FeelIT now includes a structured workspace layer for Haptic Desktop:
-
-- bundled demo workspace file: `app/static/assets/workspaces/feelit_demo.haptic_workspace.json`
-- API catalog and management endpoints:
-  - `GET /api/haptic-workspaces`
-  - `GET /api/haptic-workspaces/{slug}`
-  - `GET /api/haptic-workspaces/{slug}/browse`
-  - `GET /api/haptic-workspaces/{slug}/text-file`
-  - `GET /api/haptic-workspaces/{slug}/raw-file`
-  - `POST /api/haptic-workspaces/create`
-  - `POST /api/haptic-workspaces/register`
-
-The demo desktop workspace uses curated galleries plus a file-browser root, and it auto-surfaces the full bundled asset catalog so no internal demo item is omitted from the launcher flow. User-created workspaces keep their heavy assets outside the repository and only register descriptor files locally.
-
-## Quick Start
+## Technical Quick Start
 
 ### 1. Create the environment
 
@@ -120,20 +109,22 @@ pip install -r requirements.txt
 python run_app.py
 ```
 
-Open one of the mode routes:
+Open one of the routed workspaces:
 
 - `http://127.0.0.1:8101/object-explorer`
 - `http://127.0.0.1:8101/braille-reader`
 - `http://127.0.0.1:8101/haptic-desktop`
 - `http://127.0.0.1:8101/haptic-workspace-manager`
 
-### 3. Run tests
+## Validation
+
+### Automated tests
 
 ```powershell
 python -m pytest tests -v
 ```
 
-### 4. Optional browser smoke test for the frontend routes
+### Browser smoke validation
 
 ```powershell
 pip install -e ".[dev]"
@@ -141,57 +132,68 @@ python -m playwright install chromium
 python scripts\browser_scene_smoke.py
 ```
 
-To refresh the tracked visual baseline and also freeze a release snapshot set:
+To refresh the tracked visual baseline and freeze a release snapshot set:
 
 ```powershell
 python scripts\browser_scene_smoke.py --archive-version <released-version>
 ```
 
-## Runtime Capabilities
+## Runtime Surface
 
-- FastAPI backend on port `8101`
-- four-page frontend shell aligned to the reference workbench style
-- real 3D workspace rendering in all three user modes
-- per-route camera viewpoint persistence across scene changes until the user resets or leaves the page
-- stylus-style pointer emulation with hover and activation feedback
-- visible startup diagnostics when a workspace fails to initialize
-- bundled OBJ demo assets plus local OBJ upload for staging
-- bundled public-domain document and audio library for Braille sessions
-- scene-native Braille library launcher with paged tactile document targets and library-return flow
-- tactile material catalog exposed at `GET /api/materials`
-- demo model catalog exposed at `GET /api/demo-models`
-- document library catalog exposed at `GET /api/library/documents`
-- document segment loading exposed at `GET /api/library/documents/{slug}`
-- audio catalog exposed at `GET /api/library/audio`
-- structured haptic workspace catalog and management endpoints
-- Braille preview API at `POST /api/braille/preview`
-- bounded 3D Braille world with scene-native page controls plus auxiliary inspection board
-- workspace-driven 3D desktop launcher, gallery and browser hubs, galleries, file browser, detail scenes, and opened content scenes
-- bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
-- tracked frontend snapshot archive with a full `current/` baseline and sparse `history/v<version>/` folders that only store materially changed routes
-- null haptic backend abstraction for no-device execution
-- shared runtime metadata for version, port, and device state
+### Public metadata and health
 
-## Documentation
+- `GET /api/health`
+- `GET /api/meta`
+- `GET /api/modes`
+- `GET /api/device/status`
 
-- [Scope And Motivation](docs/scope_and_motivation.md)
-- [Architecture](docs/architecture.md)
-- [Implementation Gap Audit](docs/implementation_gap_audit.md)
-- [Material Profiles](docs/material_profiles.md)
-- [Library Catalog](docs/library_catalog.md)
-- [Asset Sources](docs/asset_sources.md)
-- [Theory](docs/theory.md)
-- [Development History](docs/development_history.md)
-- [User Guide](docs/user_guide.md)
-- [References](docs/references.md)
-- [Legacy Mapping](docs/legacy_mapping.md)
-- [Artifacts Archive](artifacts/README.md)
+### Object and material staging
+
+- `GET /api/materials`
+- `GET /api/demo-models`
+
+### Braille and library services
+
+- `POST /api/braille/preview`
+- `GET /api/library/documents`
+- `GET /api/library/documents/{slug}`
+- `GET /api/library/audio`
+
+### Haptic workspace services
+
+- `GET /api/haptic-workspaces`
+- `GET /api/haptic-workspaces/{slug}`
+- `GET /api/haptic-workspaces/{slug}/browse`
+- `GET /api/haptic-workspaces/{slug}/text-file`
+- `GET /api/haptic-workspaces/{slug}/raw-file`
+- `POST /api/haptic-workspaces/create`
+- `POST /api/haptic-workspaces/register`
+
+## Bundled Demo Content
+
+### 3D models
+
+FeelIT ships `10` lightweight OBJ demos, including `WaltHead.obj`, `Cerberus.obj`, `tree.obj`, `terrain_peak.obj`, and low-poly book and vase samples. The full catalog and provenance are documented in [Asset Sources](docs/asset_sources.md).
+
+### Reading library
+
+The internal public-domain library ships `5` bundled documents:
+
+- `Alice's Adventures in Wonderland`
+- `Pride and Prejudice`
+- `Pride and Prejudice (EPUB)`
+- `The Raven`
+- `Feeding the Mind`
+
+It also ships `4` companion audio samples from public-domain sources. See [Library Catalog](docs/library_catalog.md) and [Asset Sources](docs/asset_sources.md).
+
+### Workspace system
+
+The bundled demo workspace lives at `app/static/assets/workspaces/feelit_demo.haptic_workspace.json` and mirrors the full internal demo catalog so Haptic Desktop galleries do not hide bundled content behind a partial subset.
 
 ## Version Workflow
 
-The canonical application version lives in `app/core/version.py`.
-
-The canonical workspace version format is `X.XX.XXX`, for example `2.05.002`.
+The canonical application version lives in `app/core/version.py` and follows the workspace format `X.XX.XXX`.
 
 To bump the version and synchronize derived metadata:
 
@@ -202,11 +204,12 @@ python scripts\bump_version.py patch --summary "Short release summary"
 That workflow is expected to update:
 
 - canonical version metadata
-- README current version
-- development history entry
+- runtime and UI version surfaces
+- README version references
+- `docs/development_history.md`
 - PyInstaller version metadata
 - Inno Setup version metadata
-- impacted project documentation
+- impacted documentation
 
 ## Build And Distribution
 
@@ -223,6 +226,21 @@ After building the executable:
 ```powershell
 .\installer\Build_InnoSetup.ps1
 ```
+
+## Documentation Index
+
+- [Scope And Motivation](docs/scope_and_motivation.md)
+- [Architecture](docs/architecture.md)
+- [Implementation Gap Audit](docs/implementation_gap_audit.md)
+- [Material Profiles](docs/material_profiles.md)
+- [Library Catalog](docs/library_catalog.md)
+- [Asset Sources](docs/asset_sources.md)
+- [Theory](docs/theory.md)
+- [Development History](docs/development_history.md)
+- [User Guide](docs/user_guide.md)
+- [References](docs/references.md)
+- [Legacy Mapping](docs/legacy_mapping.md)
+- [Artifacts Archive](artifacts/README.md)
 
 ## License
 

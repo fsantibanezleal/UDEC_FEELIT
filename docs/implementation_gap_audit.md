@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document separates what FeelIT `2.05.002` demonstrably implements today from what remains partial, planned, or hardware-dependent.
+This document separates what the current FeelIT baseline demonstrably implements today from what remains partial, planned, or hardware-dependent.
 
 It is intentionally conservative. If a behavior is not visible in the runtime, testable through the current repo, or clearly encoded in the shipped code path, it is not treated here as delivered.
 
