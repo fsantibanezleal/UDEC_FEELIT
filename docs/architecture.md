@@ -59,7 +59,7 @@ This avoids collapsing incompatible workflows into one long page.
 The object explorer, Braille reader, and haptic desktop each render an actual 3D world as the main pane:
 
 - the object explorer stages real OBJ meshes inside a bounded scene
-- the Braille reader renders the tactile board as raised 3D geometry with scene-native navigation controls
+- the Braille reader starts from a scene-native tactile library launcher and then renders the tactile board as raised 3D geometry with scene-native navigation controls
 - the desktop mode renders a workspace-driven launcher, galleries, a typed file browser, detail plaques, and opened content scenes
 - the shared pointer emulator behaves as a stylus-like proxy when no hardware device is attached
 
@@ -166,7 +166,7 @@ Current file:
 7. Haptic Desktop calls `/api/haptic-workspaces` and resolves the selected `haptic_workspace`.
 8. Each spatial workspace instantiates the shared stylus-like pointer proxy and bounded scene runtime.
 9. The object explorer stages an OBJ mesh and tactile material context on a visible exploration plinth.
-10. The Braille reader loads a bundled document segment, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene controls.
+10. The Braille reader loads the bundled library catalog, opens a document from a scene-native launcher, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene page, segment, and library-return controls.
 11. Haptic Desktop moves between launcher, gallery, file-browser, detail, and opened-content scenes using workspace-driven payloads.
 12. File-browser entries use kind-specific tactile forms and dispatch supported files directly into the corresponding runtime scene.
 13. Opened desktop scenes expose `Home` for return to the exact origin and `Launcher` for return to the workspace start scene.
@@ -198,8 +198,10 @@ Current baseline:
 - Braille translation API
 - internal public-domain library with TXT, HTML, and EPUB extraction
 - segmented document loading for bounded reading sessions
+- scene-native 3D library launcher for blind-first document entry
 - page slicing and 3D Braille board rendering
 - scene-native previous and next tactile controls
+- scene-native previous and next segment controls plus library return
 - orientation rail and origin marker inside the reading world
 - optional companion audio catalog surfaced beside the reading workflow
 - selected-cell inspection and auxiliary 2D board

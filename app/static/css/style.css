@@ -653,6 +653,31 @@ input[type="range"] {
   text-align: center;
 }
 
+.braille-library-card {
+  min-width: 0;
+  text-align: left;
+  align-content: start;
+  padding: 12px 14px;
+}
+
+.braille-library-title {
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.braille-library-meta,
+.braille-library-summary {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.braille-library-summary {
+  color: var(--text-primary);
+}
+
 .braille-scale-compact .braille-cell-button {
   min-width: 74px;
   padding: 8px 10px;

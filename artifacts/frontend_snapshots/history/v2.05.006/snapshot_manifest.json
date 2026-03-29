@@ -2,7 +2,7 @@
   "app": "FeelIT",
   "version": "2.05.006",
   "base_url": "archived_release_snapshot",
-  "generated_at_utc": "2026-03-29T18:42:26+00:00",
+  "generated_at_utc": "2026-03-29T20:29:51+00:00",
   "routes": [
     {
       "route": "/object-explorer",
@@ -14,7 +14,7 @@
       "route": "/braille-reader",
       "image": "braille_reader.png",
       "archived": false,
-      "visual_source_version": "2.05.005"
+      "visual_source_version": "2.05.004"
     },
     {
       "route": "/haptic-desktop",
