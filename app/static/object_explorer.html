@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FeelIT | 3D Object Explorer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="object-explorer">
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-group">
+        <h1>FeelIT</h1>
+        <p class="subtitle">Accessible haptic interaction platform</p>
+      </div>
+      <nav class="mode-nav" aria-label="FeelIT modes">
+        <a class="mode-link is-active" href="/object-explorer">3D Object Explorer</a>
+        <a class="mode-link" href="/braille-reader">Braille Reader</a>
+        <a class="mode-link" href="/haptic-desktop">Haptic Desktop</a>
+      </nav>
+      <div class="header-tools">
+        <span class="version-badge" data-runtime="version">v--</span>
+        <button class="help-btn" type="button" data-open-modal="help-modal" aria-label="Open help">?</button>
+      </div>
+    </header>
+
+    <main class="workspace-grid">
+      <aside class="control-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Demo Models</h2>
+          </div>
+          <label for="sample-model">Bundled OBJ asset</label>
+          <select id="sample-model"></select>
+          <label for="model-file">Local OBJ file</label>
+          <input id="model-file" type="file" accept=".obj">
+          <div class="button-row">
+            <button id="load-selection" class="btn btn-primary" type="button">Load Into Scene</button>
+            <button id="reset-camera" class="btn btn-secondary" type="button">Reset Camera</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Haptic Material</h2>
+          </div>
+          <label for="material-select">Material profile</label>
+          <select id="material-select"></select>
+          <div class="material-metrics">
+            <div><span>Stiffness</span><strong id="metric-stiffness">--</strong></div>
+            <div><span>Static friction</span><strong id="metric-static-friction">--</strong></div>
+            <div><span>Texture amplitude</span><strong id="metric-texture">--</strong></div>
+            <div><span>Vibration</span><strong id="metric-vibration">--</strong></div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Workspace Controls</h2>
+          </div>
+          <label for="workspace-scale">Target scale</label>
+          <input id="workspace-scale" type="range" min="50" max="180" step="5" value="100">
+          <div class="inline-value-row">
+            <span>Scale factor</span>
+            <span id="workspace-scale-value" class="mono-value">100%</span>
+          </div>
+          <label class="toggle-row">
+            <input id="guidance-grid-toggle" type="checkbox" checked>
+            <span>Show base grid</span>
+          </label>
+          <label class="toggle-row">
+            <input id="boundary-toggle" type="checkbox" checked>
+            <span>Show workspace bounds</span>
+          </label>
+          <label class="toggle-row">
+            <input id="pointer-toggle" type="checkbox" checked>
+            <span>Show pointer proxy</span>
+          </label>
+        </section>
+      </aside>
+
+      <section class="workspace-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>3D Object Workspace</h2>
+            <p class="panel-subtitle">Real OBJ assets rendered inside the bounded world that the haptic pointer will eventually explore.</p>
+          </div>
+          <div class="panel-heading-status">
+            <span id="explorer-stage-pill" class="status-pill status-pill-cyan">Loading assets</span>
+            <span id="explorer-page-status" class="status-pill">Idle</span>
+          </div>
+        </div>
+
+        <div class="workspace-stage stage-3d">
+          <canvas id="object-canvas" class="stage-canvas"></canvas>
+          <div class="stage-overlay top-left telemetry-row">
+            <span class="telemetry-chip">Port <strong data-runtime="port">--</strong></span>
+            <span class="telemetry-chip">Backend <strong data-runtime="backend">--</strong></span>
+            <span class="telemetry-chip">Material <strong id="telemetry-material">--</strong></span>
+          </div>
+          <div class="stage-overlay top-right key-hints">
+            <span>Orbit mouse</span>
+            <span>WASD/QE pointer</span>
+          </div>
+          <div class="stage-overlay bottom-left">
+            <span id="object-stage-status" class="stage-statusbar">Preparing scene.</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="inspector-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>API</dt><dd data-runtime="api-status">Loading</dd></div>
+            <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
+            <div><dt>Haptics</dt><dd data-runtime="haptics-mode">Loading</dd></div>
+            <div><dt>Backend</dt><dd data-runtime="backend">Loading</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Selected Model</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Name</dt><dd id="inspector-model-name">--</dd></div>
+            <div><dt>Category</dt><dd id="inspector-model-category">--</dd></div>
+            <div><dt>Source</dt><dd id="inspector-model-source">--</dd></div>
+            <div><dt>Scale hint</dt><dd id="inspector-scale-hint">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Material Note</h2>
+          </div>
+          <p id="material-summary" class="panel-text">Loading material capabilities.</p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Model Description</h2>
+          </div>
+          <p id="stage-model-description" class="panel-text">Loading model description.</p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="help-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>3D Object Explorer</h2>
+        <button class="modal-close" type="button" data-close-modal="help-modal" aria-label="Close help">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>Purpose</h3>
+        <p>
+          This workspace stages real OBJ assets inside a bounded 3D world. The visible scene is the
+          same spatial context the haptic pointer is expected to traverse in later hardware-backed builds.
+        </p>
+        <h3>Current Interaction</h3>
+        <ul>
+          <li>Load a bundled demo OBJ or a local OBJ file.</li>
+          <li>Apply a haptic material profile grounded in current desktop haptic capabilities.</li>
+          <li>Inspect the scene with orbit controls and move the pointer proxy with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js" defer></script>
+  <script type="module" src="/static/js/object_explorer.js"></script>
+</body>
+</html>

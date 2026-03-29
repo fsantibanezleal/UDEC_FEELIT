@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+  <title id="title">FeelIT Braille pipeline</title>
+  <desc id="desc">Pipeline diagram for the FeelIT Braille reader from text input to API translation, 3D Braille scene realization, and future haptic mapping.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#152132"/>
+      <stop offset="100%" stop-color="#101722"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#79c0ff"/>
+    </marker>
+    <style>
+      .title { font: 700 40px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .subtitle { font: 400 18px 'Segoe UI', sans-serif; fill: #8b949e; }
+      .cardTitle { font: 700 22px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .section { font: 700 13px 'Segoe UI', sans-serif; fill: #8b949e; letter-spacing: 1.2px; }
+      .body { font: 400 16px 'Segoe UI', sans-serif; fill: #9fb0c3; }
+      .mono { font: 400 14px Consolas, monospace; fill: #d7e2ee; }
+      .badge { font: 700 12px 'Segoe UI', sans-serif; fill: #0d1117; letter-spacing: 1px; }
+      .smallBadge { font: 700 12px 'Segoe UI', sans-serif; fill: #e6edf3; letter-spacing: 0.8px; }
+      .iconStroke { stroke: #e6edf3; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="940" fill="url(#bg)"/>
+  <circle cx="1410" cy="180" r="210" fill="#58a6ff" opacity="0.06"/>
+  <circle cx="280" cy="820" r="200" fill="#7ee787" opacity="0.05"/>
+
+  <text x="78" y="102" class="title">Braille Translation Pipeline</text>
+  <text x="78" y="136" class="subtitle">Current runtime path from plain text input to 3D tactile scene, with a clean extension path toward future hardware mapping.</text>
+
+  <rect x="78" y="214" width="230" height="156" rx="22" fill="url(#panel)" stroke="#79c0ff" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="122" cy="258" r="22" fill="rgba(121,192,255,0.18)" stroke="#79c0ff"/>
+  <path d="M111 252 H133" class="iconStroke"/>
+  <path d="M114 259 H130" class="iconStroke"/>
+  <path d="M117 266 H127" class="iconStroke"/>
+  <text x="158" y="252" class="cardTitle">1. Text Input</text>
+  <text x="106" y="304" class="body">The user types or pastes content into the</text>
+  <text x="106" y="328" class="body">Braille Reader workspace and chooses columns.</text>
+
+  <rect x="350" y="214" width="248" height="156" rx="22" fill="url(#panel)" stroke="#58a6ff" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="394" cy="258" r="22" fill="rgba(88,166,255,0.18)" stroke="#58a6ff"/>
+  <circle cx="386" cy="258" r="3.2" fill="#e6edf3"/>
+  <circle cx="402" cy="250" r="3.2" fill="#e6edf3"/>
+  <circle cx="402" cy="266" r="3.2" fill="#e6edf3"/>
+  <path d="M389 258 H399" class="iconStroke"/>
+  <path d="M386 258 L402 250" class="iconStroke"/>
+  <path d="M386 258 L402 266" class="iconStroke"/>
+  <text x="430" y="252" class="cardTitle">2. API Request</text>
+  <text x="430" y="276" class="mono">POST /api/braille/preview</text>
+  <text x="378" y="328" class="body">The payload carries plain text and the requested</text>
+  <text x="378" y="352" class="body">column count for logical Braille layout.</text>
+
+  <rect x="640" y="196" width="304" height="192" rx="22" fill="url(#panel)" stroke="#7ee787" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="684" cy="246" r="22" fill="rgba(126,231,135,0.18)" stroke="#7ee787"/>
+  <circle cx="677" cy="238" r="3.2" fill="#e6edf3"/>
+  <circle cx="691" cy="238" r="3.2" fill="#e6edf3"/>
+  <circle cx="677" cy="246" r="3.2" fill="#e6edf3"/>
+  <circle cx="691" cy="246" r="3.2" fill="#e6edf3"/>
+  <circle cx="677" cy="254" r="3.2" fill="#e6edf3"/>
+  <circle cx="691" cy="254" r="3.2" fill="#e6edf3"/>
+  <text x="720" y="240" class="cardTitle">3. Core Translation</text>
+  <text x="720" y="265" class="mono">translate_text_to_cells()</text>
+  <text x="668" y="316" class="body">Normalizes characters, maps them to six-dot masks,</text>
+  <text x="668" y="340" class="body">and produces Unicode Braille cells plus dot arrays.</text>
+  <text x="668" y="372" class="mono">layout_braille_cells()</text>
+
+  <rect x="988" y="214" width="252" height="156" rx="22" fill="url(#panel)" stroke="#f2cc60" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="1032" cy="258" r="22" fill="rgba(242,204,96,0.18)" stroke="#f2cc60"/>
+  <path d="M1020 252 H1044" class="iconStroke"/>
+  <path d="M1020 260 H1044" class="iconStroke"/>
+  <path d="M1020 268 H1040" class="iconStroke"/>
+  <text x="1068" y="252" class="cardTitle">4. Layout Payload</text>
+  <text x="1068" y="276" class="mono">rows, columns, masks, cells</text>
+  <text x="1016" y="328" class="body">The API returns positioned cell data that is ready</text>
+  <text x="1016" y="352" class="body">to be realized as tactile geometry in the client.</text>
+
+  <rect x="1282" y="214" width="240" height="156" rx="22" fill="url(#panel)" stroke="#c297ff" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="1326" cy="258" r="22" fill="rgba(194,151,255,0.18)" stroke="#c297ff"/>
+  <path d="M1314 250 H1338 V266 H1314 Z" class="iconStroke"/>
+  <path d="M1320 258 H1332" class="iconStroke"/>
+  <text x="1362" y="252" class="cardTitle">5. Client State</text>
+  <text x="1310" y="304" class="body">Pagination, selection state, and per-cell</text>
+  <text x="1310" y="328" class="body">inspection metadata are prepared for rendering.</text>
+
+  <rect x="216" y="546" width="472" height="234" rx="24" fill="url(#panel)" stroke="#79c0ff" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="266" cy="598" r="24" fill="rgba(121,192,255,0.18)" stroke="#79c0ff"/>
+  <circle cx="259" cy="590" r="3.2" fill="#e6edf3"/>
+  <circle cx="273" cy="590" r="3.2" fill="#e6edf3"/>
+  <circle cx="259" cy="598" r="3.2" fill="#e6edf3"/>
+  <circle cx="273" cy="598" r="3.2" fill="#e6edf3"/>
+  <circle cx="259" cy="606" r="3.2" fill="#e6edf3"/>
+  <circle cx="273" cy="606" r="3.2" fill="#e6edf3"/>
+  <text x="306" y="592" class="cardTitle">6. 3D Braille World</text>
+  <text x="306" y="616" class="mono">braille_reader.js + three_scene_common.js</text>
+  <text x="248" y="666" class="body">The current runtime builds a raised tactile board,</text>
+  <text x="248" y="690" class="body">base surface, selection focus, and scene boundaries.</text>
+  <rect x="248" y="720" width="320" height="30" rx="15" fill="rgba(242,204,96,0.16)" stroke="#f2cc60"/>
+  <text x="268" y="739" class="smallBadge">Auxiliary 2D board remains secondary for interpretation</text>
+
+  <rect x="830" y="546" width="510" height="234" rx="24" fill="url(#panel)" stroke="#ffa657" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="880" cy="598" r="24" fill="rgba(255,166,87,0.18)" stroke="#ffa657"/>
+  <rect x="870" y="588" width="20" height="20" rx="4" class="iconStroke"/>
+  <path d="M866 594 H870" class="iconStroke"/>
+  <path d="M866 602 H870" class="iconStroke"/>
+  <path d="M890 594 H894" class="iconStroke"/>
+  <path d="M890 602 H894" class="iconStroke"/>
+  <text x="920" y="592" class="cardTitle">7. Future Haptic Mapping</text>
+  <text x="920" y="616" class="mono">native device backend + force model</text>
+  <text x="862" y="666" class="body">The same logical and geometric model can later drive</text>
+  <text x="862" y="690" class="body">physical force-feedback behavior, tactile boundaries,</text>
+  <text x="862" y="714" class="body">and page navigation objects inside real device space.</text>
+
+  <path d="M308 292 H350" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M598 292 H640" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M944 292 H988" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M1240 292 H1282" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M792 388 V546 H688" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M1114 370 V546" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <rect x="78" y="820" width="1444" height="82" rx="22" fill="#111827" stroke="#30363d"/>
+  <text x="110" y="856" class="cardTitle">Operational Baseline</text>
+  <text x="110" y="884" class="body">The current verified pipeline already reaches a real 3D tactile world in the browser. Native device force response is a future extension behind the same logical model.</text>
+</svg>
