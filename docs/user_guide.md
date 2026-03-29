@@ -97,6 +97,7 @@ Current use:
 - move through smaller paginated gallery scenes and a workspace-root file browser where folders, models, texts, audio files, and unsupported files use different tactile 3D shapes
 - use explicit in-scene `Launcher` controls plus `Gallery` or `Browser` return controls and `Start` or `Root` controls to jump back to the main menu, the current origin page, or the beginning of the active gallery or browser flow
 - expect `Launcher` to return to the neutral launcher hub, while `Gallery` or `Browser` return to the exact gallery page or file-browser location that launched the current scene and `Start` or `Root` return to the beginning of the active gallery or browser flow
+- keep the current orbit, pan, and zoom viewpoint while moving through desktop scenes on the same page; the view should only reset when explicitly requested or when leaving the page
 - open a detail plaque that exposes the content name before opening the real scene
 - open 3D model scenes, Braille reading scenes, and audio transport scenes with scene-native return controls
 - from the file browser, open supported files directly in their corresponding runtime mode: models in the 3D model scene, texts in the Braille reading scene, and audio files in the audio transport scene
@@ -138,6 +139,8 @@ All pages expose:
 If no physical haptic device is configured, the application remains usable in visual fallback mode.
 
 If a workspace cannot initialize correctly, the stage should now expose a visible startup error instead of remaining silently stuck in placeholder states such as `v--`, `Loading`, or `Waiting`.
+
+On 3D routes, orbit, pan, and zoom changes should persist across scene rebuilds while the user remains on the same page.
 
 ## Browser Smoke Validation
 

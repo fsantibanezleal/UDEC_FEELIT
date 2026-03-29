@@ -258,6 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const sceneApi = createWorkspaceScene(byId("object-canvas"), {
         cameraPosition: [3.8, 2.9, 4.8],
         target: [0, 0.8, 0],
+        debugKey: "object-explorer",
       });
 
       state.pointerController = attachPointerEmulation(sceneApi, {

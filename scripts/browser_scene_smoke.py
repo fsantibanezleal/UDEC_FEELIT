@@ -110,6 +110,50 @@ def viewport_overflow_metrics(page) -> dict[str, float]:
     )
 
 
+def read_debug_view_state(page, debug_key: str):
+    """Return the exposed per-route camera view state for scene-regression checks."""
+    return page.evaluate(
+        """
+        (routeKey) => window.__feelitSceneDebug?.[routeKey]?.getViewState?.() ?? null
+        """,
+        debug_key,
+    )
+
+
+def assert_view_state_close(
+    failures: list[str],
+    route: str,
+    label: str,
+    actual: dict | None,
+    expected: dict,
+    *,
+    tolerance: float = 0.02,
+) -> None:
+    """Fail when a camera view state drifted away from the expected persisted view."""
+    if actual is None:
+        failures.append(f"{route} missing camera debug view state while checking {label}")
+        return
+
+    for key in ("position", "target"):
+        actual_values = actual.get(key) or []
+        expected_values = expected.get(key) or []
+        if len(actual_values) != len(expected_values):
+            failures.append(f"{route} {label} returned malformed {key} view data")
+            return
+        if any(abs(float(a) - float(b)) > tolerance for a, b in zip(actual_values, expected_values)):
+            failures.append(
+                f"{route} camera {label} drifted on {key}: actual={actual_values!r} expected={expected_values!r}",
+            )
+            return
+
+    actual_zoom = float(actual.get("zoom", 1.0))
+    expected_zoom = float(expected.get("zoom", 1.0))
+    if abs(actual_zoom - expected_zoom) > tolerance:
+        failures.append(
+            f"{route} camera {label} drifted on zoom: actual={actual_zoom!r} expected={expected_zoom!r}",
+        )
+
+
 def write_snapshot_manifest(
     target_dir: Path,
     *,
@@ -187,6 +231,11 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     timeout=15_000,
                 )
             if scene.route == "/haptic-desktop":
+                persisted_view = {
+                    "position": [6.15, 4.05, 2.35],
+                    "target": [0.4, 0.52, -0.28],
+                    "zoom": 1,
+                }
                 page.wait_for_function(
                     """
                     () => {
@@ -198,6 +247,20 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
+                if not page.evaluate(
+                    """
+                    (viewState) => {
+                      const debug = window.__feelitSceneDebug?.["haptic-desktop"];
+                      if (!debug?.setViewState || !debug?.hasPersistedViewState) {
+                        return false;
+                      }
+                      debug.setViewState(viewState, { persist: true });
+                      return debug.hasPersistedViewState();
+                    }
+                    """,
+                    persisted_view,
+                ):
+                    failures.append("/haptic-desktop could not seed a persisted camera view state")
                 if not cycle_focus_to(page, "Models Gallery"):
                     failures.append("/haptic-desktop could not focus Models Gallery from the launcher")
                 else:
@@ -211,6 +274,13 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     }
                     """,
                     timeout=15_000,
+                )
+                assert_view_state_close(
+                    failures,
+                    scene.route,
+                    "after entering the gallery",
+                    read_debug_view_state(page, "haptic-desktop"),
+                    persisted_view,
                 )
                 desktop_gallery_loaded = True
                 if focused_label(page) != "Gallery":
@@ -261,6 +331,13 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             """,
                             timeout=15_000,
                         )
+                        assert_view_state_close(
+                            failures,
+                            scene.route,
+                            "after opening the model scene",
+                            read_debug_view_state(page, "haptic-desktop"),
+                            persisted_view,
+                        )
                     if not cycle_focus_to(page, "Gallery"):
                         failures.append("/haptic-desktop could not focus the model Gallery return control")
                     else:
@@ -274,6 +351,13 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             }
                             """,
                             timeout=15_000,
+                        )
+                        assert_view_state_close(
+                            failures,
+                            scene.route,
+                            "after returning to the gallery",
+                            read_debug_view_state(page, "haptic-desktop"),
+                            persisted_view,
                         )
                         if focused_label(page) != "Gallery":
                             failures.append(

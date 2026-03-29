@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.05.005 (2026-03-29)
+
+Preserve the user-adjusted 3D camera viewpoint across scene changes while staying on the same FeelIT route.
+
+Delivered:
+
+- Added shared per-route camera view persistence so orbit, pan, and zoom survive scene transitions inside the same page.
+- Updated Haptic Desktop and Braille scene rebuilds to reuse the persisted user view instead of forcing a new camera framing on each scene change.
+- Exposed route-level scene debug handles and extended browser smoke coverage to verify persisted camera state across Haptic Desktop scene transitions.
+
+Rationale:
+
+- Scene-driven exploration should not force the user to reframe the viewport after every haptic activation.
+- Camera persistence is part of the route interaction contract and needs automated validation, not just manual observation.
+
 ### v2.05.004 (2026-03-29)
 
 Compact the shared FeelIT workbench shell so desktop routes fit inside the viewport without document-level vertical scrolling.

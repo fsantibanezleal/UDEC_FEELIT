@@ -596,8 +596,9 @@ function createBrailleWorld(sceneApi, pageCells) {
   const boardWidth = Math.max(2.4, state.columns * 0.34 + 0.8);
   const boardDepth = Math.max(1.9, state.rowsPerPage * 0.48 + 1.15);
   sceneApi.setBoundarySize(new THREE.Vector3(boardWidth + 0.7, 0.95, boardDepth + 0.45));
-  sceneApi.controls.target.set(0, 0.18, 0.08);
-  sceneApi.controls.update();
+  sceneApi.applySceneView([2.4, 2.2, 3.2], [0, 0.18, 0.08], {
+    preserveUserView: true,
+  });
 
   const base = new THREE.Mesh(
     new THREE.BoxGeometry(boardWidth, 0.12, boardDepth),
@@ -746,6 +747,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cameraPosition: [2.4, 2.2, 3.2],
         target: [0, 0.18, 0.08],
         boundarySize: new THREE.Vector3(3.6, 0.95, 3.2),
+        debugKey: "braille-reader",
       });
       sceneApiRef = sceneApi;
 
