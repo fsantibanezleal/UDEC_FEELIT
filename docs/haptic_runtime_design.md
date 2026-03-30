@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the current engineering baseline for FeelIT's haptic runtime path: backend selection, dependency detection, contact-model assumptions, and material-response strategy before a physical device bridge is shipped.
+This document defines the current engineering baseline for FeelIT's haptic runtime path: backend selection, dependency detection, toolchain readiness, bridge probing, contact-model assumptions, and material-response strategy before a physical device bridge is shipped.
 
 ![Haptic Runtime Pipeline](svg/haptic_runtime_pipeline.svg)
 
@@ -34,8 +34,11 @@ The current implementation distinguishes:
 - active backend
 - configured SDK root
 - detected SDK root
+- detected driver root
 - configured bridge path
 - detected bridge path
+- bridge-probe state
+- toolchain readiness
 
 That distinction matters because dependency readiness is not the same thing as a functioning physical runtime.
 
@@ -48,10 +51,24 @@ The route currently exposes:
 - requested backend selection
 - vendor SDK-root inputs
 - vendor bridge-path inputs
+- build-tool diagnostics
+- bridge workspace commands
+- bridge-probe state per backend
 - runtime summary cards
 - per-backend diagnostics
 - proxy-first collision baseline
 - material-rendering baseline
+
+## Native Bridge Bootstrap
+
+FeelIT now includes a first reproducible local bridge-bootstrap path:
+
+- `scripts/Bootstrap_HapticBridge.ps1`
+- `scripts/haptic_bridge_diagnostics.py`
+- `native/CMakeLists.txt`
+- `native/src/feelit_bridge_probe.cpp`
+
+The scaffold is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime, but it does not yet claim live vendor SDK device enumeration.
 
 ## Contact Model Baseline
 
@@ -104,6 +121,19 @@ Reasons:
 - haptic loops have tighter timing requirements than the visual route
 - device telemetry and diagnostics need stronger control over lifecycle and failure handling
 - the browser should remain a scene mirror and orchestration surface, not the physical-device driver
+
+### Current Bridge Contract
+
+The bridge executable is now expected to answer a small JSON probe contract before it is allowed to claim anything stronger:
+
+- which backend target it was built for
+- whether the SDK root exists
+- which expected markers are present
+- whether the bridge itself is scaffold-only or device-ready
+- how many devices were enumerated
+- which device labels were reported
+
+That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early.
 
 ## Validation Expectations
 

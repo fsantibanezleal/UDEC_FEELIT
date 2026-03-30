@@ -137,6 +137,7 @@ Current responsibilities:
 - plain-text, HTML, and EPUB extraction for the internal reading library
 - freshness-aware text extraction caching for external workspace documents
 - haptic workspace descriptor parsing, registry, and server-paginated filesystem browsing
+- haptic contact-model and material-rendering baseline for future native hardware
 
 Current files:
 
@@ -159,15 +160,19 @@ Current behavior:
 - uses a visual pointer-emulator fallback for no-device execution
 - exposes stable device status metadata
 - persists requested-backend intent plus SDK or bridge overrides in a user-scoped runtime config
+- detects native build-tool availability for the bridge path
 - reports the difference between the active fallback backend and the vendor stacks that are merely detected or configured
+- probes the native bridge executable when one is configured or auto-detected
 - keeps hardware assumptions out of the API and core domain logic while still surfacing the future contact-model baseline
 
 Current files:
 
 - `app/haptics/base.py`
+- `app/haptics/bridge_probe.py`
 - `app/haptics/null_backend.py`
 - `app/haptics/factory.py`
 - `app/haptics/runtime_manager.py`
+- `app/haptics/toolchain.py`
 
 ## Page Delivery
 
@@ -201,6 +206,7 @@ Current file:
 16. Workspace text files reuse freshness-aware extracted-text cache state while the reading scene pages through the same source document.
 17. Opened desktop scenes expose `Gallery` or `Browser` returns to the exact origin context and `Launcher` for return to the workspace start scene.
 18. Runtime and device status are reflected in the current workspace, while the configuration route keeps vendor-stack readiness explicit even before the native bridge exists.
+19. The haptic-configuration route now also reports bridge-toolchain state and, when available, runs the compiled bridge-probe executable to verify the contract end to end.
 
 ## Future Extension Points
 
@@ -269,11 +275,13 @@ Current baseline:
 - dedicated route for runtime selection, SDK-root tracking, bridge-path tracking, and contact-model inspection
 - explicit separation between requested backend and active fallback backend
 - vendor-stack diagnostics for OpenHaptics, Force Dimension, and CHAI3D-oriented paths
+- toolchain diagnostics for CMake, Ninja, clang++, MSBuild, Visual Studio, MSVC, and the Windows resource compiler
+- native bridge scaffold plus JSON probe contract for early validation of the bridge path
 - frontend-facing summary of the current proxy-first collision baseline and material-rendering assumptions
 
 Next additions:
 
-- real native-bridge activation when a supported stack is installed
+- vendor-aware bridge activation when a supported stack is installed
 - live device enumeration and calibration diagnostics
 - workspace-scale alignment and device-specific homing or status actions
 

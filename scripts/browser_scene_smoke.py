@@ -1233,13 +1233,18 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-workspace-manager did not initialize the selected workspace summary")
             if scene.route == "/haptic-configuration":
                 backend_cards = page.locator("#backend-list .backend-card").count()
+                toolchain_cards = page.locator("#toolchain-list .workspace-card").count()
                 runtime_pill = (page.locator("#config-runtime-pill").text_content() or "").strip()
                 page_status = (page.locator("#config-page-status").text_content() or "").strip()
                 requested_backend = (page.locator("#config-requested-backend").text_content() or "").strip()
                 active_backend = (page.locator("#config-active-backend").text_content() or "").strip()
                 selected_backend_title = (page.locator("#selected-backend-title").text_content() or "").strip()
+                bridge_source_root = (page.locator("#bridge-source-root").text_content() or "").strip()
+                bridge_command = (page.locator("#bridge-build-command").text_content() or "").strip()
                 if backend_cards == 0:
                     failures.append("/haptic-configuration did not render any backend diagnostics cards")
+                if toolchain_cards == 0:
+                    failures.append("/haptic-configuration did not render any toolchain diagnostics cards")
                 if runtime_pill in {"", "Loading", "Runtime error"}:
                     failures.append("/haptic-configuration did not initialize the runtime pill")
                 if page_status in {"", "Waiting", "Boot failed"}:
@@ -1250,6 +1255,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-configuration did not initialize the active backend summary")
                 if selected_backend_title in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected backend inspector")
+                if bridge_source_root in {"", "Loading source root."}:
+                    failures.append("/haptic-configuration did not initialize the native bridge workspace summary")
+                if bridge_command in {"", "Loading build command."}:
+                    failures.append("/haptic-configuration did not initialize the native bridge build command")
 
             print(
                 f"{scene.route}: unique_colors={unique_colors} "

@@ -52,6 +52,12 @@ Therefore FeelIT uses a device abstraction boundary:
 - the application must remain useful without hardware
 - backend implementations can be swapped without rewriting the frontend or domain services
 
+The new bridge-bootstrap layer adds one more theoretical requirement that often gets ignored in UI-first prototypes: a hardware-backed architecture also needs an explicit build and probe theory. In practice that means:
+
+- a reproducible native toolchain
+- an executable contract for bridge diagnostics
+- a clear boundary between scaffold probe results and real device-loop results
+
 The new configuration route turns that abstraction into an explicit runtime surface: requested backend, active backend, dependency readiness, and native-bridge prerequisites are now treated as first-class product state rather than hidden engineering assumptions.
 
 ## 5. Multimodal Accessibility

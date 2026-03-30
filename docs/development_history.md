@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.10.000 (2026-03-30)
+
+Add a reproducible native haptic bridge bootstrap surface with toolchain diagnostics and a compiled probe scaffold.
+
+Delivered:
+
+- Added toolchain detection for CMake, Ninja, clang++, MSBuild, Visual Studio, the MSVC toolset, and the Windows resource compiler inside the haptic runtime snapshot and configuration page.
+- Added a native bridge scaffold project, a PowerShell bootstrap script, and a compiled JSON probe executable that FeelIT can discover, run, and classify as scaffold-only versus device-ready.
+- Expanded the haptic-configuration route, documentation, SVG diagrams, diagnostics script, and browser validation so the native bridge workflow is visible and reproducible before live device enumeration ships.
+
+Rationale:
+
+- This release adds a new system surface rather than only refining an existing page: FeelIT can now bootstrap, build, and probe a native bridge scaffold locally.
+- The haptic backend path now exposes reproducible build-tool and bridge-contract state, which materially changes what the application can support during hardware integration.
+
 ### v2.09.000 (2026-03-30)
 
 Add haptic runtime configuration, backend diagnostics, and contact-model baselines
@@ -390,17 +405,17 @@ Rationale:
 
 ## Planned Milestones
 
-### v2.06.x
+### v2.10.x
 
-- richer haptic_workspace authoring and validation
-- blind-first desktop help and cue refinement
-- stronger gallery and file-browser interaction coverage
+- vendor-aware bridge probe that can report SDK load results, runtime library load results, device count, and failure reasons
+- clearer SDK bootstrap notes and remediation paths for the first tracked hardware families
+- follow-up stabilization of the haptic-configuration diagnostics and native bridge authoring workflow
 
-### v2.07.x
+### v2.11.x
 
-- first native physical haptic bridge integration
-- device capability detection
-- hardware-assisted exploration loop
+- first live native device enumeration path with calibration, homing, and device-selection diagnostics
+- initial device-backed collision-proxy integration for object, Braille, and desktop scenes
+- first hardware-assisted interaction loop that goes beyond the current scaffold-only bridge contract
 
 ## Versioning Policy
 
