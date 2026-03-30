@@ -58,6 +58,7 @@ def test_frontend_mode_routes_are_served() -> None:
     assert "Space activate" in object_response.text
     assert "Scene-native launcher plus bounded exploration world" in object_response.text
     assert "Scene mode" in object_response.text
+    assert "Local Upload Validation" in object_response.text
     assert 'type="module" src="/static/js/object_explorer.js"' in object_response.text
     assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200
@@ -134,6 +135,46 @@ def test_demo_model_static_assets_are_served() -> None:
                 assert '"asset"' in asset_response.text
             elif model["file_format"] == "glb":
                 assert asset_response.content[:4] == b"glTF"
+
+
+def test_local_model_validation_endpoint_accepts_simple_obj_upload() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-upload",
+            files={"file": ("sample.obj", b"v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n", "text/plain")},
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is True
+    assert payload["file_format"] == "obj"
+    assert payload["metrics"]["vertex_count"] == 3
+    assert payload["metrics"]["face_count"] == 1
+
+
+def test_local_model_validation_endpoint_blocks_external_resource_gltf() -> None:
+    gltf_payload = (
+        b'{"asset":{"version":"2.0"},"buffers":[{"uri":"mesh.bin","byteLength":12}],"meshes":[{"primitives":[{}]}]}'
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-upload",
+            files={"file": ("sample.gltf", gltf_payload, "model/gltf+json")},
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is False
+    assert payload["file_format"] == "gltf"
+    assert any("External buffer or image references" in blocker for blocker in payload["blockers"])
+
+
+def test_local_model_validation_endpoint_rejects_unsupported_format() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-upload",
+            files={"file": ("sample.fbx", b"placeholder", "application/octet-stream")},
+        )
+    assert response.status_code == 400
+    assert "Unsupported 3D model format" in response.json()["detail"]
 
 
 def test_braille_preview_returns_positioned_cells() -> None:

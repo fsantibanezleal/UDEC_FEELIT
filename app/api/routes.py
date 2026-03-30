@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -26,6 +26,7 @@ from app.core.library_assets import (
     build_document_catalog,
     build_document_payload,
 )
+from app.core.model_validation import validate_local_model_file
 from app.core.modes import build_mode_catalog
 
 router = APIRouter(prefix="/api")
@@ -102,6 +103,17 @@ async def materials() -> dict:
 async def demo_models() -> dict:
     """Return bundled multi-format demo assets for the 3D explorer."""
     return {"models": build_demo_model_catalog()}
+
+
+@router.post("/models/validate-local-upload")
+async def validate_local_model_upload(file: UploadFile = File(...)) -> dict:
+    """Validate one local model file before browser-side staging."""
+    try:
+        payload = await file.read()
+        filename = file.filename or "uploaded-model"
+        return validate_local_model_file(filename, payload).model_dump()
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @router.get("/library/documents")

@@ -141,6 +141,21 @@
 
         <section class="panel-section">
           <div class="section-header">
+            <h2>Local Upload Validation</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Status</dt><dd id="validation-status">No local file selected</dd></div>
+            <div><dt>Format</dt><dd id="validation-format">--</dd></div>
+            <div><dt>Size</dt><dd id="validation-size">--</dd></div>
+            <div><dt>Resources</dt><dd id="validation-resource-mode">--</dd></div>
+            <div><dt>Geometry</dt><dd id="validation-geometry">--</dd></div>
+          </dl>
+          <p id="validation-summary" class="panel-text">Select a local model to inspect whether it is safe for direct browser staging.</p>
+          <ul id="validation-findings" class="compact-list"></ul>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
             <h2>Material Note</h2>
           </div>
           <p id="material-summary" class="panel-text">Loading material capabilities.</p>
@@ -172,6 +187,7 @@
         <ul>
           <li>Begin with a scene-native 3D launcher that pages through curated bundled demo models.</li>
           <li>Load bundled `OBJ`, `STL`, `glTF`, or `GLB` demos from the launcher or stage a local file through the outer controls.</li>
+          <li>Local uploads are validated through the backend before staging so unsupported external-resource packages can be blocked early.</li>
           <li>Apply a haptic material profile grounded in current desktop haptic capabilities.</li>
           <li>Inspect the scene with orbit controls and move the pointer proxy with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
           <li>Use scene-native Launcher and Material controls inside the 3D world once a model session is open.</li>

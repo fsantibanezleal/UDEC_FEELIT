@@ -933,6 +933,30 @@ input[type="range"] {
   margin: 0 0 16px;
 }
 
+.compact-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compact-list-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(48, 54, 61, 0.74);
+  background: rgba(13, 17, 23, 0.78);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.compact-list-item-danger {
+  border-color: rgba(255, 123, 114, 0.34);
+  background: rgba(52, 21, 26, 0.72);
+  color: #ffb4ae;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }

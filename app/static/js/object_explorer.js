@@ -3,6 +3,7 @@ import {
   loadLocalModelFile,
   loadModelFromUrl,
   modelFileAcceptString,
+  modelFormatLabel,
 } from "./model_loading.js";
 import {
   THREE,
@@ -13,6 +14,7 @@ import {
 
 const materialsUrl = "/api/materials";
 const demoModelsUrl = "/api/demo-models";
+const modelValidationUrl = "/api/models/validate-local-upload";
 const LAUNCHER_PAGE_SIZE = 3;
 const LAUNCHER_VIEW_STATE = {
   position: [4.6, 2.8, 5.2],
@@ -36,6 +38,8 @@ const state = {
   targetById: new Map(),
   modelTemplateCache: new Map(),
   renderGeneration: 0,
+  localValidation: null,
+  localValidationFingerprint: null,
 };
 
 function byId(id) {
@@ -112,6 +116,124 @@ function updateModelInspector(model) {
   byId("stage-model-description").textContent = model.description;
 }
 
+function fileFingerprint(file) {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function formatBytes(byteCount) {
+  if (!Number.isFinite(byteCount) || byteCount < 0) {
+    return "--";
+  }
+  if (byteCount < 1024) {
+    return `${byteCount} B`;
+  }
+  const units = ["KB", "MB", "GB"];
+  let value = byteCount / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const digits = value >= 100 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(digits)} ${units[unitIndex]}`;
+}
+
+function humanizeResourceMode(resourceMode) {
+  if (!resourceMode) {
+    return "--";
+  }
+  return resourceMode.replaceAll("-", " ");
+}
+
+function geometrySummary(result) {
+  if (!result) {
+    return "--";
+  }
+  const metrics = result.metrics ?? {};
+  if (result.file_format === "obj") {
+    return `${metrics.vertex_count ?? 0} vertices / ${metrics.face_count ?? 0} faces`;
+  }
+  if (result.file_format === "stl") {
+    return `${metrics.triangle_count ?? 0} triangles / ${metrics.encoding ?? "unknown"} encoding`;
+  }
+  if (result.file_format === "gltf" || result.file_format === "glb") {
+    return `${metrics.mesh_count ?? 0} meshes / ${metrics.node_count ?? 0} nodes / ${metrics.scene_count ?? 0} scenes`;
+  }
+  return "--";
+}
+
+function setValidationFindingItems(items, tone = "neutral") {
+  const list = byId("validation-findings");
+  list.innerHTML = "";
+  if (!items.length) {
+    return;
+  }
+  items.forEach((item) => {
+    const entry = document.createElement("li");
+    entry.className = tone === "danger" ? "compact-list-item compact-list-item-danger" : "compact-list-item";
+    entry.textContent = item;
+    list.appendChild(entry);
+  });
+}
+
+function resetValidationPanel(message = "Select a local model to inspect whether it is safe for direct browser staging.") {
+  state.localValidation = null;
+  state.localValidationFingerprint = null;
+  byId("validation-status").textContent = "No local file selected";
+  byId("validation-format").textContent = "--";
+  byId("validation-size").textContent = "--";
+  byId("validation-resource-mode").textContent = "--";
+  byId("validation-geometry").textContent = "--";
+  byId("validation-summary").textContent = message;
+  setValidationFindingItems([]);
+}
+
+function setValidationPending(file) {
+  const filename = file?.name ?? "selected model";
+  let formatLabel = "--";
+  try {
+    formatLabel = file ? modelFormatLabel(file.name) : "--";
+  } catch {
+    formatLabel = "--";
+  }
+  byId("validation-status").textContent = "Validating";
+  byId("validation-format").textContent = formatLabel;
+  byId("validation-size").textContent = file ? formatBytes(file.size) : "--";
+  byId("validation-resource-mode").textContent = "--";
+  byId("validation-geometry").textContent = "--";
+  byId("validation-summary").textContent = `Inspecting ${filename} before direct browser staging.`;
+  setValidationFindingItems([]);
+}
+
+function setValidationTransportError(message) {
+  state.localValidation = null;
+  byId("validation-status").textContent = "Validation failed";
+  byId("validation-format").textContent = "--";
+  byId("validation-resource-mode").textContent = "--";
+  byId("validation-geometry").textContent = "--";
+  byId("validation-summary").textContent = message;
+  setValidationFindingItems([message], "danger");
+}
+
+function updateValidationPanel(result) {
+  const findings = [
+    ...(result.blockers ?? []),
+    ...(result.warnings ?? []),
+  ];
+  byId("validation-status").textContent = result.can_stage_locally ? "Ready for staging" : "Blocked";
+  byId("validation-format").textContent = result.format_label ?? result.file_format?.toUpperCase?.() ?? "--";
+  byId("validation-size").textContent = formatBytes(result.file_size_bytes);
+  byId("validation-resource-mode").textContent = humanizeResourceMode(result.resource_mode);
+  byId("validation-geometry").textContent = geometrySummary(result);
+  byId("validation-summary").textContent = result.summary;
+  if (findings.length) {
+    const hasBlockers = (result.blockers ?? []).length > 0;
+    setValidationFindingItems(findings, hasBlockers ? "danger" : "neutral");
+    return;
+  }
+  setValidationFindingItems(["No blocking issues detected for the current direct browser staging workflow."]);
+}
+
 function populateSelect(select, items, valueField, labelField) {
   select.innerHTML = "";
   items.forEach((item) => {
@@ -167,6 +289,50 @@ async function fetchJson(url) {
     throw new Error(`Request failed: ${url}`);
   }
   return response.json();
+}
+
+async function validateLocalUpload(file, options = {}) {
+  const { announce = true } = options;
+  const fingerprint = fileFingerprint(file);
+  if (state.localValidation && state.localValidationFingerprint === fingerprint) {
+    return state.localValidation;
+  }
+
+  state.localValidationFingerprint = fingerprint;
+  setValidationPending(file);
+
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+
+  try {
+    const response = await fetch(modelValidationUrl, {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.detail ?? "The backend validation request failed.");
+    }
+    state.localValidation = payload;
+    updateValidationPanel(payload);
+    if (announce) {
+      setStatus(
+        payload.can_stage_locally
+          ? `${file.name} passed backend validation and is ready for direct browser staging.`
+          : `${file.name} is blocked for direct browser staging. ${payload.blockers?.[0] ?? payload.summary}`,
+      );
+    }
+    return payload;
+  } catch (error) {
+    state.localValidation = null;
+    state.localValidationFingerprint = null;
+    const message = error instanceof Error ? error.message : "The backend validation request failed.";
+    setValidationTransportError(message);
+    if (announce) {
+      setStatus(`Local upload validation failed. ${message}`);
+    }
+    throw error;
+  }
 }
 
 async function loadDemoObjectTemplate(model) {
@@ -925,9 +1091,11 @@ async function openDemoSession(sceneApi, model, options = {}) {
   await loadObjectIntoScene(sceneApi, object, model, `Loaded ${model.title} into the bounded scene.`);
 }
 
-async function openLocalUploadSession(sceneApi, localFile) {
+async function openLocalUploadSession(sceneApi, localFile, validation) {
   const baseModel = modelBySlug(byId("sample-model").value) ?? state.models[0];
   const { modelRoot: object, format, formatLabel } = await loadLocalModelFile(localFile);
+  const validationSummary = validation?.summary ?? `Local ${formatLabel} file validated for direct browser staging.`;
+  const resourceMode = humanizeResourceMode(validation?.resource_mode ?? "single-file");
   const localModel = {
     ...baseModel,
     slug: "local_model_session",
@@ -936,7 +1104,7 @@ async function openLocalUploadSession(sceneApi, localFile) {
     file_format: format,
     format_label: formatLabel,
     source_name: `Local ${formatLabel} upload`,
-    description: `Local ${formatLabel} file parsed in-browser for visual and future haptic staging.`,
+    description: `${validationSummary} Resource mode: ${resourceMode}.`,
     scale_hint: 1.0,
   };
   setSelectedModel(baseModel.slug, { syncSelect: true, useDefaultMaterial: false });
@@ -952,7 +1120,12 @@ async function openLocalUploadSession(sceneApi, localFile) {
 async function loadSelectedModel(sceneApi) {
   const localFile = byId("model-file").files[0];
   if (localFile) {
-    await openLocalUploadSession(sceneApi, localFile);
+    const validation = await validateLocalUpload(localFile, { announce: false });
+    if (!validation.can_stage_locally) {
+      setStatus(validation.blockers?.[0] ?? validation.summary);
+      return;
+    }
+    await openLocalUploadSession(sceneApi, localFile, validation);
     return;
   }
   const model = modelBySlug(byId("sample-model").value);
@@ -1038,6 +1211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       populateSelect(byId("material-select"), state.materials, "slug", "title");
       populateSelect(byId("sample-model"), state.models, "slug", (model) => `${model.title} (${model.format_label})`);
       byId("model-file").setAttribute("accept", modelFileAcceptString());
+      resetValidationPanel();
 
       const initialModel = state.models[0];
       setSelectedModel(initialModel.slug, { syncSelect: true, useDefaultMaterial: true });
@@ -1049,6 +1223,16 @@ document.addEventListener("DOMContentLoaded", () => {
         loadSelectedModel(sceneApi).catch(() => {
           setStatus("Model loading failed.");
         });
+      });
+
+      byId("model-file").addEventListener("change", () => {
+        const localFile = byId("model-file").files[0];
+        if (!localFile) {
+          resetValidationPanel();
+          setStatus("Local upload cleared. Select a bundled demo or choose another local file.");
+          return;
+        }
+        validateLocalUpload(localFile).catch(() => {});
       });
 
       byId("reset-camera").addEventListener("click", () => {
