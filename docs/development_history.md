@@ -29,7 +29,6 @@ Rationale:
 
 - The delivered changes improve performance, privacy, and runtime stability inside existing workflows without introducing a new major user-facing mode.
 - The release is a patch because it refines the shipped workspace-management and reading surfaces rather than materially expanding the application capability boundary.
-
 ### v2.08.000 (2026-03-29)
 
 Expand FeelIT model loading beyond OBJ with bundled STL, glTF, and GLB demos across Object Explorer and Haptic Desktop.

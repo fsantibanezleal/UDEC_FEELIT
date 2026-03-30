@@ -63,8 +63,6 @@ MODEL_FORMAT_LABELS = {
     "gltf": "glTF",
     "glb": "GLB",
 }
-
-
 def _display_label_from_path(path: Path | str) -> str:
     """Return a safe user-facing label derived from one filesystem path."""
     return Path(path).name or str(path)

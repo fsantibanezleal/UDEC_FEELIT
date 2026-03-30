@@ -21,6 +21,11 @@ VSVersionInfo(
           StringStruct('OriginalFilename', 'FeelIT.exe'),
           StringStruct('ProductName', 'FeelIT'),
           StringStruct('ProductVersion', '2.08.001')
+          StringStruct('FileVersion', '2.08.001.0'),
+          StringStruct('InternalName', 'FeelIT'),
+          StringStruct('OriginalFilename', 'FeelIT.exe'),
+          StringStruct('ProductName', 'FeelIT'),
+          StringStruct('ProductVersion', '2.08.001')
         ]
       )
     ]),

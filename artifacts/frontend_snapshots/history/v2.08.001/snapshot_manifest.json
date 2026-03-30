@@ -6,8 +6,8 @@
     {
       "route": "/object-explorer",
       "image": "object_explorer.png",
-      "archived": true,
-      "visual_source_version": "2.08.001"
+      "archived": false,
+      "visual_source_version": "2.08.000"
     },
     {
       "route": "/braille-reader",
@@ -30,8 +30,7 @@
   ],
   "history_policy": "sparse_changed_routes_only",
   "changed_routes": [
-    "/object-explorer",
     "/haptic-workspace-manager"
   ],
-  "generated_at_utc": "2026-03-30T03:11:22+00:00"
+  "generated_at_utc": "2026-03-30T03:21:45+00:00"
 }
