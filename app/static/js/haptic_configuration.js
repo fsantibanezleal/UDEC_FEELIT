@@ -40,7 +40,9 @@ function renderSelectedBackend() {
     byId("selected-backend-dependencies").textContent = "--";
     byId("selected-backend-driver").textContent = "--";
     byId("selected-backend-devices").textContent = "--";
+    byId("selected-backend-detected-devices").textContent = "--";
     byId("selected-backend-bridge-probe").textContent = "--";
+    byId("selected-backend-probe-summary").textContent = "--";
     byId("selected-backend-device-count").textContent = "--";
     byId("backend-evidence").innerHTML = "";
     return;
@@ -52,7 +54,13 @@ function renderSelectedBackend() {
   byId("selected-backend-dependencies").textContent = backend.dependency_state;
   byId("selected-backend-driver").textContent = backend.driver_state;
   byId("selected-backend-devices").textContent = backend.device_detection_state;
+  byId("selected-backend-detected-devices").textContent =
+    backend.detected_devices.length
+      ? backend.detected_devices.join(" | ")
+      : "No device identities reported.";
   byId("selected-backend-bridge-probe").textContent = backend.bridge_probe_state;
+  byId("selected-backend-probe-summary").textContent =
+    backend.bridge_probe_summary || "No bridge-probe summary recorded.";
   byId("selected-backend-device-count").textContent =
     backend.detected_device_count == null ? "0" : String(backend.detected_device_count);
 

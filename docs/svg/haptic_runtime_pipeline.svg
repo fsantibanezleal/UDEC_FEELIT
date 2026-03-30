@@ -31,7 +31,7 @@
   <circle cx="180" cy="790" r="200" fill="#39d2c0" opacity="0.05"/>
 
   <text x="78" y="102" class="title">FeelIT Haptic Runtime Pipeline</text>
-  <text x="78" y="136" class="subtitle">The configuration route now makes backend intent, dependency readiness, bridge probing, and fallback execution visible before a native device bridge exists.</text>
+  <text x="78" y="136" class="subtitle">The configuration route now makes backend intent, dependency readiness, bridge probing, and fallback execution visible while the first vendor-aware DHD probe path is coming online.</text>
 
   <rect x="92" y="220" width="240" height="250" rx="22" fill="url(#card)" stroke="#ff7b72" filter="url(#shadow)"/>
   <rect x="392" y="220" width="280" height="250" rx="22" fill="url(#card)" stroke="#79c0ff" filter="url(#shadow)"/>
@@ -65,8 +65,8 @@
   <text x="1100" y="270" class="cardTitle">4. Vendor Stacks</text>
   <text x="1100" y="300" class="mono">OpenHaptics   DHD SDK   CHAI3D</text>
   <text x="1100" y="340" class="body">May already be installed, configured,</text>
-  <text x="1100" y="364" class="body">or probed through the bridge scaffold.</text>
-  <text x="1100" y="388" class="body">That still does not mean the device loop is live.</text>
+  <text x="1100" y="364" class="body">or probed through the bridge contract.</text>
+  <text x="1100" y="388" class="body">Force Dimension can now report runtime load and device count.</text>
 
   <path d="M332 345 H392" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
   <path d="M672 345 H732" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
@@ -81,7 +81,7 @@
   <text x="646" y="640" class="body">Active backend</text>
   <text x="646" y="664" class="body">What is truly running now inside the app.</text>
   <text x="646" y="714" class="body">Bridge readiness</text>
-  <text x="646" y="738" class="body">Whether a native executable exists and can return probe JSON.</text>
+  <text x="646" y="738" class="body">Whether a native executable exists and can return scaffold or vendor-aware probe JSON.</text>
 
   <text x="1066" y="640" class="body">Device readiness</text>
   <text x="1066" y="664" class="body">Whether live enumeration and calibration are possible.</text>

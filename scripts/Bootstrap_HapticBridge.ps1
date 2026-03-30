@@ -73,7 +73,8 @@ function Invoke-CheckedExternal {
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$nativeRoot = Join-Path $repoRoot "native"
+$nativeRootOverride = Resolve-ExistingPath ([Environment]::GetEnvironmentVariable("FEELIT_NATIVE_BRIDGE_ROOT"))
+$nativeRoot = if ($nativeRootOverride) { $nativeRootOverride } else { Join-Path $repoRoot "native" }
 $buildRoot = Join-Path $nativeRoot "build"
 $buildDir = Join-Path $buildRoot $Backend
 
@@ -139,7 +140,7 @@ if ($SdkRoot) {
   if (-not $resolvedSdkRoot) {
     throw "The provided -SdkRoot path does not exist: $SdkRoot"
   }
-  $cmakeArgs += "-DFEELIT_VENDOR_SDK_ROOT=$resolvedSdkRoot"
+  $cmakeArgs += "-DFEELIT_VENDOR_SDK_ROOT=$(Convert-ToCMakePath $resolvedSdkRoot)"
 }
 
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null

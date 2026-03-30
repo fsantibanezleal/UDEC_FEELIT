@@ -68,7 +68,7 @@ FeelIT now includes a first reproducible local bridge-bootstrap path:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-The scaffold is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime, but it does not yet claim live vendor SDK device enumeration.
+The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now also includes a first vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
 
 ## Contact Model Baseline
 
@@ -129,11 +129,11 @@ The bridge executable is now expected to answer a small JSON probe contract befo
 - which backend target it was built for
 - whether the SDK root exists
 - which expected markers are present
-- whether the bridge itself is scaffold-only or device-ready
+- whether the bridge is scaffold-only, runtime-loaded-without-devices, probe-failed, or device-ready
 - how many devices were enumerated
 - which device labels were reported
 
-That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early.
+That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension is the first tracked stack that can move beyond scaffold-only and report vendor-aware runtime results.
 
 ## Validation Expectations
 

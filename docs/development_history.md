@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.11.000 (2026-03-30)
+
+Add the first vendor-aware native bridge probe path by loading the Force Dimension DHD runtime and surfacing real device enumeration results.
+
+Delivered:
+
+- Extended the native bridge probe so the Force Dimension backend can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities through the existing JSON contract.
+- Updated the runtime manager and haptic-configuration inspector to surface richer bridge-probe states, runtime summaries, and detected device identities without breaking the safe visual fallback path.
+- Added native-bridge integration coverage with a mock DHD runtime DLL, refreshed the docs and SVG suite, and kept the current visual snapshot archive aligned with the new configuration surface.
+
+Rationale:
+
+- This release materially expands FeelIT beyond bootstrap-only diagnostics by giving one tracked vendor stack a real vendor-aware probe path with runtime loading and device enumeration.
+- The application can now distinguish scaffold-only readiness from a concrete vendor runtime that loads and reports devices, which changes what the haptic backend layer can actually prove.
+
 ### v2.10.000 (2026-03-30)
 
 Add a reproducible native haptic bridge bootstrap surface with toolchain diagnostics and a compiled probe scaffold.
@@ -405,17 +420,17 @@ Rationale:
 
 ## Planned Milestones
 
-### v2.10.x
+### v2.11.x
 
-- vendor-aware bridge probe that can report SDK load results, runtime library load results, device count, and failure reasons
+- extend vendor-aware bridge probing beyond the first Force Dimension path into the other tracked stacks
 - clearer SDK bootstrap notes and remediation paths for the first tracked hardware families
 - follow-up stabilization of the haptic-configuration diagnostics and native bridge authoring workflow
 
-### v2.11.x
+### v2.12.x
 
-- first live native device enumeration path with calibration, homing, and device-selection diagnostics
+- first live native device activation path with calibration, homing, and device-selection diagnostics
 - initial device-backed collision-proxy integration for object, Braille, and desktop scenes
-- first hardware-assisted interaction loop that goes beyond the current scaffold-only bridge contract
+- first hardware-assisted interaction loop that goes beyond probe-only enumeration
 
 ## Versioning Policy
 

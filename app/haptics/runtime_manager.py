@@ -501,7 +501,7 @@ def _build_bridge_workspace_status(
 
     notes = [
         "The bridge scaffold is compiled without vendor SDK linkage so the probe contract can be validated early.",
-        "Real device enumeration still requires a vendor-aware native backend beyond the scaffold probe.",
+        "The Force Dimension DHD path now has a first vendor-aware probe, while OpenHaptics and CHAI3D still remain scaffold-level bridge targets.",
         "CMake plus a Windows resource compiler and either Ninja with clang++ or MSBuild is required to build the scaffold locally.",
     ]
     return HapticBridgeWorkspaceStatus(
@@ -634,6 +634,15 @@ class HapticRuntimeManager:
             evidence = sdk_evidence + driver_evidence + bridge_evidence
             if bridge_probe.summary:
                 evidence.append(f"Bridge probe: {bridge_probe.summary}")
+            runtime_library = str(bridge_probe.payload.get("runtime_library", "")).strip()
+            runtime_load_state = str(bridge_probe.payload.get("runtime_load_state", "")).strip()
+            sdk_version = str(bridge_probe.payload.get("sdk_version", "")).strip()
+            if runtime_library:
+                evidence.append(f"Bridge runtime library: {runtime_library}")
+            if runtime_load_state:
+                evidence.append(f"Bridge runtime load state: {runtime_load_state}")
+            if sdk_version:
+                evidence.append(f"Bridge SDK version: {sdk_version}")
 
             if bridge_probe.state == "ready" and (bridge_probe.detected_device_count or 0) > 0:
                 availability = "devices-detected"
@@ -641,6 +650,23 @@ class HapticRuntimeManager:
                 driver_state = "installed" if driver_root else "unknown"
                 device_detection_state = "devices-detected"
                 can_activate = True
+            elif bridge_probe.state == "runtime-loaded-no-devices":
+                availability = "runtime-loaded-no-devices"
+                dependency_state = "native-runtime-loaded"
+                driver_state = "installed" if driver_root else "unknown"
+                device_detection_state = "no-devices-detected"
+                can_activate = False
+            elif bridge_probe.state in {
+                "runtime-library-missing",
+                "runtime-load-failed",
+                "runtime-symbol-missing",
+                "device-open-failed",
+            }:
+                availability = bridge_probe.state
+                dependency_state = "native-runtime-probe-failed"
+                driver_state = "installed" if driver_root else "unknown"
+                device_detection_state = "probe-failed"
+                can_activate = False
             elif bridge_probe.state == "scaffold-only":
                 availability = "bridge-scaffold-detected"
                 dependency_state = "probe-contract-ready"
