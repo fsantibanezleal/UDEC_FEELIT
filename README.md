@@ -85,6 +85,34 @@ The contact pipeline captures the current design rule for future native hardware
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
 | Current validation surface | `59` automated tests passing plus browser smoke validation across the `5` routed pages |
 
+## Current Frontend Views
+
+The current README-facing screenshots use the tracked current-facing image set under `docs/png`, with the haptic-configuration surface synchronized from the curated snapshot artifacts.
+
+### 3D Object Explorer
+
+![FeelIT Object Explorer](docs/png/frontend_3d_objects.png)
+
+### Braille Reader Launcher
+
+![FeelIT Braille Launcher](docs/png/frontend_braille_launcher.png)
+
+### Braille Reader Session
+
+![FeelIT Braille Reading World](docs/png/frontend_braille_hapticreader.png)
+
+### Haptic Desktop
+
+![FeelIT Haptic Desktop](docs/png/frontend_hapticdesktop.png)
+
+### Haptic Workspace Manager
+
+![FeelIT Haptic Workspace Manager](docs/png/frontend_workspacemanager.png)
+
+### Haptic Configuration
+
+![FeelIT Haptic Configuration](docs/png/frontend_haptic_configuration.png)
+
 ## Scope And Current Status
 
 ### Current Workspaces
