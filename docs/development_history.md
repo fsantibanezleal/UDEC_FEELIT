@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.12.000 (2026-03-30)
+
+Extend the native bridge layer with a vendor-aware OpenHaptics probe that loads runtime libraries and reports non-scaffold capability states.
+
+Delivered:
+
+- Added an OpenHaptics vendor-aware native probe path that loads the HD runtime library set and checks minimal HDAPI entry points through the existing bridge JSON contract.
+- Extended the runtime manager and haptic-configuration diagnostics so OpenHaptics can move beyond scaffold-only into an explicit runtime-loaded capability state without pretending safe device enumeration exists yet.
+- Added isolated native integration coverage with a mock OpenHaptics SDK root and runtime DLLs, and refreshed the docs and SVGs to reflect the broader vendor-aware bridge baseline.
+
+Rationale:
+
+- This release materially expands FeelIT's native bridge coverage from one vendor family to two tracked vendor paths.
+- The application can now prove vendor-aware runtime loading for OpenHaptics instead of treating that stack as marker-only bootstrap state.
+
 ### v2.11.000 (2026-03-30)
 
 Add the first vendor-aware native bridge probe path by loading the Force Dimension DHD runtime and surfacing real device enumeration results.
@@ -420,13 +435,14 @@ Rationale:
 
 ## Planned Milestones
 
-### v2.11.x
+### v2.12.x
 
-- extend vendor-aware bridge probing beyond the first Force Dimension path into the other tracked stacks
+- safe OpenHaptics device enumeration and richer capability reporting beyond runtime-loaded symbol validation
+- extend vendor-aware bridge probing beyond Force Dimension and OpenHaptics into the CHAI3D-oriented path
 - clearer SDK bootstrap notes and remediation paths for the first tracked hardware families
 - follow-up stabilization of the haptic-configuration diagnostics and native bridge authoring workflow
 
-### v2.12.x
+### v2.13.x
 
 - first live native device activation path with calibration, homing, and device-selection diagnostics
 - initial device-backed collision-proxy integration for object, Braille, and desktop scenes

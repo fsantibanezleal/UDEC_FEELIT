@@ -276,12 +276,12 @@ Current baseline:
 - explicit separation between requested backend and active fallback backend
 - vendor-stack diagnostics for OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - toolchain diagnostics for CMake, Ninja, clang++, MSBuild, Visual Studio, MSVC, and the Windows resource compiler
-- native bridge scaffold plus JSON probe contract for early validation of the bridge path, with a first vendor-aware Force Dimension runtime loader and device enumerator
+- native bridge scaffold plus JSON probe contract for early validation of the bridge path, with a vendor-aware OpenHaptics runtime loader and a vendor-aware Force Dimension runtime loader plus device enumerator
 - frontend-facing summary of the current proxy-first collision baseline and material-rendering assumptions
 
 Next additions:
 
-- extend vendor-aware bridge activation beyond Force Dimension to the other tracked stacks
+- extend the current OpenHaptics and Force Dimension probe coverage into controlled activation, and move CHAI3D beyond scaffold-level readiness
 - live device enumeration and calibration diagnostics
 - workspace-scale alignment and device-specific homing or status actions
 

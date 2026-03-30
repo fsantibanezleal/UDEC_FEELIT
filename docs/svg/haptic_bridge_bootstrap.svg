@@ -32,7 +32,7 @@
   <circle cx="180" cy="820" r="210" fill="#39d2c0" opacity="0.05"/>
 
   <text x="76" y="100" class="title">FeelIT Haptic Bridge Bootstrap</text>
-  <text x="76" y="136" class="subtitle">The bridge path is now a real local workflow: detect tools, configure the scaffold, compile it, and probe it through the same runtime surface the app exposes, with a first vendor-aware DHD path.</text>
+  <text x="76" y="136" class="subtitle">The bridge path is now a real local workflow: detect tools, configure the scaffold, compile it, and probe it through the same runtime surface the app exposes, with vendor-aware OpenHaptics and DHD paths.</text>
 
   <rect x="84" y="210" width="280" height="264" rx="22" fill="url(#card)" stroke="#f2cc60" filter="url(#shadow)"/>
   <rect x="408" y="210" width="292" height="264" rx="22" fill="url(#card)" stroke="#79c0ff" filter="url(#shadow)"/>
@@ -61,10 +61,9 @@
   <text x="772" y="288" class="mono">native/CMakeLists.txt</text>
   <text x="772" y="312" class="mono">native/src/feelit_bridge_probe.cpp</text>
   <text x="772" y="354" class="body">Compiles a narrow probe executable that can</text>
-  <text x="772" y="378" class="body">check SDK markers, emit JSON, and load the</text>
-  <text x="772" y="402" class="body">first vendor-aware runtime path.</text>
-  <text x="772" y="402" class="body">the bridge contract before real device logic</text>
-  <text x="772" y="426" class="body">is wired in.</text>
+  <text x="772" y="378" class="body">check SDK markers, emit JSON, and move</text>
+  <text x="772" y="402" class="body">OpenHaptics and DHD beyond scaffold-only</text>
+  <text x="772" y="426" class="body">before real device control is wired in.</text>
   <rect x="772" y="432" width="160" height="28" rx="14" fill="#7ee787"/>
   <text x="798" y="450" class="badge">COMPILED PROBE</text>
 
@@ -96,11 +95,11 @@
   <text x="662" y="762" class="body">The runtime can tell whether the bridge is missing, failing, scaffold-only, runtime-loaded, or device-ready.</text>
 
   <text x="1126" y="650" class="legend">Device-ready</text>
-  <text x="1126" y="678" class="body">Force loops are still future work. The first vendor-aware DHD probe stops at runtime load and enumeration.</text>
+  <text x="1126" y="678" class="body">Force loops are still future work. DHD reaches enumeration; OpenHaptics now proves runtime load and symbol readiness.</text>
 
   <text x="1126" y="734" class="legend">Current engineering value</text>
   <text x="1126" y="762" class="body">The backend path is no longer vague. It has scripts, binaries, diagnostics, and explicit next failures.</text>
 
   <rect x="198" y="798" width="1188" height="1" fill="#30363d"/>
-  <text x="198" y="824" class="body">Design rule: the bridge workflow must be reproducible and measurable before FeelIT claims physical-device readiness. The scaffold and first vendor-aware DHD probe are valuable because they remove uncertainty from installation and enumeration without pretending that device control is finished.</text>
+  <text x="198" y="824" class="body">Design rule: the bridge workflow must be reproducible and measurable before FeelIT claims physical-device readiness. The scaffold and the current vendor-aware OpenHaptics and DHD probes remove uncertainty from installation and enumeration without pretending that device control is finished.</text>
 </svg>
