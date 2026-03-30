@@ -138,6 +138,33 @@
               </article>
             </div>
           </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Native Bridge Workspace</h2>
+            </div>
+            <div class="backend-split-grid">
+              <article class="workspace-card workspace-card-static">
+                <strong class="workspace-card-title">Build Surface</strong>
+                <span class="workspace-card-body" id="bridge-source-root">Loading source root.</span>
+                <span class="workspace-card-meta" id="bridge-build-root">Loading build root.</span>
+                <span class="workspace-card-path" id="bridge-toolchain-summary">Loading toolchain summary.</span>
+              </article>
+              <article class="workspace-card workspace-card-static">
+                <strong class="workspace-card-title">Bridge Commands</strong>
+                <span class="workspace-card-body mono-block" id="bridge-configure-command">Loading configure command.</span>
+                <span class="workspace-card-body mono-block" id="bridge-build-command">Loading build command.</span>
+                <span class="workspace-card-body mono-block" id="bridge-probe-command">Loading probe command.</span>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Build Toolchain</h2>
+            </div>
+            <div id="toolchain-list" class="workspace-list"></div>
+          </section>
         </div>
       </section>
 
@@ -163,7 +190,10 @@
             <div><dt>Vendor</dt><dd id="selected-backend-vendor">--</dd></div>
             <div><dt>Availability</dt><dd id="selected-backend-availability">--</dd></div>
             <div><dt>Dependencies</dt><dd id="selected-backend-dependencies">--</dd></div>
+            <div><dt>Driver</dt><dd id="selected-backend-driver">--</dd></div>
             <div><dt>Devices</dt><dd id="selected-backend-devices">--</dd></div>
+            <div><dt>Bridge probe</dt><dd id="selected-backend-bridge-probe">--</dd></div>
+            <div><dt>Device count</dt><dd id="selected-backend-device-count">--</dd></div>
           </dl>
         </section>
 
@@ -195,6 +225,9 @@
         <ul>
           <li>Select which backend stack FeelIT should track as the requested runtime.</li>
           <li>Record SDK roots and bridge executables for OpenHaptics, Force Dimension, or CHAI3D-based paths.</li>
+          <li>Inspect which native build tools are available on the current Windows host for the bridge workflow.</li>
+          <li>Review the native bridge workspace and the commands used to configure or build the bridge scaffold.</li>
+          <li>See whether a bridge executable is missing, failing, scaffold-only, or reporting real device-ready probe data.</li>
           <li>Inspect the current collision, contact, and material-rendering baseline that the native backend must honor.</li>
           <li>Keep the built-in visual emulator as the safe default while physical-device integration is still under construction.</li>
         </ul>

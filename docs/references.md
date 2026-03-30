@@ -14,26 +14,28 @@
 7. CHAI3D. Features. https://chai3d.org/concept/features
 8. CHAI3D. Material and texture effects chapter. https://www.chai3d.org/download/doc/html/chapter15-material.html
 9. CHAI3D. Documentation. https://www.chai3d.org/documentation/
-10. Force Dimension. DHD SDK documentation. https://downloads.forcedimension.com/sdk/doc/fdsdk-3.14.0/dhd/index.html
-11. Force Dimension. DHD header reference. https://downloads.forcedimension.com/sdk/doc/fdsdk-3.14.0/dhd/dhdc_8h.html
-12. Force Dimension. sigma.7 product page. https://www.forcedimension.com/products/sigma
+10. CHAI3D. Introduction. https://www.chai3d.org/download/doc/html/
+11. Force Dimension. DHD SDK documentation. https://downloads.forcedimension.com/sdk/doc/fdsdk-3.14.0/dhd/index.html
+12. Force Dimension. DHD header reference. https://downloads.forcedimension.com/sdk/doc/fdsdk-3.14.0/dhd/dhdc_8h.html
+13. Force Dimension. single_device.cpp example. https://downloads.forcedimension.com/sdk/doc/fdsdk-3.14.0/dhd/single_device_8cpp-example.html
+14. Force Dimension. sigma.7 product page. https://www.forcedimension.com/products/sigma
 
 ## 3D Web Runtime And Demo Asset References
 
-13. three.js. OBJLoader documentation. https://threejs.org/docs/#examples/en/loaders/OBJLoader
-14. three.js. STLLoader documentation. https://threejs.org/docs/#examples/en/loaders/STLLoader
-15. three.js. GLTFLoader documentation. https://threejs.org/docs/#examples/en/loaders/GLTFLoader
-16. three.js example asset source for Walt Head. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/walt/WaltHead.obj
-17. three.js example asset source for tree. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/tree.obj
-18. three.js example asset source for male figure. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/male02/male02.obj
-19. three.js example asset source for female figure. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/female02/female02.obj
-20. three.js example asset source for Cerberus. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/cerberus/Cerberus.obj
+15. three.js. OBJLoader documentation. https://threejs.org/docs/#examples/en/loaders/OBJLoader
+16. three.js. STLLoader documentation. https://threejs.org/docs/#examples/en/loaders/STLLoader
+17. three.js. GLTFLoader documentation. https://threejs.org/docs/#examples/en/loaders/GLTFLoader
+18. three.js example asset source for Walt Head. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/walt/WaltHead.obj
+19. three.js example asset source for tree. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/tree.obj
+20. three.js example asset source for male figure. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/male02/male02.obj
+21. three.js example asset source for female figure. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/female02/female02.obj
+22. three.js example asset source for Cerberus. https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/obj/cerberus/Cerberus.obj
 
 ## Accessibility And Haptics Research
 
-21. Siu, A. F., et al. (2020). Virtual Reality Without Vision: A Haptic and Auditory White Cane to Navigate Complex Virtual Worlds. CHI 2020. https://www.microsoft.com/en-us/research/wp-content/uploads/2020/02/Siu-VR_without_vision-CHI2020.pdf
-22. Quinn, L., et al. (2024). A shape-changing haptic navigation interface for vision impairment. Scientific Reports. https://pubmed.ncbi.nlm.nih.gov/39658590/
-23. Papadopoulos, G., et al. (2025). 3D haptic texture discrimination in individuals with and without visual impairments using a force feedback device. Universal Access in the Information Society. https://link.springer.com/article/10.1007/s10209-025-01202-w
-24. Chen, Y., et al. (2025). Visually Impaired People Recognize Virtual Objects Through 3D Reconstructed Shapes. IEEE Transactions on Neural Systems and Rehabilitation Engineering. https://pubmed.ncbi.nlm.nih.gov/41144407/
-25. Memeo, M., et al. (2023). Blind people can actively manipulate virtual objects with a novel tactile device. Scientific Reports. https://pubmed.ncbi.nlm.nih.gov/38129483/
-26. Harders, M., et al. (2026). Extension of and Performance Study With a Haptic Mouse for Fingertip Tactile Display of 2.5D Data. IEEE Transactions on Haptics. https://pubmed.ncbi.nlm.nih.gov/41632652/
+23. Siu, A. F., et al. (2020). Virtual Reality Without Vision: A Haptic and Auditory White Cane to Navigate Complex Virtual Worlds. CHI 2020. https://www.microsoft.com/en-us/research/wp-content/uploads/2020/02/Siu-VR_without_vision-CHI2020.pdf
+24. Quinn, L., et al. (2024). A shape-changing haptic navigation interface for vision impairment. Scientific Reports. https://pubmed.ncbi.nlm.nih.gov/39658590/
+25. Papadopoulos, G., et al. (2025). 3D haptic texture discrimination in individuals with and without visual impairments using a force feedback device. Universal Access in the Information Society. https://link.springer.com/article/10.1007/s10209-025-01202-w
+26. Chen, Y., et al. (2025). Visually Impaired People Recognize Virtual Objects Through 3D Reconstructed Shapes. IEEE Transactions on Neural Systems and Rehabilitation Engineering. https://pubmed.ncbi.nlm.nih.gov/41144407/
+27. Memeo, M., et al. (2023). Blind people can actively manipulate virtual objects with a novel tactile device. Scientific Reports. https://pubmed.ncbi.nlm.nih.gov/38129483/
+28. Harders, M., et al. (2026). Extension of and Performance Study With a Haptic Mouse for Fingertip Tactile Display of 2.5D Data. IEEE Transactions on Haptics. https://pubmed.ncbi.nlm.nih.gov/41632652/

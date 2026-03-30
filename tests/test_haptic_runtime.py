@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -20,6 +21,8 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
     assert snapshot.requested_backend == "visual-emulator"
     assert snapshot.active_backend == "visual-emulator"
     assert any(backend.slug == "openhaptics-touch" for backend in snapshot.backends)
+    assert any(tool.slug == "cmake" for tool in snapshot.toolchains)
+    assert snapshot.bridge_workspace.probe_binary_name == "feelit_bridge_probe.exe"
     assert snapshot.contact_design["servo_loop_target_hz"] == 1000
     assert any(item["slug"] == "polished_metal" for item in snapshot.material_rendering)
 
@@ -55,6 +58,8 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
     assert payload["requested_backend"] == "visual-emulator"
     assert payload["active_backend"] == "visual-emulator"
     assert payload["config_file_label"] == Path(config_path).name
+    assert any(tool["slug"] == "ninja" for tool in payload["toolchains"])
+    assert payload["bridge_workspace"]["probe_binary_name"] == "feelit_bridge_probe.exe"
     assert any(backend["slug"] == "chai3d-bridge" for backend in payload["backends"])
 
 
@@ -93,3 +98,37 @@ def test_haptic_configuration_api_rejects_unknown_backend(tmp_path, monkeypatch)
 
     assert response.status_code == 400
     assert "Unsupported haptic backend selection" in response.json()["detail"]
+
+
+def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
+    config_path = tmp_path / "haptic_runtime_config.json"
+    bridge_script = tmp_path / "mock_bridge_probe.py"
+    bridge_script.write_text(
+        textwrap.dedent(
+            """
+            import json
+
+            print(json.dumps({
+                "backend": "openhaptics-touch",
+                "status": "scaffold-only",
+                "summary": "Mock bridge responded successfully.",
+                "device_count": 0,
+                "devices": []
+            }))
+            """,
+        ).strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FEELIT_HAPTIC_CONFIG_PATH", str(config_path))
+
+    manager = HapticRuntimeManager()
+    snapshot = manager.update_configuration(
+        requested_backend="openhaptics-touch",
+        sdk_roots={},
+        bridge_paths={"openhaptics": str(bridge_script)},
+    )
+
+    openhaptics = next(backend for backend in snapshot.backends if backend.slug == "openhaptics-touch")
+    assert openhaptics.detected_bridge_path == str(bridge_script.resolve())
+    assert openhaptics.bridge_probe_state == "scaffold-only"
+    assert openhaptics.bridge_probe_summary == "Mock bridge responded successfully."

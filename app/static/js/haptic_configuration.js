@@ -38,7 +38,10 @@ function renderSelectedBackend() {
     byId("selected-backend-vendor").textContent = "--";
     byId("selected-backend-availability").textContent = "--";
     byId("selected-backend-dependencies").textContent = "--";
+    byId("selected-backend-driver").textContent = "--";
     byId("selected-backend-devices").textContent = "--";
+    byId("selected-backend-bridge-probe").textContent = "--";
+    byId("selected-backend-device-count").textContent = "--";
     byId("backend-evidence").innerHTML = "";
     return;
   }
@@ -47,7 +50,11 @@ function renderSelectedBackend() {
   byId("selected-backend-vendor").textContent = backend.vendor;
   byId("selected-backend-availability").textContent = backend.availability;
   byId("selected-backend-dependencies").textContent = backend.dependency_state;
+  byId("selected-backend-driver").textContent = backend.driver_state;
   byId("selected-backend-devices").textContent = backend.device_detection_state;
+  byId("selected-backend-bridge-probe").textContent = backend.bridge_probe_state;
+  byId("selected-backend-device-count").textContent =
+    backend.detected_device_count == null ? "0" : String(backend.detected_device_count);
 
   const evidenceContainer = byId("backend-evidence");
   evidenceContainer.innerHTML = "";
@@ -114,6 +121,50 @@ function renderBackendList() {
   });
 }
 
+function renderToolchainList() {
+  const container = byId("toolchain-list");
+  container.innerHTML = "";
+
+  state.snapshot.toolchains.forEach((tool) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = tool.title;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent =
+      tool.status === "ready"
+        ? `${tool.status} | ${tool.detected_version || "version probe unavailable"}`
+        : tool.install_hint;
+
+    const meta = document.createElement("span");
+    meta.className = "workspace-card-meta";
+    meta.textContent = tool.detected_path || "No executable detected.";
+
+    const evidence = document.createElement("span");
+    evidence.className = "workspace-card-path";
+    evidence.textContent = tool.evidence.join(" | ");
+
+    card.append(title, description, meta, evidence);
+    container.appendChild(card);
+  });
+}
+
+function renderBridgeWorkspace() {
+  const workspace = state.snapshot.bridge_workspace;
+  byId("bridge-source-root").textContent = workspace.source_root;
+  byId("bridge-build-root").textContent =
+    `${workspace.build_root_pattern} | probe: ${workspace.probe_binary_name}`;
+  byId("bridge-toolchain-summary").textContent =
+    `${workspace.preferred_generator} | ${workspace.preferred_compiler} | toolchain ready: ${workspace.toolchain_ready}`;
+  byId("bridge-configure-command").textContent = workspace.configure_command;
+  byId("bridge-build-command").textContent = workspace.build_command;
+  byId("bridge-probe-command").textContent = workspace.run_probe_command;
+}
+
 function applyFormValues(snapshot) {
   byId("requested-backend").innerHTML = "";
   snapshot.backends.forEach((backend) => {
@@ -170,6 +221,8 @@ function renderSnapshot(snapshot) {
   applyFormValues(snapshot);
   renderBackendList();
   renderSelectedBackend();
+  renderToolchainList();
+  renderBridgeWorkspace();
   setStatus(snapshot.selection_summary, "Ready");
 }
 

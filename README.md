@@ -14,7 +14,7 @@ The current repository is not a single long web page. It is a multi-workspace ap
 - `/haptic-workspace-manager`
 - `/haptic-configuration`
 
-The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness.
+The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness. It now also ships a native-bridge bootstrap surface: toolchain diagnostics, a PowerShell bridge bootstrap script, a JSON-based bridge probe contract, and a compiled scaffold that proves the bridge workflow can be configured and built locally before the vendor-specific device loop is fully implemented.
 
 ## Problem Framing
 
@@ -44,6 +44,10 @@ The Braille pipeline shows a representative runtime path that is already impleme
 
 The runtime pipeline shows the new configuration route, the runtime manager, the active visual fallback backend, and the vendor stacks that can already be tracked for dependency readiness before the native bridge is live.
 
+![FeelIT haptic bridge bootstrap](docs/svg/haptic_bridge_bootstrap.svg)
+
+The bridge bootstrap flow shows the toolchain, script, native scaffold, and probe contract that now turn the haptic backend path into a reproducible local engineering workflow rather than a purely conceptual future note.
+
 ## Architecture
 
 ![FeelIT architecture](docs/svg/architecture.svg)
@@ -52,7 +56,7 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, an explic
 
 ![FeelIT haptic contact pipeline](docs/svg/haptic_contact_pipeline.svg)
 
-The contact pipeline captures the current design rule for future native hardware: proxy-first collision geometry, servo-loop contact solving, and material rendering through controlled force channels rather than naïve raw-mesh contact.
+The contact pipeline captures the current design rule for future native hardware: proxy-first collision geometry, servo-loop contact solving, and material rendering through controlled force channels rather than naive raw-mesh contact.
 
 ## KPI Targets
 
@@ -75,9 +79,11 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Public port | `8101` |
-| Canonical version | `2.09.000` |
+| Canonical version | `2.10.000` |
+| Haptic backend candidates tracked | `4` |
+| Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `56` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `57` automated tests passing plus browser smoke validation across the `5` routed pages |
 
 ## Scope And Current Status
 
@@ -87,7 +93,7 @@ The contact pipeline captures the current design rule for future native hardware
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
-- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, and the current contact or material-rendering baseline that the future physical backend must respect.
+- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, build-tool readiness, the compiled bridge probe state, and the current contact or material-rendering baseline that the future physical backend must respect.
 
 ### Legacy Boundary
 
@@ -97,7 +103,8 @@ The preserved legacy archive in `legacy/Registro Software` most strongly verifie
 
 ### Current Boundaries
 
-- no native physical haptic backend is attached yet, although a dedicated configuration route now tracks requested backends, SDK roots, bridge paths, and contact-model assumptions
+- no native physical haptic backend is attached yet, although a dedicated configuration route now tracks requested backends, SDK roots, bridge paths, toolchain readiness, and contact-model assumptions
+- the shipped bridge probe is intentionally scaffold-only: it validates the bridge contract, build path, and SDK-marker probing, but it does not yet enumerate or drive live haptic devices
 - 3D asset import is client-side and currently supports `obj`, `stl`, self-contained `gltf`, and `glb`, but it still lacks server-side validation and preprocessing
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub`
 - the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite
@@ -152,6 +159,15 @@ python scripts\browser_scene_smoke.py --archive-version <released-version>
 ```
 
 The curated captures are expected to come from a stable canonical state per route so the visual history does not over-report change because of idle animation or leftover post-validation state.
+
+### Native bridge diagnostics
+
+```powershell
+python scripts\haptic_bridge_diagnostics.py
+.\scripts\Bootstrap_HapticBridge.ps1 -Backend openhaptics-touch -Build
+```
+
+These commands dump the current backend and toolchain diagnostic state and compile the native bridge scaffold for the requested backend target.
 
 ## Runtime Surface
 
@@ -230,6 +246,7 @@ After building the executable:
 - [Architecture](docs/architecture.md)
 - [Implementation Gap Audit](docs/implementation_gap_audit.md)
 - [Haptic Runtime Design](docs/haptic_runtime_design.md)
+- [Haptic Bridge Bootstrap](docs/haptic_bridge_bootstrap.md)
 - [Material Profiles](docs/material_profiles.md)
 - [Library Catalog](docs/library_catalog.md)
 - [Asset Sources](docs/asset_sources.md)

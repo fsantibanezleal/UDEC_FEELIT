@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+  <title id="title">FeelIT haptic bridge bootstrap</title>
+  <desc id="desc">Diagram showing the native bridge bootstrap workflow from toolchain discovery to compiled bridge probe and runtime diagnostics.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#101a26"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#152132"/>
+      <stop offset="100%" stop-color="#101722"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#79c0ff"/>
+    </marker>
+    <style>
+      .title { font: 700 38px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .subtitle { font: 400 18px 'Segoe UI', sans-serif; fill: #8b949e; }
+      .cardTitle { font: 700 22px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .body { font: 400 16px 'Segoe UI', sans-serif; fill: #9fb0c3; }
+      .mono { font: 400 14px Consolas, monospace; fill: #d7e2ee; }
+      .badge { font: 700 12px 'Segoe UI', sans-serif; fill: #0d1117; letter-spacing: 1px; }
+      .legend { font: 600 14px 'Segoe UI', sans-serif; fill: #8b949e; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="940" fill="url(#bg)"/>
+  <circle cx="1450" cy="180" r="220" fill="#58a6ff" opacity="0.06"/>
+  <circle cx="180" cy="820" r="210" fill="#39d2c0" opacity="0.05"/>
+
+  <text x="76" y="100" class="title">FeelIT Haptic Bridge Bootstrap</text>
+  <text x="76" y="136" class="subtitle">The bridge path is now a real local workflow: detect tools, configure the scaffold, compile it, and probe it through the same runtime surface the app exposes.</text>
+
+  <rect x="84" y="210" width="280" height="264" rx="22" fill="url(#card)" stroke="#f2cc60" filter="url(#shadow)"/>
+  <rect x="408" y="210" width="292" height="264" rx="22" fill="url(#card)" stroke="#79c0ff" filter="url(#shadow)"/>
+  <rect x="744" y="210" width="336" height="264" rx="22" fill="url(#card)" stroke="#7ee787" filter="url(#shadow)"/>
+  <rect x="1124" y="210" width="388" height="264" rx="22" fill="url(#card)" stroke="#ffa657" filter="url(#shadow)"/>
+
+  <text x="112" y="258" class="cardTitle">1. Toolchain Surface</text>
+  <text x="112" y="288" class="mono">cmake  ninja  clang++  msbuild  rc</text>
+  <text x="112" y="330" class="body">FeelIT now detects the build tools that</text>
+  <text x="112" y="354" class="body">the bridge path actually needs on Windows.</text>
+  <text x="112" y="396" class="body">This keeps the app honest when the backend</text>
+  <text x="112" y="420" class="body">is blocked by missing compilers rather than</text>
+  <text x="112" y="444" class="body">missing SDKs.</text>
+  <rect x="112" y="392" width="126" height="28" rx="14" fill="#f2cc60"/>
+  <text x="136" y="410" class="badge">HOST READY</text>
+
+  <text x="436" y="258" class="cardTitle">2. Bootstrap Script</text>
+  <text x="436" y="288" class="mono">Bootstrap_HapticBridge.ps1</text>
+  <text x="436" y="330" class="body">Configures one build tree per backend slug,</text>
+  <text x="436" y="354" class="body">selects the available generator and compiler,</text>
+  <text x="436" y="378" class="body">and passes the SDK-root intent into CMake.</text>
+  <text x="436" y="420" class="body">The workflow is reproducible instead of living</text>
+  <text x="436" y="444" class="body">only in local shell history.</text>
+
+  <text x="772" y="258" class="cardTitle">3. Native Scaffold</text>
+  <text x="772" y="288" class="mono">native/CMakeLists.txt</text>
+  <text x="772" y="312" class="mono">native/src/feelit_bridge_probe.cpp</text>
+  <text x="772" y="354" class="body">Compiles a narrow probe executable that can</text>
+  <text x="772" y="378" class="body">check SDK markers, emit JSON, and validate</text>
+  <text x="772" y="402" class="body">the bridge contract before real device logic</text>
+  <text x="772" y="426" class="body">is wired in.</text>
+  <rect x="772" y="432" width="160" height="28" rx="14" fill="#7ee787"/>
+  <text x="798" y="450" class="badge">COMPILED PROBE</text>
+
+  <text x="1152" y="258" class="cardTitle">4. Runtime Diagnostics</text>
+  <text x="1152" y="288" class="mono">/api/haptics/configuration</text>
+  <text x="1152" y="312" class="mono">/haptic-configuration</text>
+  <text x="1152" y="354" class="body">The app can now run the bridge probe, keep</text>
+  <text x="1152" y="378" class="body">the result visible, and distinguish between</text>
+  <text x="1152" y="402" class="body">scaffold-only readiness and real device</text>
+  <text x="1152" y="426" class="body">enumeration.</text>
+
+  <path d="M364 344 H408" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M700 344 H744" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M1080 344 H1124" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <rect x="160" y="548" width="1280" height="290" rx="26" fill="url(#card)" stroke="#30363d" filter="url(#shadow)"/>
+  <text x="198" y="598" class="cardTitle">Bootstrap Truth States</text>
+
+  <text x="198" y="650" class="legend">Toolchain ready</text>
+  <text x="198" y="678" class="body">CMake, resource compiler, and one usable build chain exist on the host.</text>
+
+  <text x="198" y="734" class="legend">Bridge scaffold built</text>
+  <text x="198" y="762" class="body">A probe executable exists and responds to the FeelIT JSON contract.</text>
+
+  <text x="662" y="650" class="legend">SDK markers found</text>
+  <text x="662" y="678" class="body">The configured SDK root contains expected headers or runtime markers for the vendor path.</text>
+
+  <text x="662" y="734" class="legend">Bridge probe state</text>
+  <text x="662" y="762" class="body">The runtime can tell whether the bridge is missing, failing, scaffold-only, or device-ready.</text>
+
+  <text x="1126" y="650" class="legend">Device-ready</text>
+  <text x="1126" y="678" class="body">This is still future work. The current scaffold stops before live device enumeration and force loops.</text>
+
+  <text x="1126" y="734" class="legend">Current engineering value</text>
+  <text x="1126" y="762" class="body">The backend path is no longer vague. It has scripts, binaries, diagnostics, and explicit next failures.</text>
+
+  <rect x="198" y="798" width="1188" height="1" fill="#30363d"/>
+  <text x="198" y="824" class="body">Design rule: the bridge workflow must be reproducible and measurable before FeelIT claims physical-device readiness. The scaffold is valuable because it removes uncertainty from the installation and probe path without pretending that device control is finished.</text>
+</svg>

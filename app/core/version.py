@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 APP_NAME = "FeelIT"
-APP_VERSION = "2.09.000"
+APP_VERSION = "2.10.000"
 APP_PUBLISHER = "Felipe Santibanez"
 VERSION_FORMAT = "X.XX.XXX"
 VERSION_PATTERN = re.compile(r"^(?P<major>\d+)\.(?P<minor>\d{2})\.(?P<patch>\d{3})$")
