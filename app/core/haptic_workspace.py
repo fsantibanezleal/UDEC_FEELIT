@@ -27,6 +27,8 @@ SUPPORTED_MODEL_SUFFIXES = {".obj", ".stl", ".gltf", ".glb"}
 SUPPORTED_TEXT_SUFFIXES = {".txt", ".html", ".htm", ".epub", ".md"}
 SUPPORTED_AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".m4a"}
 DEFAULT_SEGMENT_CHARS = 1200
+DEFAULT_FILE_BROWSER_PAGE_SIZE = 6
+MAX_FILE_BROWSER_PAGE_SIZE = 24
 KIND_LABELS = {
     "directory": "Folder",
     "model": "3D Model",
@@ -61,6 +63,11 @@ MODEL_FORMAT_LABELS = {
     "gltf": "glTF",
     "glb": "GLB",
 }
+
+
+def _display_label_from_path(path: Path | str) -> str:
+    """Return a safe user-facing label derived from one filesystem path."""
+    return Path(path).name or str(path)
 
 
 def local_app_state_dir() -> Path:
@@ -265,6 +272,7 @@ def _load_workspace_record(path: Path, *, registry_source: str) -> dict[str, Any
         "is_default": bool(descriptor.get("is_default")),
         "registry_source": registry_source,
         "workspace_file_path": str(path.resolve()),
+        "workspace_file_label": _display_label_from_path(path),
         "content_root": content_root,
         "file_browser_root": file_browser_root,
         "libraries": libraries,
@@ -290,6 +298,7 @@ def _workspace_registry_snapshot() -> dict[str, list[dict[str, Any]]]:
             invalid_records.append(
                 {
                     "workspace_file_path": str(path),
+                    "workspace_file_label": _display_label_from_path(path),
                     "registry_source": "user_registered",
                     "error_code": "missing_file",
                     "error": "Registered workspace file does not exist.",
@@ -303,6 +312,7 @@ def _workspace_registry_snapshot() -> dict[str, list[dict[str, Any]]]:
             invalid_records.append(
                 {
                     "workspace_file_path": str(path),
+                    "workspace_file_label": _display_label_from_path(path),
                     "registry_source": "user_registered",
                     "error_code": "invalid_descriptor",
                     "error": str(error),
@@ -437,7 +447,7 @@ def build_haptic_workspace_catalog() -> list[dict[str, Any]]:
                 "description": record["description"],
                 "is_default": record["is_default"],
                 "registry_source": record["registry_source"],
-                "workspace_file_path": record["workspace_file_path"],
+                "workspace_file_label": record["workspace_file_label"],
                 "category_counts": {
                     "models": len(record["libraries"].get("models", [])),
                     "texts": len(record["libraries"].get("texts", [])),
@@ -464,17 +474,37 @@ def build_haptic_workspace_payload(slug: str) -> dict[str, Any]:
         "description": record["description"],
         "is_default": record["is_default"],
         "registry_source": record["registry_source"],
-        "workspace_file_path": record["workspace_file_path"],
+        "workspace_file_label": record["workspace_file_label"],
         "libraries": libraries,
         "file_browser": {
             "root_label": record["file_browser_root"].name,
-            "root_path_hint": str(record["file_browser_root"]),
         },
     }
 
 
-def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[str, Any]:
-    """Return a safe file-system browser payload under the configured root."""
+def _paginate_browser_entries(entries: list[dict[str, Any]], *, page: int, page_size: int) -> tuple[list[dict[str, Any]], int, int]:
+    """Return one browser page plus normalized page metadata."""
+    if page_size < 1 or page_size > MAX_FILE_BROWSER_PAGE_SIZE:
+        raise ValueError(
+            f"Workspace browser page_size must be between 1 and {MAX_FILE_BROWSER_PAGE_SIZE}.",
+        )
+    total_entries = len(entries)
+    page_count = max(1, (total_entries + page_size - 1) // page_size)
+    normalized_page = min(max(page, 0), page_count - 1)
+    start_index = normalized_page * page_size
+    end_index = start_index + page_size
+    return entries[start_index:end_index], normalized_page, page_count
+
+
+def build_workspace_browser_payload(
+    slug: str,
+    relative_path: str = "",
+    *,
+    page: int = 0,
+    page_size: int = DEFAULT_FILE_BROWSER_PAGE_SIZE,
+    include_directory_child_counts: bool = False,
+) -> dict[str, Any]:
+    """Return a safe paginated file-system browser payload under the configured root."""
     record = _workspace_record_by_slug(slug)
     current_directory = _resolve_child_path(record["file_browser_root"], relative_path)
     if not current_directory.is_dir():
@@ -496,7 +526,8 @@ def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[
         }
         entry.update(build_kind_contract(kind))
         if kind == "directory":
-            entry["child_count"] = sum(1 for _ in child.iterdir())
+            if include_directory_child_counts:
+                entry["child_count"] = sum(1 for _ in child.iterdir())
         else:
             entry["source"] = {
                 "kind": "workspace_file",
@@ -522,12 +553,22 @@ def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[
         if parent_path == ".":
             parent_path = ""
 
+    paginated_entries, normalized_page, page_count = _paginate_browser_entries(
+        entries,
+        page=page,
+        page_size=page_size,
+    )
+
     return {
         "workspace_slug": slug,
         "current_path": normalized_path,
         "current_label": current_directory.name,
         "parent_path": parent_path or None,
-        "entries": entries,
+        "page": normalized_page,
+        "page_size": page_size,
+        "page_count": page_count,
+        "total_entries": len(entries),
+        "entries": paginated_entries,
     }
 
 
@@ -647,7 +688,16 @@ def build_workspace_manager_payload() -> dict[str, Any]:
     snapshot = _workspace_registry_snapshot()
     return {
         "workspace_suffix": WORKSPACE_SUFFIX,
-        "registry_file_path": str(REGISTRY_FILE),
+        "registry_file_label": REGISTRY_FILE.name,
+        "registry_storage_scope": "User-local FeelIT application state",
         "workspaces": build_haptic_workspace_catalog(),
-        "invalid_workspaces": snapshot["invalid_records"],
+        "invalid_workspaces": [
+            {
+                "workspace_file_label": record["workspace_file_label"],
+                "registry_source": record["registry_source"],
+                "error_code": record["error_code"],
+                "error": record["error"],
+            }
+            for record in snapshot["invalid_records"]
+        ],
     }

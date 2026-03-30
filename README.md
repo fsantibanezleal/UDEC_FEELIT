@@ -66,9 +66,9 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Public port | `8101` |
-| Canonical version | `2.08.000` |
+| Canonical version | `2.08.001` |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `49` automated tests passing plus browser smoke validation across the `4` routed pages |
+| Current validation surface | `51` automated tests passing plus browser smoke validation across the `4` routed pages |
 
 ## Scope And Current Status
 
@@ -76,8 +76,8 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 
 - `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local `OBJ`, `STL`, `glTF`, and `GLB` geometry, and exposes tactile material cycling inside the 3D world.
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
-- `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio.
-- `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, and now surfaces registry diagnostics when registered descriptors are missing or invalid.
+- `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
+- `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
 
 ### Legacy Boundary
 
@@ -166,7 +166,7 @@ The curated captures are expected to come from a stable canonical state per rout
 
 - `GET /api/haptic-workspaces`
 - `GET /api/haptic-workspaces/{slug}`
-- `GET /api/haptic-workspaces/{slug}/browse`
+- `GET /api/haptic-workspaces/{slug}/browse?path=&page=0&page_size=6`
 - `GET /api/haptic-workspaces/{slug}/text-file`
 - `GET /api/haptic-workspaces/{slug}/raw-file`
 - `POST /api/haptic-workspaces/create`

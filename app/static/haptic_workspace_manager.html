@@ -96,7 +96,7 @@
                 <span id="invalid-workspace-count" class="status-value">0</span>
               </div>
               <div class="status-card">
-                <span class="status-label">Registry path</span>
+                <span class="status-label">Registry file</span>
                 <span id="workspace-registry-path" class="status-value">Loading</span>
               </div>
             </div>
@@ -162,10 +162,11 @@
       </div>
       <div class="modal-body">
         <h3>Purpose</h3>
-        <p>
-          This page manages structured desktop workspaces. A workspace file defines curated galleries and a safe file-browser root,
-          while the heavy media stays in an external folder on the user's machine.
-        </p>
+          <p>
+            This page manages structured desktop workspaces. A workspace file defines curated galleries and a safe file-browser root,
+            while the heavy media stays in an external folder on the user's machine. The manager surfaces descriptor labels and registry
+            state without exposing full local absolute paths by default.
+          </p>
         <h3>Current Interaction</h3>
         <ul>
           <li>Create a new workspace rooted in an external folder.</li>

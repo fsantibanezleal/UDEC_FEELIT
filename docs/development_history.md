@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.08.001 (2026-03-30)
+
+This patch improves Haptic Desktop workspace browsing with server-side pagination, reduces repeated external text extraction through freshness-aware caching, and stops exposing absolute local workspace paths by default in the workspace-facing frontend surfaces.
+
+Delivered:
+
+- Added server-side file-browser pagination metadata and lighter directory payloads for Haptic Desktop workspace browsing.
+- Added freshness-aware caching for extracted text loaded from external workspace files so Braille segment navigation does not keep reparsing the same source document.
+- Sanitized workspace-facing payloads and UI so descriptor labels and registry labels are shown without exposing absolute local paths by default.
+
+Rationale:
+
+- The delivered changes improve performance, privacy, and runtime stability inside existing workflows without introducing a new major user-facing mode.
+- The release is a patch because it refines the shipped workspace-management and reading surfaces rather than materially expanding the application capability boundary.
+
 ### v2.08.000 (2026-03-29)
 
 Expand FeelIT model loading beyond OBJ with bundled STL, glTF, and GLB demos across Object Explorer and Haptic Desktop.

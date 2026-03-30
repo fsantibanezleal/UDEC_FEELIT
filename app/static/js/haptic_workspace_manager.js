@@ -63,7 +63,7 @@ function renderWorkspaceList() {
 
     const path = document.createElement("span");
     path.className = "workspace-card-path";
-    path.textContent = workspace.workspace_file_path;
+    path.textContent = workspace.workspace_file_label;
 
     button.append(title, description, meta, path);
     button.addEventListener("click", () => {
@@ -107,7 +107,7 @@ function renderInvalidWorkspaceList() {
 
     const path = document.createElement("span");
     path.className = "workspace-card-path";
-    path.textContent = workspace.workspace_file_path;
+    path.textContent = workspace.workspace_file_label;
 
     card.append(title, description, meta, path);
     container.appendChild(card);
@@ -131,7 +131,7 @@ async function refreshCatalog() {
   byId("workspace-count").textContent = String(payload.workspaces.length);
   byId("invalid-workspace-count").textContent = String(state.invalidWorkspaces.length);
   byId("workspace-suffix").textContent = payload.workspace_suffix;
-  byId("workspace-registry-path").textContent = payload.registry_file_path;
+  byId("workspace-registry-path").textContent = payload.registry_file_label;
   renderWorkspaceList();
   renderInvalidWorkspaceList();
   renderSelectedWorkspace(
@@ -159,7 +159,6 @@ async function createWorkspace() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  byId("existing-workspace-path").value = response.workspace.workspace_file_path;
   setStatus(`Created workspace ${response.workspace.title}.`, "Created");
   await refreshCatalog();
 }

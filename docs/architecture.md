@@ -74,7 +74,7 @@ The object explorer, Braille reader, and haptic desktop each render an actual 3D
 - the object explorer stages real `OBJ`, `STL`, `glTF`, and `GLB` meshes inside a bounded scene
 - the object explorer now begins from a scene-native object-session launcher and then opens exploration scenes with in-world launcher and material controls
 - the Braille reader starts from a scene-native tactile library launcher and then renders the tactile board as raised 3D geometry with scene-native navigation controls
-- the desktop mode renders a workspace-driven launcher, galleries, a typed file browser, detail plaques, and opened content scenes
+- the desktop mode renders a workspace-driven launcher, galleries, a server-paginated typed file browser, detail plaques, and opened content scenes
 - the shared pointer emulator behaves as a stylus-like proxy when no hardware device is attached
 
 Auxiliary 2D views are secondary and are only used when they help interpretation or debugging.
@@ -108,7 +108,7 @@ Current responsibilities:
 - bundled document library catalog
 - bundled document segment loading
 - bundled audio library catalog
-- haptic workspace catalog, browsing, text loading, raw file serving, and descriptor management
+- haptic workspace catalog, server-paginated browsing, text loading, raw file serving, and descriptor management
 - haptic backend status
 - Braille preview translation
 
@@ -131,7 +131,8 @@ Current responsibilities:
 - bundled demo asset catalog
 - bundled public-domain document and audio catalogs
 - plain-text, HTML, and EPUB extraction for the internal reading library
-- haptic workspace descriptor parsing, registry, and filesystem browsing
+- freshness-aware text extraction caching for external workspace documents
+- haptic workspace descriptor parsing, registry, and server-paginated filesystem browsing
 
 Current files:
 
@@ -185,9 +186,11 @@ Current file:
 9. The object explorer resolves the bundled demo-model catalog into a scene-native object-session launcher, then stages the selected `OBJ`, `STL`, `glTF`, or `GLB` mesh plus tactile material context on a visible exploration plinth.
 10. The Braille reader loads the bundled library catalog, opens a document from a scene-native launcher, requests `/api/braille/preview`, and realizes the response as a 3D tactile board with in-scene page, segment, and library-return controls.
 11. Haptic Desktop moves between launcher, gallery, file-browser, detail, and opened-content scenes using workspace-driven payloads.
-12. File-browser entries use kind-specific tactile forms and dispatch supported files directly into the corresponding runtime scene.
-13. Opened desktop scenes expose `Gallery` or `Browser` returns to the exact origin context and `Launcher` for return to the workspace start scene.
-14. Runtime and device status are reflected in the current workspace.
+12. File-browser requests now page server-side so larger external roots do not have to be materialized in one frontend payload.
+13. File-browser entries use kind-specific tactile forms and dispatch supported files directly into the corresponding runtime scene.
+14. Workspace text files reuse freshness-aware extracted-text cache state while the reading scene pages through the same source document.
+15. Opened desktop scenes expose `Gallery` or `Browser` returns to the exact origin context and `Launcher` for return to the workspace start scene.
+16. Runtime and device status are reflected in the current workspace.
 
 ## Future Extension Points
 
@@ -237,9 +240,10 @@ Current baseline:
 - dedicated manager route for creating and registering workspaces rooted in external folders
 - launcher scene for curated models, texts, audio, and file browsing
 - paginated gallery scenes for curated workspace content
-- file-browser scene rooted in the configured workspace path
+- file-browser scene rooted in the configured workspace path with server-side pagination
 - detail plaque scene with braille naming before content opening
 - opened model, text, and audio scenes with scene-native return controls
+- workspace manager surfaces descriptor labels and registry diagnostics without exposing absolute local paths by default
 
 Next additions:
 

@@ -100,6 +100,7 @@ Current use:
 - start in a tactile launcher with a neutral launcher hub plus entry objects for models, texts, audio, and the workspace file browser
 - enter gallery and file-browser scenes through a neutral `Gallery` or `Browser` hub before moving to individual items
 - move through smaller paginated gallery scenes and a workspace-root file browser where folders, models, texts, audio files, and unsupported files use different tactile 3D shapes
+- expect file-browser paging to be resolved server-side so larger external folders can still be navigated through bounded scene pages
 - use explicit in-scene `Launcher` controls plus `Gallery` or `Browser` return controls and `Start` or `Root` controls to jump back to the main menu, the current origin page, or the beginning of the active gallery or browser flow
 - expect `Launcher` to return to the neutral launcher hub, while `Gallery` or `Browser` return to the exact gallery page or file-browser location that launched the current scene and `Start` or `Root` return to the beginning of the active gallery or browser flow
 - keep the current orbit, pan, and zoom viewpoint while moving through desktop scenes on the same page; the view should only reset when explicitly requested or when leaving the page
@@ -132,6 +133,7 @@ Current use:
 - register an existing `.haptic_workspace.json` descriptor file
 - review the current workspace catalog before opening a workspace inside Haptic Desktop
 - inspect registry diagnostics when a previously registered workspace file is missing or its descriptor is invalid
+- expect the manager to show descriptor labels and registry file labels by default rather than full absolute local paths
 
 ## Runtime Information
 
@@ -246,7 +248,7 @@ GET /api/haptic-workspaces/{slug}
 ### Haptic Workspace Browser
 
 ```text
-GET /api/haptic-workspaces/{slug}/browse?path=
+GET /api/haptic-workspaces/{slug}/browse?path=&page=0&page_size=6
 ```
 
 ### Haptic Workspace Text Payload
