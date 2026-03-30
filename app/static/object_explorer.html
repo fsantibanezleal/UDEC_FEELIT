@@ -149,6 +149,8 @@
             <div><dt>Size</dt><dd id="validation-size">--</dd></div>
             <div><dt>Resources</dt><dd id="validation-resource-mode">--</dd></div>
             <div><dt>Geometry</dt><dd id="validation-geometry">--</dd></div>
+            <div><dt>Bounds</dt><dd id="validation-bounds">--</dd></div>
+            <div><dt>Staging</dt><dd id="validation-staging">--</dd></div>
           </dl>
           <p id="validation-summary" class="panel-text">Select a local model to inspect whether it is safe for direct browser staging.</p>
           <ul id="validation-findings" class="compact-list"></ul>
@@ -188,6 +190,7 @@
           <li>Begin with a scene-native 3D launcher that pages through curated bundled demo models.</li>
           <li>Load bundled `OBJ`, `STL`, `glTF`, or `GLB` demos from the launcher or stage a local file through the outer controls.</li>
           <li>Local uploads are validated through the backend before staging so unsupported external-resource packages can be blocked early.</li>
+          <li>The backend also derives a staging profile from available geometry metadata and can suggest a safer workspace scale for local exploration.</li>
           <li>Apply a haptic material profile grounded in current desktop haptic capabilities.</li>
           <li>Inspect the scene with orbit controls and move the pointer proxy with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
           <li>Use scene-native Launcher and Material controls inside the 3D world once a model session is open.</li>

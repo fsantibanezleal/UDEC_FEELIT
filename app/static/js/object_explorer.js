@@ -162,6 +162,44 @@ function geometrySummary(result) {
   return "--";
 }
 
+function formatAxisTriplet(values) {
+  if (!Array.isArray(values) || values.length < 3) {
+    return "--";
+  }
+  return `X ${Number(values[0]).toFixed(2)} / Y ${Number(values[1]).toFixed(2)} / Z ${Number(values[2]).toFixed(2)}`;
+}
+
+function boundsSummary(result) {
+  const stagingProfile = result?.staging_profile ?? {};
+  if (!stagingProfile.bounds_available) {
+    return "Unavailable";
+  }
+  return formatAxisTriplet(stagingProfile.bounds_size);
+}
+
+function stagingSummary(result) {
+  const stagingProfile = result?.staging_profile ?? {};
+  if (!stagingProfile.bounds_available) {
+    return "Default scale";
+  }
+  return `${stagingProfile.size_band} / ${stagingProfile.recommended_workspace_scale_percent}% / dominant ${String(stagingProfile.dominant_axis ?? "--").toUpperCase()}`;
+}
+
+function updateWorkspaceScaleDisplay(value) {
+  byId("workspace-scale-value").textContent = `${Number(value)}%`;
+}
+
+function applySuggestedWorkspaceScale(result) {
+  const stagingProfile = result?.staging_profile ?? {};
+  const suggestedScale = Number(stagingProfile.recommended_workspace_scale_percent);
+  if (!stagingProfile.bounds_available || !Number.isFinite(suggestedScale)) {
+    return false;
+  }
+  byId("workspace-scale").value = `${suggestedScale}`;
+  updateWorkspaceScaleDisplay(suggestedScale);
+  return true;
+}
+
 function setValidationFindingItems(items, tone = "neutral") {
   const list = byId("validation-findings");
   list.innerHTML = "";
@@ -184,6 +222,8 @@ function resetValidationPanel(message = "Select a local model to inspect whether
   byId("validation-size").textContent = "--";
   byId("validation-resource-mode").textContent = "--";
   byId("validation-geometry").textContent = "--";
+  byId("validation-bounds").textContent = "--";
+  byId("validation-staging").textContent = "--";
   byId("validation-summary").textContent = message;
   setValidationFindingItems([]);
 }
@@ -201,6 +241,8 @@ function setValidationPending(file) {
   byId("validation-size").textContent = file ? formatBytes(file.size) : "--";
   byId("validation-resource-mode").textContent = "--";
   byId("validation-geometry").textContent = "--";
+  byId("validation-bounds").textContent = "--";
+  byId("validation-staging").textContent = "--";
   byId("validation-summary").textContent = `Inspecting ${filename} before direct browser staging.`;
   setValidationFindingItems([]);
 }
@@ -211,6 +253,8 @@ function setValidationTransportError(message) {
   byId("validation-format").textContent = "--";
   byId("validation-resource-mode").textContent = "--";
   byId("validation-geometry").textContent = "--";
+  byId("validation-bounds").textContent = "--";
+  byId("validation-staging").textContent = "--";
   byId("validation-summary").textContent = message;
   setValidationFindingItems([message], "danger");
 }
@@ -225,6 +269,8 @@ function updateValidationPanel(result) {
   byId("validation-size").textContent = formatBytes(result.file_size_bytes);
   byId("validation-resource-mode").textContent = humanizeResourceMode(result.resource_mode);
   byId("validation-geometry").textContent = geometrySummary(result);
+  byId("validation-bounds").textContent = boundsSummary(result);
+  byId("validation-staging").textContent = stagingSummary(result);
   byId("validation-summary").textContent = result.summary;
   if (findings.length) {
     const hasBlockers = (result.blockers ?? []).length > 0;
@@ -292,7 +338,7 @@ async function fetchJson(url) {
 }
 
 async function validateLocalUpload(file, options = {}) {
-  const { announce = true } = options;
+  const { announce = true, applySuggestedScale = false } = options;
   const fingerprint = fileFingerprint(file);
   if (state.localValidation && state.localValidationFingerprint === fingerprint) {
     return state.localValidation;
@@ -315,10 +361,11 @@ async function validateLocalUpload(file, options = {}) {
     }
     state.localValidation = payload;
     updateValidationPanel(payload);
+    const suggestedScaleApplied = applySuggestedScale && payload.can_stage_locally && applySuggestedWorkspaceScale(payload);
     if (announce) {
       setStatus(
         payload.can_stage_locally
-          ? `${file.name} passed backend validation and is ready for direct browser staging.`
+          ? `${file.name} passed backend validation and is ready for direct browser staging.${suggestedScaleApplied ? " Suggested workspace scale applied." : ""}`
           : `${file.name} is blocked for direct browser staging. ${payload.blockers?.[0] ?? payload.summary}`,
       );
     }
@@ -1096,6 +1143,8 @@ async function openLocalUploadSession(sceneApi, localFile, validation) {
   const { modelRoot: object, format, formatLabel } = await loadLocalModelFile(localFile);
   const validationSummary = validation?.summary ?? `Local ${formatLabel} file validated for direct browser staging.`;
   const resourceMode = humanizeResourceMode(validation?.resource_mode ?? "single-file");
+  const normalizationHint = validation?.staging_profile?.normalization_hint ?? "Manual workspace scale may still be required after staging.";
+  const scaleSuggestion = validation?.staging_profile?.recommended_workspace_scale_percent;
   const localModel = {
     ...baseModel,
     slug: "local_model_session",
@@ -1104,7 +1153,7 @@ async function openLocalUploadSession(sceneApi, localFile, validation) {
     file_format: format,
     format_label: formatLabel,
     source_name: `Local ${formatLabel} upload`,
-    description: `${validationSummary} Resource mode: ${resourceMode}.`,
+    description: `${validationSummary} Resource mode: ${resourceMode}. ${normalizationHint}${Number.isFinite(scaleSuggestion) ? ` Suggested workspace scale: ${scaleSuggestion}%.` : ""}`,
     scale_hint: 1.0,
   };
   setSelectedModel(baseModel.slug, { syncSelect: true, useDefaultMaterial: false });
@@ -1232,7 +1281,7 @@ document.addEventListener("DOMContentLoaded", () => {
           setStatus("Local upload cleared. Select a bundled demo or choose another local file.");
           return;
         }
-        validateLocalUpload(localFile).catch(() => {});
+        validateLocalUpload(localFile, { applySuggestedScale: true }).catch(() => {});
       });
 
       byId("reset-camera").addEventListener("click", () => {
@@ -1266,7 +1315,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       byId("workspace-scale").addEventListener("input", () => {
         const value = Number(byId("workspace-scale").value);
-        byId("workspace-scale-value").textContent = `${value}%`;
+        updateWorkspaceScaleDisplay(value);
       });
 
       byId("guidance-grid-toggle").addEventListener("change", (event) => {

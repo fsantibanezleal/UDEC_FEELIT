@@ -149,6 +149,8 @@ def test_local_model_validation_endpoint_accepts_simple_obj_upload() -> None:
     assert payload["file_format"] == "obj"
     assert payload["metrics"]["vertex_count"] == 3
     assert payload["metrics"]["face_count"] == 1
+    assert payload["staging_profile"]["bounds_available"] is True
+    assert payload["staging_profile"]["recommended_workspace_scale_percent"] == 120
 
 
 def test_local_model_validation_endpoint_blocks_external_resource_gltf() -> None:
