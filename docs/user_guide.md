@@ -31,6 +31,8 @@ Current use:
 
 - start from a scene-native 3D launcher with paged demo-model session targets
 - open a bundled demo object directly from the 3D world or stage a local `OBJ`, `STL`, `glTF`, or `GLB` file from the outer controls
+- if multiple supported local model files are selected together, choose which one is the main model before loading the bundle
+- select a local `glTF` main file together with its sidecar buffers or textures when the asset is not self-contained
 - select a tactile material profile or cycle materials from the in-scene controls once a session is open
 - adjust bounded workspace scale
 - move the stylus-style pointer proxy with keyboard support
@@ -43,7 +45,7 @@ Current keyboard cues:
 - `Q`, `E`: move vertically
 - `Space` or `Enter`: emulate contact near the current object surface
 
-This workspace now has a blind-first entry path for curated demo models, while local uploads support `OBJ`, `STL`, self-contained `glTF`, and `GLB` as a secondary outer-panel intake path.
+This workspace now has a blind-first entry path for curated demo models, while local uploads support `OBJ`, `STL`, `GLB`, self-contained `glTF`, and multi-file local `glTF` bundles as a secondary outer-panel intake path.
 
 ### 2. Braille Reader
 
@@ -317,7 +319,7 @@ POST /api/haptic-workspaces/register
 - no physical device loop is connected to the scene runtime yet, even though the haptic-configuration route now tracks backend selection intent, vendor dependency readiness, bridge-probe state, and toolchain availability
 - the Force Dimension DHD path can now load the runtime library and enumerate devices through the native probe, OpenHaptics can now load the HD runtime library set and validate minimal symbols, and CHAI3D remains a scaffold-level probe path
 - no current probe drives force output, calibration, homing, or scene-coupled haptic interaction
-- 3D object staging is currently client-side and focused on `obj`, `stl`, self-contained `gltf`, and `glb`
+- 3D object staging is currently client-side and focused on `obj`, `stl`, `glb`, self-contained `gltf`, and local `gltf` bundles selected together with their sidecar resources
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
 - workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances
 - desktop actions are limited to models, text, audio, and file browsing rather than full desktop automation

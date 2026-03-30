@@ -15,6 +15,23 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.13.000 (2026-03-30)
+
+Expand the Object Explorer import pipeline with server-side validation, staging guidance, and bundle-aware local glTF intake.
+
+Delivered:
+
+- Added server-side validation endpoints for local model uploads and multi-file local bundles across OBJ, STL, GLTF, and GLB flows.
+- Derived staging guidance from geometry bounds, dominant-axis analysis, and workspace-scale recommendations before browser-side scene opening.
+- Extended the local import UX with multi-file bundle selection, explicit main-file choice, bundle diagnostics, and bundle-aware sidecar loading for local glTF assets.
+- Hardened browser smoke validation so benign Chromium GPU `ReadPixels` warnings do not produce false 404-style failures during release snapshot capture.
+- Updated README, user guidance, implementation-gap notes, curated screenshots, and automated coverage to reflect the stronger import pipeline.
+
+Rationale:
+
+- The Object Explorer now crosses a new capability boundary by moving from browser-only parsing into a documented backend-assisted import path.
+- Bundle-aware local glTF intake and backend-derived staging guidance materially expand what the application can accept and explain to the user before scene entry.
+
 ### v2.12.000 (2026-03-30)
 
 Extend the native bridge layer with a vendor-aware OpenHaptics probe that loads runtime libraries and reports non-scaffold capability states.
@@ -435,14 +452,13 @@ Rationale:
 
 ## Planned Milestones
 
-### v2.12.x
-
-- safe OpenHaptics device enumeration and richer capability reporting beyond runtime-loaded symbol validation
-- extend vendor-aware bridge probing beyond Force Dimension and OpenHaptics into the CHAI3D-oriented path
-- clearer SDK bootstrap notes and remediation paths for the first tracked hardware families
-- follow-up stabilization of the haptic-configuration diagnostics and native bridge authoring workflow
-
 ### v2.13.x
+
+- persistent normalized model metadata and preprocessing artifacts for reused local import sessions
+- repair or repackaging support for incomplete or external-resource-heavy 3D asset bundles
+- richer server-side import constraints for orientation, scale normalization, and safer asset reuse across scenes
+
+### v2.14.x
 
 - first live native device activation path with calibration, homing, and device-selection diagnostics
 - initial device-backed collision-proxy integration for object, Braille, and desktop scenes

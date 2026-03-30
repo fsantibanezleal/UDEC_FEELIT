@@ -14,7 +14,7 @@ The current repository is not a single long web page. It is a multi-workspace ap
 - `/haptic-workspace-manager`
 - `/haptic-configuration`
 
-The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness. It now also ships a native-bridge bootstrap surface: toolchain diagnostics, a PowerShell bridge bootstrap script, a JSON-based bridge probe contract, and a compiled scaffold that proves the bridge workflow can be configured and built locally before the vendor-specific device loop is fully implemented. The vendor-aware bridge layer now has two concrete levels: the Force Dimension DHD path can load the runtime library and enumerate devices when a compatible SDK runtime is present, while the OpenHaptics path can load the HD runtime library set and validate minimal HDAPI entry points even though safe device enumeration is still pending.
+The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness. On the 3D import side, FeelIT now ships server-side local-upload validation, backend-derived staging guidance, and bundle-aware local `glTF` intake that can resolve sidecar buffers or textures when the user selects the main model together with its required resources. It also ships a native-bridge bootstrap surface: toolchain diagnostics, a PowerShell bridge bootstrap script, a JSON-based bridge probe contract, and a compiled scaffold that proves the bridge workflow can be configured and built locally before the vendor-specific device loop is fully implemented. The vendor-aware bridge layer now has two concrete levels: the Force Dimension DHD path can load the runtime library and enumerate devices when a compatible SDK runtime is present, while the OpenHaptics path can load the HD runtime library set and validate minimal HDAPI entry points even though safe device enumeration is still pending.
 
 ## Problem Framing
 
@@ -78,12 +78,13 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled public-domain documents | `5` |
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
+| Local multi-file bundle intake | bundle-aware `gltf` sidecar resolution with explicit main-file selection |
 | Public port | `8101` |
-| Canonical version | `2.12.000` |
+| Release-synced version | `2.13.000` |
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `59` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `79` automated tests passing plus browser smoke validation across the `5` routed pages |
 
 ## Current Frontend Views
 
@@ -93,31 +94,43 @@ The current README-facing screenshots use the tracked current-facing image set u
 
 ![FeelIT Object Explorer](docs/png/frontend_3d_objects.png)
 
+This route stages curated demo models and local uploads inside a bounded exploration world. It exposes backend-driven upload validation, scale guidance derived from geometry bounds, explicit main-file selection when several supported local models are selected together, and bundle-aware local `glTF` intake when sidecar resources are selected together with the main model.
+
 ### Braille Reader Launcher
 
 ![FeelIT Braille Launcher](docs/png/frontend_braille_launcher.png)
+
+The launcher scene is the blind-first entry point for the reading workflow. It lets the user choose bundled public-domain documents directly from tactile targets inside the 3D world before entering the reading surface.
 
 ### Braille Reader Session
 
 ![FeelIT Braille Reading World](docs/png/frontend_braille_hapticreader.png)
 
+The reading world renders the active Braille segment on a bounded tactile board and keeps scene-native navigation controls in the same space, so the user can move through the document without dropping back to a purely outer browser UI.
+
 ### Haptic Desktop
 
 ![FeelIT Haptic Desktop](docs/png/frontend_hapticdesktop.png)
+
+The desktop route is a controlled tactile launcher and gallery system rather than a generic file tree alone. It moves between launcher, galleries, typed file-browser scenes, detail plaques, and opened content scenes for models, text, and audio.
 
 ### Haptic Workspace Manager
 
 ![FeelIT Haptic Workspace Manager](docs/png/frontend_workspacemanager.png)
 
+The manager route is the authoring and registry surface for structured `haptic_workspace` descriptors. It helps define curated external roots without exposing uncontrolled raw-path details as the primary UX.
+
 ### Haptic Configuration
 
 ![FeelIT Haptic Configuration](docs/png/frontend_haptic_configuration.png)
+
+The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, and the current boundary between scaffold-only, runtime-loaded, and device-aware capability.
 
 ## Scope And Current Status
 
 ### Current Workspaces
 
-- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local `OBJ`, `STL`, `glTF`, and `GLB` geometry, and exposes tactile material cycling inside the 3D world.
+- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local `OBJ`, `STL`, `glTF`, and `GLB` geometry, validates local uploads in the backend before staging, derives workspace-scale guidance from geometry bounds, supports explicit main-file selection for local bundles, and resolves local `glTF` sidecar bundles when the required files are selected together.
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
@@ -134,7 +147,7 @@ The preserved legacy archive in `legacy/Registro Software` most strongly verifie
 - no native physical haptic backend is attached yet, although a dedicated configuration route now tracks requested backends, SDK roots, bridge paths, toolchain readiness, and contact-model assumptions
 - the shipped bridge system now includes a vendor-aware Force Dimension DHD probe that can load the runtime library and enumerate devices plus a vendor-aware OpenHaptics probe that can load the HD runtime library set and validate minimal symbols, but CHAI3D still remains a scaffold-level probe path
 - no probe currently drives force output, calibration, homing, or a live scene-coupled servo loop
-- 3D asset import is client-side and currently supports `obj`, `stl`, self-contained `gltf`, and `glb`, but it still lacks server-side validation and preprocessing
+- 3D asset import now has server-side validation, staging guidance, explicit local-bundle main-file selection, and bundle-aware local `gltf` sidecar resolution, but it still lacks a full server-side preprocessing or repair pipeline
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub`
 - the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite
 - the desktop flow already opens models, text, and audio, but it is not yet a full desktop automation environment
@@ -213,6 +226,8 @@ These commands dump the current backend and toolchain diagnostic state and compi
 
 - `GET /api/materials`
 - `GET /api/demo-models`
+- `POST /api/models/validate-local-upload`
+- `POST /api/models/validate-local-bundle`
 
 ### Braille and library services
 

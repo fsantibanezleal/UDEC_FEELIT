@@ -1,5 +1,7 @@
 """Tests for FeelIT API endpoints."""
 
+import json
+
 from fastapi.testclient import TestClient
 
 from app.core.version import APP_VERSION
@@ -58,6 +60,9 @@ def test_frontend_mode_routes_are_served() -> None:
     assert "Space activate" in object_response.text
     assert "Scene-native launcher plus bounded exploration world" in object_response.text
     assert "Scene mode" in object_response.text
+    assert "Local Upload Validation" in object_response.text
+    assert "Main model file" in object_response.text
+    assert "Clear Local Bundle" in object_response.text
     assert 'type="module" src="/static/js/object_explorer.js"' in object_response.text
     assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200
@@ -134,6 +139,95 @@ def test_demo_model_static_assets_are_served() -> None:
                 assert '"asset"' in asset_response.text
             elif model["file_format"] == "glb":
                 assert asset_response.content[:4] == b"glTF"
+
+
+def test_local_model_validation_endpoint_accepts_simple_obj_upload() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-upload",
+            files={"file": ("sample.obj", b"v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n", "text/plain")},
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is True
+    assert payload["file_format"] == "obj"
+    assert payload["metrics"]["vertex_count"] == 3
+    assert payload["metrics"]["face_count"] == 1
+    assert payload["staging_profile"]["bounds_available"] is True
+    assert payload["staging_profile"]["recommended_workspace_scale_percent"] == 120
+
+
+def test_local_model_validation_endpoint_blocks_external_resource_gltf() -> None:
+    gltf_payload = (
+        b'{"asset":{"version":"2.0"},"buffers":[{"uri":"mesh.bin","byteLength":12}],"meshes":[{"primitives":[{}]}]}'
+    )
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-upload",
+            files={"file": ("sample.gltf", gltf_payload, "model/gltf+json")},
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is False
+    assert payload["file_format"] == "gltf"
+    assert any("External buffer or image references" in blocker for blocker in payload["blockers"])
+
+
+def test_local_model_validation_endpoint_rejects_unsupported_format() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-upload",
+            files={"file": ("sample.fbx", b"placeholder", "application/octet-stream")},
+        )
+    assert response.status_code == 400
+    assert "Unsupported 3D model format" in response.json()["detail"]
+
+
+def test_local_model_bundle_validation_endpoint_accepts_gltf_with_sidecars() -> None:
+    gltf_payload = json.dumps(
+        {
+            "asset": {"version": "2.0"},
+            "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+            "accessors": [{"min": [0, 0, 0], "max": [1, 2, 1]}],
+            "meshes": [{"primitives": [{"attributes": {"POSITION": 0}}]}],
+        },
+    ).encode("utf-8")
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-bundle",
+            data={"main_filename": "bundle.gltf"},
+            files=[
+                ("files", ("bundle.gltf", gltf_payload, "model/gltf+json")),
+                ("files", ("mesh.bin", b"\x00" * 12, "application/octet-stream")),
+            ],
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is True
+    assert payload["resource_mode"] == "bundle-resolved"
+    assert payload["metrics"]["resolved_external_resource_count"] == 1
+    assert payload["metrics"]["resolved_external_resources"] == ["mesh.bin"]
+
+
+def test_local_model_bundle_validation_endpoint_blocks_incomplete_gltf_bundle() -> None:
+    gltf_payload = json.dumps(
+        {
+            "asset": {"version": "2.0"},
+            "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+            "meshes": [{"primitives": [{}]}],
+        },
+    ).encode("utf-8")
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-bundle",
+            data={"main_filename": "bundle.gltf"},
+            files=[("files", ("bundle.gltf", gltf_payload, "model/gltf+json"))],
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is False
+    assert payload["resource_mode"] == "bundle-incomplete"
+    assert payload["metrics"]["missing_external_resources"] == ["mesh.bin"]
 
 
 def test_braille_preview_returns_positioned_cells() -> None:

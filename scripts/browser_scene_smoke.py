@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import socket
 import subprocess
@@ -62,6 +63,27 @@ SCENES: tuple[SceneSpec, ...] = (
         wait_until="commit",
     ),
 )
+
+BENIGN_CONSOLE_WARNING_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"GPU stall due to ReadPixels", re.IGNORECASE),
+)
+HTTP_404_PATTERN = re.compile(r"\b404\b")
+
+
+def is_benign_console_warning(line: str) -> bool:
+    """Return True when one captured console line matches a known benign warning."""
+    return any(pattern.search(line) for pattern in BENIGN_CONSOLE_WARNING_PATTERNS)
+
+
+def is_relevant_console_failure(line: str) -> bool:
+    """Return True when one captured console line should fail the smoke run."""
+    if is_benign_console_warning(line):
+        return False
+    return (
+        "console[error]" in line
+        or bool(HTTP_404_PATTERN.search(line))
+        or "Failed to load" in line
+    )
 
 
 def reserve_free_local_port() -> int:
@@ -1134,10 +1156,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
             api_status_text = (page.locator('[data-runtime="api-status"]').first.text_content() or "").strip()
             error_overlay_count = page.locator(".stage-error-overlay").count()
 
-            error_logs = [
-                line for line in console_messages
-                if "console[error]" in line or "404" in line or "Failed to load" in line
-            ]
+            error_logs = [line for line in console_messages if is_relevant_console_failure(line)]
             if page_errors:
                 failures.extend(page_errors)
             if error_logs:

@@ -1,0 +1,123 @@
+"""Tests for server-side local 3D model validation."""
+
+from __future__ import annotations
+
+import json
+
+from app.core.model_validation import (
+    MAX_LOCAL_MODEL_FILE_BYTES,
+    validate_local_model_bundle,
+    validate_local_model_file,
+)
+
+
+def test_validate_obj_accepts_simple_geometry() -> None:
+    result = validate_local_model_file(
+        "triangle.obj",
+        b"v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n",
+    )
+    assert result.can_stage_locally is True
+    assert result.file_format == "obj"
+    assert result.metrics["vertex_count"] == 3
+    assert result.metrics["face_count"] == 1
+    assert result.metrics["bounds_size"] == [1.0, 1.0, 0.0]
+    assert result.staging_profile["bounds_available"] is True
+    assert result.staging_profile["recommended_workspace_scale_percent"] == 120
+
+
+def test_validate_obj_without_faces_is_blocked() -> None:
+    result = validate_local_model_file(
+        "points.obj",
+        b"v 0 0 0\nv 1 0 0\nv 0 1 0\n",
+    )
+    assert result.can_stage_locally is False
+    assert any("polygon faces" in blocker for blocker in result.blockers)
+
+
+def test_validate_ascii_stl_without_facets_is_blocked() -> None:
+    result = validate_local_model_file(
+        "empty.stl",
+        b"solid empty\nendsolid empty\n",
+    )
+    assert result.can_stage_locally is False
+    assert result.metrics["triangle_count"] == 0
+
+
+def test_validate_gltf_with_external_resources_is_blocked() -> None:
+    payload = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+        "meshes": [{"primitives": [{}]}],
+    }
+    result = validate_local_model_file("external.gltf", json.dumps(payload).encode("utf-8"))
+    assert result.can_stage_locally is False
+    assert result.metrics["external_resource_count"] == 1
+
+
+def test_validate_gltf_uses_accessor_bounds_for_staging_profile() -> None:
+    payload = {
+        "asset": {"version": "2.0"},
+        "accessors": [
+            {"min": [0, 0, 0], "max": [2, 4, 1]},
+        ],
+        "meshes": [{"primitives": [{"attributes": {"POSITION": 0}}]}],
+    }
+    result = validate_local_model_file("bounded.gltf", json.dumps(payload).encode("utf-8"))
+    assert result.can_stage_locally is True
+    assert result.metrics["position_accessor_count"] == 1
+    assert result.metrics["bounded_position_accessor_count"] == 1
+    assert result.staging_profile["bounds_size"] == [2.0, 4.0, 1.0]
+    assert result.staging_profile["dominant_axis"] == "y"
+    assert result.staging_profile["recommended_workspace_scale_percent"] == 85
+
+
+def test_validate_glb_with_invalid_header_is_blocked() -> None:
+    result = validate_local_model_file("broken.glb", b"not-a-valid-glb")
+    assert result.can_stage_locally is False
+    assert any("too small" in blocker.lower() or "magic" in blocker.lower() for blocker in result.blockers)
+
+
+def test_validate_gltf_bundle_accepts_present_sidecar_resource() -> None:
+    payload = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+        "accessors": [{"min": [0, 0, 0], "max": [1, 2, 1]}],
+        "meshes": [{"primitives": [{"attributes": {"POSITION": 0}}]}],
+    }
+    result = validate_local_model_bundle(
+        "bundle.gltf",
+        {
+            "bundle.gltf": json.dumps(payload).encode("utf-8"),
+            "mesh.bin": b"\x00" * 12,
+        },
+    )
+    assert result.can_stage_locally is True
+    assert result.resource_mode == "bundle-resolved"
+    assert result.metrics["resolved_external_resource_count"] == 1
+    assert result.metrics["missing_external_resource_count"] == 0
+    assert result.metrics["resolved_external_resources"] == ["mesh.bin"]
+
+
+def test_validate_gltf_bundle_blocks_when_sidecars_are_missing() -> None:
+    payload = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"uri": "nested/mesh.bin", "byteLength": 12}],
+        "meshes": [{"primitives": [{}]}],
+    }
+    result = validate_local_model_bundle(
+        "bundle.gltf",
+        {
+            "bundle.gltf": json.dumps(payload).encode("utf-8"),
+        },
+    )
+    assert result.can_stage_locally is False
+    assert result.resource_mode == "bundle-incomplete"
+    assert any("missing 1 required external resources" in blocker for blocker in result.blockers)
+    assert result.metrics["missing_external_resources"] == ["nested/mesh.bin"]
+
+
+def test_validate_oversized_model_is_blocked() -> None:
+    payload = b"x" * (MAX_LOCAL_MODEL_FILE_BYTES + 1)
+    result = validate_local_model_file("heavy.obj", payload)
+    assert result.can_stage_locally is False
+    assert result.resource_mode == "oversized"

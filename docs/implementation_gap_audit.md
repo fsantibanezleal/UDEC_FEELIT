@@ -46,6 +46,10 @@ Implemented:
 - bundled multi-format demo catalog exposed through the API
 - scene-native paged launcher for curated demo-model sessions
 - local `OBJ`, `STL`, self-contained `glTF`, and `GLB` upload and in-browser parsing
+- local `glTF` bundle staging when the main model and required sidecar resources are selected together
+- server-side validation and staging-profile analysis for local browser-staged uploads before scene parsing
+- early blocking for oversized local uploads and incomplete external-resource `glTF` or `GLB` packages
+- backend-derived bounds and workspace-scale recommendations when enough geometry metadata is available
 - haptic material profile selection grounded in plausible current-device approximations
 - visible exploration plinth and adaptive scene bounds
 - in-scene Launcher plus material-cycling controls inside the exploration world
@@ -53,8 +57,8 @@ Implemented:
 
 Still limited:
 
-- no server-side asset validation
-- no preprocessing pipeline for heavy or externally referenced assets
+- no preprocessing pipeline yet for heavy staged assets after validation and staging analysis
+- external-resource packages can be resolved only when the required sidecars are selected together locally; there is still no repackaging or repair pipeline
 - no native force model tied to real haptic hardware
 - no persistent model metadata or saved exploration sessions
 - local upload still enters through the surrounding web controls rather than a scene-native intake path
@@ -160,7 +164,7 @@ The repository does not yet deliver:
 - a native haptic backend beside the null backend
 - broad runtime device capability detection and activation beyond the current OpenHaptics runtime-load and Force Dimension enumeration baseline
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
-- server-side import and validation for 3D assets
+- server-side preprocessing and import pipeline for 3D assets beyond the current validation gate
 - real desktop action execution semantics beyond content launching and playback control
 - hardware-backed tactile realization of the material profiles
 - validated physical collision, force, and material rendering against a real haptic device
@@ -195,5 +199,5 @@ Those belong to the modernization path, not to the verified archived implementat
 
 1. Build a first native backend activation boundary on top of the current vendor-aware probe coverage so the material and workspace models can move beyond visual approximation.
 2. Extend the Braille library with richer compatibility beyond the current TXT, HTML, and EPUB support.
-3. Extend the 3D asset pipeline with server-side validation, preprocessing, and safer handling for external-resource packages.
+3. Extend the 3D asset pipeline from the current validation gate into preprocessing, repackaging, and safer handling for heavy or external-resource packages.
 4. Expand the workspace manager into a richer editor with descriptor validation, asset previews, and safer authoring affordances.
