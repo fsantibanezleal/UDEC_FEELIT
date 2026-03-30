@@ -351,6 +351,77 @@ static ProbeResult run_forcedimension_probe(const std::string& backend_slug, con
   return result;
 }
 
+static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const std::string& configured_sdk_root, const BackendProfile& profile) {
+  using hdInitDeviceFn = void* (*)(const char*);
+  using hdDisableDeviceFn = void (*)(void*);
+  using hdGetErrorStringFn = const char* (*)(int);
+
+  ProbeResult result = build_default_probe_result(backend_slug, configured_sdk_root);
+  result.runtime_load_state = "not-attempted";
+  apply_marker_hits(&result, profile);
+
+  if (!result.sdk_root_exists) {
+    result.summary = "Bridge scaffold compiled, but the SDK root is missing or was not provided.";
+    return result;
+  }
+
+  const fs::path sdk_root(result.sdk_root);
+  const auto runtime_library = first_existing_candidate({
+      sdk_root / "bin" / "hd.dll",
+      sdk_root / "lib" / "hd.dll",
+  });
+  const auto utility_library = first_existing_candidate({
+      sdk_root / "bin" / "hdu.dll",
+      sdk_root / "lib" / "hdu.dll",
+  });
+
+  if (!runtime_library) {
+    result.status = "runtime-library-missing";
+    result.runtime_load_state = "missing";
+    result.summary = "OpenHaptics SDK markers were found, but no supported HD runtime library was present under the SDK root.";
+    return result;
+  }
+
+  result.runtime_library = runtime_library->string();
+
+  SharedLibrary hd_library;
+  std::string load_error;
+  if (!hd_library.open(*runtime_library, &load_error)) {
+    result.status = "runtime-load-failed";
+    result.runtime_load_state = "load-failed";
+    result.summary = "Failed to load the OpenHaptics HD runtime library: " + load_error;
+    return result;
+  }
+  result.runtime_load_state = "loaded";
+
+  SharedLibrary hdu_library;
+  if (utility_library) {
+    std::string utility_error;
+    if (!hdu_library.open(*utility_library, &utility_error)) {
+      result.status = "runtime-load-failed";
+      result.runtime_load_state = "utility-load-failed";
+      result.summary = "OpenHaptics HD runtime loaded, but the HDU utility library failed to load: " + utility_error;
+      return result;
+    }
+  }
+
+  auto hd_init_device = hd_library.symbol<hdInitDeviceFn>("hdInitDevice");
+  auto hd_disable_device = hd_library.symbol<hdDisableDeviceFn>("hdDisableDevice");
+  auto hd_get_error_string = hd_library.symbol<hdGetErrorStringFn>("hdGetErrorString");
+
+  if (!hd_init_device || !hd_disable_device || !hd_get_error_string) {
+    result.status = "runtime-symbol-missing";
+    result.runtime_load_state = "symbols-missing";
+    result.summary = "OpenHaptics runtime loaded, but one or more minimal HDAPI entry points are missing.";
+    return result;
+  }
+
+  result.status = "runtime-loaded-capability-ready";
+  result.summary =
+      "OpenHaptics runtime libraries loaded and minimal HDAPI entry points are available, but safe device enumeration is not implemented yet.";
+  return result;
+}
+
 static ProbeResult run_scaffold_probe(const std::string& backend_slug, const std::string& configured_sdk_root, const BackendProfile& profile) {
   ProbeResult result = build_default_probe_result(backend_slug, configured_sdk_root);
   apply_marker_hits(&result, profile);
@@ -422,6 +493,8 @@ int main(int argc, char* argv[]) {
   ProbeResult result =
       backend_slug == "forcedimension-dhd"
           ? run_forcedimension_probe(backend_slug, configured_sdk_root, profile)
+          : backend_slug == "openhaptics-touch"
+                ? run_openhaptics_probe(backend_slug, configured_sdk_root, profile)
           : run_scaffold_probe(backend_slug, configured_sdk_root, profile);
 
   if (!emit_json) {

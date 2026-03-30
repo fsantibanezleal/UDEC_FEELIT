@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import textwrap
 from pathlib import Path
@@ -96,6 +95,85 @@ def _build_mock_forcedimension_sdk(sdk_root: Path, clang_path: str) -> None:
     )
 
 
+def _build_mock_openhaptics_sdk(sdk_root: Path, clang_path: str) -> None:
+    """Create a minimal SDK root with mock OpenHaptics runtime DLLs."""
+    hd_include_dir = sdk_root / "include" / "HD"
+    hdu_include_dir = sdk_root / "include" / "HDU"
+    lib_dir = sdk_root / "lib"
+    bin_dir = sdk_root / "bin"
+    hd_include_dir.mkdir(parents=True, exist_ok=True)
+    hdu_include_dir.mkdir(parents=True, exist_ok=True)
+    lib_dir.mkdir(parents=True, exist_ok=True)
+    bin_dir.mkdir(parents=True, exist_ok=True)
+
+    (hd_include_dir / "hd.h").write_text("// mock OpenHaptics HD header\n", encoding="utf-8")
+    (hdu_include_dir / "hduVector.h").write_text("// mock OpenHaptics HDU header\n", encoding="utf-8")
+    (lib_dir / "hd.lib").write_text("", encoding="utf-8")
+    (lib_dir / "hdu.lib").write_text("", encoding="utf-8")
+
+    hd_runtime_source = sdk_root / "mock_hd_runtime.cpp"
+    hd_runtime_source.write_text(
+        textwrap.dedent(
+            """
+            #if defined(_WIN32)
+            #define EXPORT __declspec(dllexport)
+            #else
+            #define EXPORT
+            #endif
+
+            extern "C" {
+            EXPORT void* hdInitDevice(const char*) { return reinterpret_cast<void*>(0x1); }
+            EXPORT void hdDisableDevice(void*) {}
+            EXPORT const char* hdGetErrorString(int) { return "No error"; }
+            }
+            """,
+        ).strip(),
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            clang_path,
+            "-shared",
+            "-o",
+            str(bin_dir / "hd.dll"),
+            str(hd_runtime_source),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    hdu_runtime_source = sdk_root / "mock_hdu_runtime.cpp"
+    hdu_runtime_source.write_text(
+        textwrap.dedent(
+            """
+            #if defined(_WIN32)
+            #define EXPORT __declspec(dllexport)
+            #else
+            #define EXPORT
+            #endif
+
+            extern "C" {
+            EXPORT int hduMockUtility() { return 1; }
+            }
+            """,
+        ).strip(),
+        encoding="utf-8",
+    )
+    subprocess.run(
+        [
+            clang_path,
+            "-shared",
+            "-o",
+            str(bin_dir / "hdu.dll"),
+            str(hdu_runtime_source),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def _build_temp_native_root(native_root: Path) -> Path:
     """Create a temporary native bridge source tree for isolated builds."""
     source_root = ROOT / "native"
@@ -111,10 +189,10 @@ def _build_temp_native_root(native_root: Path) -> Path:
     return native_root
 
 
-def _build_forcedimension_probe(sdk_root: Path, native_root: Path) -> Path:
-    """Build the native bridge probe for the Force Dimension backend."""
+def _build_backend_probe(backend_slug: str, sdk_root: Path, native_root: Path) -> Path:
+    """Build the native bridge probe for one backend slug."""
     bootstrap_script = ROOT / "scripts" / "Bootstrap_HapticBridge.ps1"
-    probe_path = native_root / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe"
+    probe_path = native_root / "build" / backend_slug / "out" / "feelit_bridge_probe.exe"
     environment = os.environ.copy()
     environment["FEELIT_NATIVE_BRIDGE_ROOT"] = str(native_root)
     subprocess.run(
@@ -125,7 +203,7 @@ def _build_forcedimension_probe(sdk_root: Path, native_root: Path) -> Path:
             "-File",
             str(bootstrap_script),
             "-Backend",
-            "forcedimension-dhd",
+            backend_slug,
             "-SdkRoot",
             str(sdk_root),
             "-Build",
@@ -149,7 +227,7 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     sdk_root = tmp_path / "mock_forcedimension_sdk"
     native_root = _build_temp_native_root(tmp_path / "native_bridge_root")
     _build_mock_forcedimension_sdk(sdk_root, clang_path)
-    probe_path = _build_forcedimension_probe(sdk_root, native_root)
+    probe_path = _build_backend_probe("forcedimension-dhd", sdk_root, native_root)
 
     probe = probe_native_bridge(
         str(probe_path),
@@ -179,4 +257,47 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     assert forcedimension.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
     assert forcedimension.availability == "devices-detected"
     assert any("Bridge runtime load state: loaded" in item for item in forcedimension.evidence)
-    assert not (ROOT / "native" / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe").exists()
+    assert probe_path == native_root / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe"
+    assert probe_path != ROOT / "native" / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe"
+
+
+def test_openhaptics_vendor_probe_reports_runtime_loaded_capability(tmp_path, monkeypatch) -> None:
+    """The native probe should report runtime-loaded capability states for OpenHaptics."""
+    statuses = _require_native_build_support()
+    clang_path = statuses["clang++"].detected_path
+    assert clang_path
+
+    sdk_root = tmp_path / "mock_openhaptics_sdk"
+    native_root = _build_temp_native_root(tmp_path / "openhaptics_native_bridge_root")
+    _build_mock_openhaptics_sdk(sdk_root, clang_path)
+    probe_path = _build_backend_probe("openhaptics-touch", sdk_root, native_root)
+
+    probe = probe_native_bridge(
+        str(probe_path),
+        backend_slug="openhaptics-touch",
+        sdk_root=str(sdk_root),
+    )
+    assert probe.state == "runtime-loaded-capability-ready"
+    assert probe.detected_device_count == 0
+    assert probe.payload["runtime_load_state"] == "loaded"
+    assert probe.payload["runtime_library"].endswith("hd.dll")
+    assert probe.detected_devices == []
+
+    config_path = tmp_path / "openhaptics_runtime_config.json"
+    monkeypatch.setenv("FEELIT_HAPTIC_CONFIG_PATH", str(config_path))
+    manager = HapticRuntimeManager()
+    snapshot = manager.update_configuration(
+        requested_backend="openhaptics-touch",
+        sdk_roots={"openhaptics": str(sdk_root)},
+        bridge_paths={"openhaptics": str(probe_path)},
+    )
+
+    openhaptics = next(
+        backend for backend in snapshot.backends if backend.slug == "openhaptics-touch"
+    )
+    assert openhaptics.bridge_probe_state == "runtime-loaded-capability-ready"
+    assert openhaptics.availability == "runtime-loaded-no-devices"
+    assert openhaptics.device_detection_state == "runtime-loaded-no-enumeration"
+    assert any("Bridge runtime load state: loaded" in item for item in openhaptics.evidence)
+    assert probe_path == native_root / "build" / "openhaptics-touch" / "out" / "feelit_bridge_probe.exe"
+    assert probe_path != ROOT / "native" / "build" / "openhaptics-touch" / "out" / "feelit_bridge_probe.exe"

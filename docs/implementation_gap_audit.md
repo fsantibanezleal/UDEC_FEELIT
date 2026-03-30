@@ -131,16 +131,16 @@ Status:
 
 Interpretation:
 
-FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. It also now has a first vendor-aware Force Dimension runtime path that can load the DHD runtime and enumerate devices through the probe contract. This is a real architectural and product step, but it still stops before force rendering or live scene-coupled control.
+FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. It also now has a vendor-aware Force Dimension runtime path that can load the DHD runtime and enumerate devices through the probe contract, plus a vendor-aware OpenHaptics path that can load the HD runtime library set and validate minimal HDAPI symbols. This is a real architectural and product step, but it still stops before force rendering or live scene-coupled control.
 
 The current bridge path is meaningful because it proves four things end to end:
 
 - FeelIT can discover or configure a bridge executable
 - FeelIT can compile that executable locally through a documented bootstrap script
 - FeelIT can invoke the bridge and parse JSON results back into the API and frontend
-- FeelIT can distinguish scaffold-only bridge readiness from runtime-loaded and device-backed capability
+- FeelIT can distinguish scaffold-only bridge readiness from runtime-loaded capability and device-backed capability
 
-The remaining gap is therefore narrower and more concrete: extend vendor-aware probing to the other stacks, then move from enumeration into the actual haptic-control loop.
+The remaining gap is therefore narrower and more concrete: move OpenHaptics from runtime-loaded capability into safe device enumeration, move CHAI3D beyond scaffold-level readiness, then advance from probe states into the actual haptic-control loop.
 
 ### Pointer Emulation
 
@@ -158,7 +158,7 @@ This is a valid operational fallback, not a replacement for real haptic executio
 The repository does not yet deliver:
 
 - a native haptic backend beside the null backend
-- runtime device capability detection beyond vendor-stack readiness and fallback status
+- broad runtime device capability detection and activation beyond the current OpenHaptics runtime-load and Force Dimension enumeration baseline
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side import and validation for 3D assets
 - real desktop action execution semantics beyond content launching and playback control
@@ -193,7 +193,7 @@ Those belong to the modernization path, not to the verified archived implementat
 
 ## Recommended Near-Term Priorities
 
-1. Build a first native backend integration boundary so the material and workspace models can move beyond visual approximation.
+1. Build a first native backend activation boundary on top of the current vendor-aware probe coverage so the material and workspace models can move beyond visual approximation.
 2. Extend the Braille library with richer compatibility beyond the current TXT, HTML, and EPUB support.
 3. Extend the 3D asset pipeline with server-side validation, preprocessing, and safer handling for external-resource packages.
 4. Expand the workspace manager into a richer editor with descriptor validation, asset previews, and safer authoring affordances.

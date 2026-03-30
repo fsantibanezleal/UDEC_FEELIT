@@ -501,7 +501,7 @@ def _build_bridge_workspace_status(
 
     notes = [
         "The bridge scaffold is compiled without vendor SDK linkage so the probe contract can be validated early.",
-        "The Force Dimension DHD path now has a first vendor-aware probe, while OpenHaptics and CHAI3D still remain scaffold-level bridge targets.",
+        "The Force Dimension DHD path can now reach runtime load and device enumeration, OpenHaptics can now reach a vendor-aware runtime-loaded capability state, and CHAI3D still remains a scaffold-level bridge target.",
         "CMake plus a Windows resource compiler and either Ninja with clang++ or MSBuild is required to build the scaffold locally.",
     ]
     return HapticBridgeWorkspaceStatus(
@@ -650,11 +650,15 @@ class HapticRuntimeManager:
                 driver_state = "installed" if driver_root else "unknown"
                 device_detection_state = "devices-detected"
                 can_activate = True
-            elif bridge_probe.state == "runtime-loaded-no-devices":
+            elif bridge_probe.state in {"runtime-loaded-no-devices", "runtime-loaded-capability-ready"}:
                 availability = "runtime-loaded-no-devices"
                 dependency_state = "native-runtime-loaded"
                 driver_state = "installed" if driver_root else "unknown"
-                device_detection_state = "no-devices-detected"
+                device_detection_state = (
+                    "runtime-loaded-no-enumeration"
+                    if bridge_probe.state == "runtime-loaded-capability-ready"
+                    else "no-devices-detected"
+                )
                 can_activate = False
             elif bridge_probe.state in {
                 "runtime-library-missing",
