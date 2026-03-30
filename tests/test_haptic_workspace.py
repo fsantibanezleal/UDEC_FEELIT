@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import time
 
 from fastapi.testclient import TestClient
 
 from app.core.demo_assets import build_demo_model_catalog
 from app.core import haptic_workspace
+from app.core import library_assets
 from app.core.library_assets import build_audio_catalog, build_document_catalog, build_text_payload_from_path
 from app.main import app
 
@@ -55,12 +57,17 @@ def test_demo_workspace_browser_payload_lists_internal_library_entries() -> None
     payload = haptic_workspace.build_workspace_browser_payload("feelit_demo_workspace")
     entry_titles = {entry["title"] for entry in payload["entries"]}
     assert payload["current_path"] == ""
+    assert payload["page"] == 0
+    assert payload["page_count"] >= 1
+    assert payload["page_size"] == haptic_workspace.DEFAULT_FILE_BROWSER_PAGE_SIZE
+    assert payload["total_entries"] >= len(payload["entries"])
     assert "library" in entry_titles
     assert "models" in entry_titles
     library_entry = next(entry for entry in payload["entries"] if entry["title"] == "library")
     assert library_entry["kind"] == "directory"
     assert library_entry["open_mode"] == "file-browser"
     assert library_entry["shape_key"] == "folder_tile"
+    assert "child_count" not in library_entry
 
 
 def test_demo_workspace_browser_payload_maps_text_files_to_braille_scene() -> None:
@@ -165,6 +172,86 @@ def test_workspace_text_payload_uses_collision_safe_slug_seed(tmp_path) -> None:
     assert payload_a["slug"] != payload_b["slug"]
 
 
+def test_workspace_browser_payload_paginates_server_side(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    for index in range(8):
+        (workspace_root / f"entry_{index}.txt").write_text(f"entry {index}", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="Paged Workspace",
+        slug="paged_workspace",
+        description="Temporary workspace for pagination testing.",
+        root_path=str(workspace_root),
+        auto_populate=False,
+    )
+
+    payload = haptic_workspace.build_workspace_browser_payload(
+        "paged_workspace",
+        page=1,
+        page_size=3,
+    )
+
+    assert payload["page"] == 1
+    assert payload["page_size"] == 3
+    assert payload["page_count"] == 3
+    assert payload["total_entries"] == 9
+    assert len(payload["entries"]) == 3
+
+
+def test_workspace_text_payload_reuses_cached_path_extraction(tmp_path, monkeypatch) -> None:
+    document_path = tmp_path / "cached_document.txt"
+    document_path.write_text("first payload text", encoding="utf-8")
+
+    observed_calls = {"count": 0}
+    original = library_assets.extract_document_text_from_path
+
+    def tracked_extract(path):
+        observed_calls["count"] += 1
+        return original(path)
+
+    monkeypatch.setattr(library_assets, "extract_document_text_from_path", tracked_extract)
+    library_assets._read_text_from_path_cached.cache_clear()
+
+    build_text_payload_from_path(
+        document_path,
+        title="Cached document",
+        source_name="Workspace file",
+        source_url="cached_document.txt",
+        slug_seed="cached_document.txt",
+        offset=0,
+        max_chars=12,
+    )
+    build_text_payload_from_path(
+        document_path,
+        title="Cached document",
+        source_name="Workspace file",
+        source_url="cached_document.txt",
+        slug_seed="cached_document.txt",
+        offset=4,
+        max_chars=12,
+    )
+
+    assert observed_calls["count"] == 1
+
+    time.sleep(0.01)
+    document_path.write_text("second payload text with an updated size", encoding="utf-8")
+    build_text_payload_from_path(
+        document_path,
+        title="Cached document",
+        source_name="Workspace file",
+        source_url="cached_document.txt",
+        slug_seed="cached_document.txt",
+        offset=0,
+        max_chars=12,
+    )
+
+    assert observed_calls["count"] == 2
+
+
 def test_haptic_workspace_create_and_register_endpoints_use_external_registry(tmp_path, monkeypatch) -> None:
     registry_file = tmp_path / "registry.json"
     monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
@@ -215,12 +302,16 @@ def test_haptic_workspace_create_and_register_endpoints_use_external_registry(tm
 
     assert create_response.status_code == 200
     assert create_response.json()["workspace"]["slug"] == "created_workspace"
+    assert create_response.json()["workspace"]["workspace_file_label"] == "created_workspace.haptic_workspace.json"
     assert register_response.status_code == 200
     assert register_response.json()["workspace"]["slug"] == "registered_workspace"
+    assert register_response.json()["workspace"]["workspace_file_label"] == "registered_workspace.haptic_workspace.json"
     assert catalog_response.status_code == 200
     payload = catalog_response.json()
     assert any(workspace["slug"] == "created_workspace" for workspace in payload["workspaces"])
     assert any(workspace["slug"] == "registered_workspace" for workspace in payload["workspaces"])
+    assert "registry_file_label" in payload
+    assert "registry_file_path" not in payload
 
 
 def test_workspace_manager_payload_surfaces_invalid_registered_descriptors(tmp_path, monkeypatch) -> None:
@@ -276,12 +367,17 @@ def test_workspace_manager_payload_surfaces_invalid_registered_descriptors(tmp_p
         "invalid_descriptor",
         "missing_file",
     }
+    assert all("workspace_file_path" not in entry for entry in payload["invalid_workspaces"])
+    assert all(entry["workspace_file_label"].endswith(".haptic_workspace.json") for entry in payload["invalid_workspaces"])
 
 
 def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -> None:
     with TestClient(app) as client:
         detail_response = client.get("/api/haptic-workspaces/feelit_demo_workspace")
-        browse_response = client.get("/api/haptic-workspaces/feelit_demo_workspace/browse")
+        browse_response = client.get(
+            "/api/haptic-workspaces/feelit_demo_workspace/browse",
+            params={"page": 0, "page_size": 2},
+        )
         text_response = client.get(
             "/api/haptic-workspaces/feelit_demo_workspace/text-file",
             params={"path": "library/documents/alice_in_wonderland.txt", "offset": 0, "max_chars": 400},
@@ -291,7 +387,11 @@ def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -
     assert browse_response.status_code == 200
     assert text_response.status_code == 200
     assert detail_response.json()["slug"] == "feelit_demo_workspace"
+    assert "workspace_file_path" not in detail_response.json()
+    assert "root_path_hint" not in detail_response.json()["file_browser"]
     assert any(entry["title"] == "library" for entry in browse_response.json()["entries"])
+    assert browse_response.json()["page_size"] == 2
+    assert browse_response.json()["total_entries"] >= 2
     assert "Alice" in text_response.json()["text"]
 
 

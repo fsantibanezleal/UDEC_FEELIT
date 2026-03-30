@@ -90,12 +90,14 @@ Implemented:
 - paginated gallery scenes backed by workspace payloads
 - bundled demo-workspace galleries synchronized against the full internal model, text, and audio catalogs
 - typed file-browser entries with distinct tactile forms for folders, models, text files, audio files, and unsupported files
+- server-side file-browser pagination for larger workspace roots
 - explicit in-scene Launcher, Gallery or Browser, and Start or Root return controls across gallery, browser, detail, and opened-content scenes
 - file-browser scene rooted in the configured workspace path
 - direct mode dispatch from the file browser for supported models, text files, and audio files
 - detail plaque scene that exposes the content name before opening it
 - opened scenes for 3D models, Braille reading, and audio transport
 - pointer-driven focus and activation across the current scene's tactile controls
+- sanitized workspace-manager payloads and descriptor-label views that avoid exposing absolute local paths by default
 
 Still limited:
 
@@ -104,6 +106,7 @@ Still limited:
 - no desktop-wide automation beyond curated content opening and file browsing
 - no support yet for unsupported file types beyond explicit placeholders
 - no real blind-user validation round on the new desktop scene flow
+- no unregister, rescan, or descriptor-repair lifecycle actions yet in the workspace manager
 
 ## Partial Or Prototype-Only Areas
 

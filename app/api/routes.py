@@ -11,6 +11,7 @@ from app.core.config import APP_NAME, APP_PORT, APP_VERSION
 from app.core.demo_assets import build_demo_model_catalog
 from app.core.haptic_materials import build_material_catalog
 from app.core.haptic_workspace import (
+    DEFAULT_FILE_BROWSER_PAGE_SIZE,
     build_haptic_workspace_catalog,
     build_haptic_workspace_payload,
     build_workspace_browser_payload,
@@ -144,10 +145,12 @@ async def haptic_workspace_detail(slug: str) -> dict:
 async def haptic_workspace_browse(
     slug: str,
     path: str = Query(default="", max_length=2048),
+    page: int = Query(default=0, ge=0),
+    page_size: int = Query(default=DEFAULT_FILE_BROWSER_PAGE_SIZE, ge=1, le=24),
 ) -> dict:
     """Browse the configured file-browser root for one workspace."""
     try:
-        return build_workspace_browser_payload(slug, path)
+        return build_workspace_browser_payload(slug, path, page=page, page_size=page_size)
     except KeyError as error:
         raise HTTPException(status_code=404, detail=f"Unknown workspace slug: {slug}") from error
     except ValueError as error:
@@ -195,7 +198,7 @@ async def haptic_workspace_register(payload: RegisterHapticWorkspaceRequest) -> 
             "workspace": {
                 "slug": record["slug"],
                 "title": record["title"],
-                "workspace_file_path": record["workspace_file_path"],
+                "workspace_file_label": record["workspace_file_label"],
             },
         }
     except ValueError as error:
@@ -218,7 +221,7 @@ async def haptic_workspace_create(payload: CreateHapticWorkspaceRequest) -> dict
             "workspace": {
                 "slug": record["slug"],
                 "title": record["title"],
-                "workspace_file_path": record["workspace_file_path"],
+                "workspace_file_label": record["workspace_file_label"],
             },
         }
     except ValueError as error:

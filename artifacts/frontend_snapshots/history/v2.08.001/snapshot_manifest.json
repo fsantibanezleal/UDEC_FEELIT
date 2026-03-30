@@ -1,32 +1,36 @@
 {
   "app": "FeelIT",
   "version": "2.08.001",
-  "base_url": "local_smoke_capture",
+  "base_url": "archived_release_snapshot",
   "routes": [
     {
       "route": "/object-explorer",
       "image": "object_explorer.png",
-      "archived": true,
-      "visual_source_version": null
+      "archived": false,
+      "visual_source_version": "2.08.000"
     },
     {
       "route": "/braille-reader",
       "image": "braille_reader.png",
-      "archived": true,
-      "visual_source_version": null
+      "archived": false,
+      "visual_source_version": "2.06.000"
     },
     {
       "route": "/haptic-desktop",
       "image": "haptic_desktop.png",
-      "archived": true,
-      "visual_source_version": null
+      "archived": false,
+      "visual_source_version": "2.08.000"
     },
     {
       "route": "/haptic-workspace-manager",
       "image": "haptic_workspace_manager.png",
       "archived": true,
-      "visual_source_version": null
+      "visual_source_version": "2.08.001"
     }
+  ],
+  "history_policy": "sparse_changed_routes_only",
+  "changed_routes": [
+    "/haptic-workspace-manager"
   ],
   "generated_at_utc": "2026-03-30T03:21:45+00:00"
 }

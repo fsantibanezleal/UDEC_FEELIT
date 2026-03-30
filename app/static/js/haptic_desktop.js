@@ -9,8 +9,8 @@ import {
 
 const workspaceCatalogUrl = "/api/haptic-workspaces";
 const workspaceDetailUrl = (slug) => `/api/haptic-workspaces/${encodeURIComponent(slug)}`;
-const workspaceBrowseUrl = (slug, path = "") =>
-  `/api/haptic-workspaces/${encodeURIComponent(slug)}/browse?path=${encodeURIComponent(path)}`;
+const workspaceBrowseUrl = (slug, path = "", page = 0, pageSize = FILE_BROWSER_PAGE_SIZE) =>
+  `/api/haptic-workspaces/${encodeURIComponent(slug)}/browse?path=${encodeURIComponent(path)}&page=${page}&page_size=${pageSize}`;
 const workspaceTextUrl = (slug, path, offset, maxChars) =>
   `/api/haptic-workspaces/${encodeURIComponent(slug)}/text-file?path=${encodeURIComponent(path)}&offset=${offset}&max_chars=${maxChars}`;
 const workspaceRawUrl = (slug, path) =>
@@ -1289,11 +1289,11 @@ function browserHubTargetId() {
 
 function fileBrowserHubMessage(payload, pageSlice) {
   const location = payload.current_path ? `Path ${payload.current_path}` : "Workspace file browser root";
-  const firstItem = pageSlice.items.length ? pageSlice.page * FILE_BROWSER_PAGE_SIZE + 1 : 0;
+  const firstItem = pageSlice.items.length ? pageSlice.page * payload.page_size + 1 : 0;
   const lastItem = pageSlice.items.length ? firstItem + pageSlice.items.length - 1 : 0;
   const rangeText =
     firstItem > 0
-      ? `Visible entries ${firstItem} through ${lastItem} of ${payload.entries.length}`
+      ? `Visible entries ${firstItem} through ${lastItem} of ${payload.total_entries}`
       : "No entries are currently visible on this page";
   return `${location}. Page ${pageSlice.page + 1} of ${pageSlice.pageCount}. ${rangeText}.`;
 }
@@ -1498,7 +1498,7 @@ async function navigateToLauncher() {
     title: "Workspace Launcher",
     subtitle: "Tactile launcher for curated models, text, audio, and direct file browsing.",
     context: workspace.title,
-    path: workspace.file_browser.root_path_hint,
+    path: workspace.file_browser.root_label,
     pagination: "1 / 1",
     idleMessage: "Pointer moving across the launcher scene.",
   });
@@ -1614,8 +1614,14 @@ async function navigateToGallery(category, page = 0) {
 async function navigateToFileBrowser(relativePath = "", page = 0) {
   const token = beginSceneBuild("file browser");
   const workspace = state.activeWorkspace;
-  const payload = await fetchJson(workspaceBrowseUrl(workspace.slug, relativePath));
-  const pageSlice = slicePage(payload.entries, FILE_BROWSER_PAGE_SIZE, page);
+  const payload = await fetchJson(
+    workspaceBrowseUrl(workspace.slug, relativePath, page, FILE_BROWSER_PAGE_SIZE),
+  );
+  const pageSlice = {
+    items: payload.entries,
+    page: payload.page,
+    pageCount: payload.page_count,
+  };
   prepareScene(
     6.8,
     4.5,
@@ -1627,7 +1633,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
 
   const positions = galleryTilePositions(pageSlice.items.length);
   pageSlice.items.forEach((entry, index) => {
-    const origin = { type: "file-browser", path: payload.current_path, page: pageSlice.page };
+    const origin = { type: "file-browser", path: payload.current_path, page: payload.page };
     const onActivate =
       entry.kind === "directory"
         ? async () => navigateToFileBrowser(entry.relative_path, 0)
@@ -1712,8 +1718,8 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     kind: "previous",
     color: 0x58a6ff,
     position: new THREE.Vector3(1.71, 0.12, 1.78),
-    onActivate: async () => navigateToFileBrowser(payload.current_path, pageSlice.page - 1),
-    disabled: pageSlice.page === 0,
+    onActivate: async () => navigateToFileBrowser(payload.current_path, payload.page - 1),
+    disabled: payload.page === 0,
   });
   addControlTarget({
     id: "file-browser-next",
@@ -1723,8 +1729,8 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     kind: "next",
     color: 0x58a6ff,
     position: new THREE.Vector3(2.85, 0.12, 1.78),
-    onActivate: async () => navigateToFileBrowser(payload.current_path, pageSlice.page + 1),
-    disabled: pageSlice.page >= pageSlice.pageCount - 1,
+    onActivate: async () => navigateToFileBrowser(payload.current_path, payload.page + 1),
+    disabled: payload.page >= payload.page_count - 1,
   });
 
   state.pointerController.setBounds(
@@ -1741,7 +1747,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     subtitle: "Directory buttons and typed file buttons share one tactile map, while supported files dispatch directly into their corresponding runtime scenes.",
     context: workspace.title,
     path: payload.current_path || payload.current_label,
-    pagination: `${pageSlice.page + 1} / ${pageSlice.pageCount}`,
+    pagination: `${payload.page + 1} / ${payload.page_count}`,
     idleMessage: "Pointer moving across the workspace file browser.",
   });
   focusTarget(

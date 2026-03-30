@@ -363,6 +363,25 @@ def read_document_text(slug: str) -> str:
     return extract_document_text_from_path(path)
 
 
+@lru_cache(maxsize=128)
+def _read_text_from_path_cached(path_str: str, file_size_bytes: int, file_mtime_ns: int) -> str:
+    """Return extracted text for one filesystem path guarded by freshness signals."""
+    del file_size_bytes
+    del file_mtime_ns
+    return extract_document_text_from_path(Path(path_str))
+
+
+def read_text_from_path(path: Path) -> str:
+    """Return extracted text for one arbitrary document path with freshness-aware caching."""
+    resolved_path = path.resolve()
+    stat_result = resolved_path.stat()
+    return _read_text_from_path_cached(
+        resolved_path.as_posix(),
+        stat_result.st_size,
+        stat_result.st_mtime_ns,
+    )
+
+
 def _clip_excerpt(text: str, offset: int, max_chars: int) -> tuple[str, int, int]:
     """Return a word-aware excerpt slice."""
     if not text:
@@ -410,7 +429,7 @@ def build_text_payload_from_path(
     max_chars: int = 1200,
 ) -> dict[str, object]:
     """Return a clipped text payload for a supported arbitrary document path."""
-    text = extract_document_text_from_path(path)
+    text = read_text_from_path(path)
     excerpt, start, end = _clip_excerpt(text, offset, max_chars)
     return {
         "slug": _slugify_path(path, slug_seed=slug_seed),
