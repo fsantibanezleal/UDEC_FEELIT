@@ -1,8 +1,10 @@
 import { bootWorkspace } from "./app.js";
 import {
+  loadLocalModelBundle,
   loadLocalModelFile,
   loadModelFromUrl,
   modelFileAcceptString,
+  modelFormatFromFilename,
   modelFormatLabel,
 } from "./model_loading.js";
 import {
@@ -15,6 +17,7 @@ import {
 const materialsUrl = "/api/materials";
 const demoModelsUrl = "/api/demo-models";
 const modelValidationUrl = "/api/models/validate-local-upload";
+const modelBundleValidationUrl = "/api/models/validate-local-bundle";
 const LAUNCHER_PAGE_SIZE = 3;
 const LAUNCHER_VIEW_STATE = {
   position: [4.6, 2.8, 5.2],
@@ -118,6 +121,40 @@ function updateModelInspector(model) {
 
 function fileFingerprint(file) {
   return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function bundleFingerprint(files) {
+  return Array.from(files ?? [])
+    .map((file) => fileFingerprint(file))
+    .sort()
+    .join("|");
+}
+
+function selectedLocalBundle() {
+  const files = Array.from(byId("model-file").files ?? []);
+  if (!files.length) {
+    return null;
+  }
+  const mainCandidates = files.filter((file) => {
+    try {
+      modelFormatFromFilename(file.name);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!mainCandidates.length) {
+    throw new Error("Select one supported main 3D model file together with any required sidecar resources.");
+  }
+  if (mainCandidates.length > 1) {
+    throw new Error("Select only one main 3D model file at a time. Additional selected files must be sidecar resources for that model.");
+  }
+
+  return {
+    mainFile: mainCandidates[0],
+    files,
+  };
 }
 
 function formatBytes(byteCount) {
@@ -337,21 +374,30 @@ async function fetchJson(url) {
   return response.json();
 }
 
-async function validateLocalUpload(file, options = {}) {
+async function validateLocalUpload(bundleSelection, options = {}) {
   const { announce = true, applySuggestedScale = false } = options;
-  const fingerprint = fileFingerprint(file);
+  const { mainFile, files } = bundleSelection;
+  const fingerprint = bundleFingerprint(files);
   if (state.localValidation && state.localValidationFingerprint === fingerprint) {
     return state.localValidation;
   }
 
   state.localValidationFingerprint = fingerprint;
-  setValidationPending(file);
+  setValidationPending(mainFile);
 
   const formData = new FormData();
-  formData.append("file", file, file.name);
+  const isBundle = files.length > 1;
+  if (isBundle) {
+    formData.append("main_filename", mainFile.name);
+    files.forEach((file) => {
+      formData.append("files", file, file.name);
+    });
+  } else {
+    formData.append("file", mainFile, mainFile.name);
+  }
 
   try {
-    const response = await fetch(modelValidationUrl, {
+    const response = await fetch(isBundle ? modelBundleValidationUrl : modelValidationUrl, {
       method: "POST",
       body: formData,
     });
@@ -365,8 +411,8 @@ async function validateLocalUpload(file, options = {}) {
     if (announce) {
       setStatus(
         payload.can_stage_locally
-          ? `${file.name} passed backend validation and is ready for direct browser staging.${suggestedScaleApplied ? " Suggested workspace scale applied." : ""}`
-          : `${file.name} is blocked for direct browser staging. ${payload.blockers?.[0] ?? payload.summary}`,
+          ? `${mainFile.name} passed backend validation and is ready for direct browser staging.${suggestedScaleApplied ? " Suggested workspace scale applied." : ""}`
+          : `${mainFile.name} is blocked for direct browser staging. ${payload.blockers?.[0] ?? payload.summary}`,
       );
     }
     return payload;
@@ -1138,9 +1184,11 @@ async function openDemoSession(sceneApi, model, options = {}) {
   await loadObjectIntoScene(sceneApi, object, model, `Loaded ${model.title} into the bounded scene.`);
 }
 
-async function openLocalUploadSession(sceneApi, localFile, validation) {
+async function openLocalUploadSession(sceneApi, bundleSelection, validation) {
+  const { mainFile, files } = bundleSelection;
   const baseModel = modelBySlug(byId("sample-model").value) ?? state.models[0];
-  const { modelRoot: object, format, formatLabel } = await loadLocalModelFile(localFile);
+  const loader = files.length > 1 ? loadLocalModelBundle : loadLocalModelFile;
+  const { modelRoot: object, format, formatLabel } = await loader(mainFile, files);
   const validationSummary = validation?.summary ?? `Local ${formatLabel} file validated for direct browser staging.`;
   const resourceMode = humanizeResourceMode(validation?.resource_mode ?? "single-file");
   const normalizationHint = validation?.staging_profile?.normalization_hint ?? "Manual workspace scale may still be required after staging.";
@@ -1148,33 +1196,33 @@ async function openLocalUploadSession(sceneApi, localFile, validation) {
   const localModel = {
     ...baseModel,
     slug: "local_model_session",
-    title: localFile.name,
+    title: mainFile.name,
     category: "local_model",
     file_format: format,
     format_label: formatLabel,
-    source_name: `Local ${formatLabel} upload`,
-    description: `${validationSummary} Resource mode: ${resourceMode}. ${normalizationHint}${Number.isFinite(scaleSuggestion) ? ` Suggested workspace scale: ${scaleSuggestion}%.` : ""}`,
+    source_name: files.length > 1 ? `Local ${formatLabel} bundle` : `Local ${formatLabel} upload`,
+    description: `${validationSummary} Resource mode: ${resourceMode}. ${normalizationHint}${Number.isFinite(scaleSuggestion) ? ` Suggested workspace scale: ${scaleSuggestion}%.` : ""}${files.length > 1 ? ` Bundle files: ${files.length}.` : ""}`,
     scale_hint: 1.0,
   };
   setSelectedModel(baseModel.slug, { syncSelect: true, useDefaultMaterial: false });
-  setStatus(`Loading local ${formatLabel} ${localFile.name} into the exploration scene...`);
+  setStatus(`Loading local ${formatLabel} ${mainFile.name} into the exploration scene...`);
   await loadObjectIntoScene(
     sceneApi,
     object,
     localModel,
-    `Loaded local ${formatLabel} ${localFile.name} into the bounded scene.`,
+    `Loaded local ${formatLabel} ${mainFile.name} into the bounded scene.`,
   );
 }
 
 async function loadSelectedModel(sceneApi) {
-  const localFile = byId("model-file").files[0];
-  if (localFile) {
-    const validation = await validateLocalUpload(localFile, { announce: false });
+  const bundleSelection = selectedLocalBundle();
+  if (bundleSelection) {
+    const validation = await validateLocalUpload(bundleSelection, { announce: false });
     if (!validation.can_stage_locally) {
       setStatus(validation.blockers?.[0] ?? validation.summary);
       return;
     }
-    await openLocalUploadSession(sceneApi, localFile, validation);
+    await openLocalUploadSession(sceneApi, bundleSelection, validation);
     return;
   }
   const model = modelBySlug(byId("sample-model").value);
@@ -1275,13 +1323,20 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       byId("model-file").addEventListener("change", () => {
-        const localFile = byId("model-file").files[0];
-        if (!localFile) {
+        let bundleSelection = null;
+        try {
+          bundleSelection = selectedLocalBundle();
+        } catch (error) {
+          resetValidationPanel();
+          setStatus(error instanceof Error ? error.message : "Local bundle selection is invalid.");
+          return;
+        }
+        if (!bundleSelection) {
           resetValidationPanel();
           setStatus("Local upload cleared. Select a bundled demo or choose another local file.");
           return;
         }
-        validateLocalUpload(localFile, { applySuggestedScale: true }).catch(() => {});
+        validateLocalUpload(bundleSelection, { applySuggestedScale: true }).catch(() => {});
       });
 
       byId("reset-camera").addEventListener("click", () => {

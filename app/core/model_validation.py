@@ -345,6 +345,41 @@ def _external_resource_uris(payload: dict[str, Any]) -> list[str]:
     return uris
 
 
+def _bundle_resource_name_candidates(resource_name: str) -> list[str]:
+    raw = str(resource_name).strip().replace("\\", "/")
+    if not raw:
+        return []
+    decoded = raw.replace("%20", " ")
+    candidates = [raw, decoded]
+    basename = decoded.rsplit("/", maxsplit=1)[-1]
+    if basename not in candidates:
+        candidates.append(basename)
+    return candidates
+
+
+def _bundle_resource_report(resource_names: list[str], bundle_files: dict[str, bytes]) -> tuple[list[str], list[str]]:
+    available_names = {name.replace("\\", "/"): name for name in bundle_files}
+    basename_lookup = {name.replace("\\", "/").rsplit("/", maxsplit=1)[-1]: name for name in bundle_files}
+    resolved: list[str] = []
+    missing: list[str] = []
+
+    for resource_name in resource_names:
+        matched = None
+        for candidate in _bundle_resource_name_candidates(resource_name):
+            if candidate in available_names:
+                matched = available_names[candidate]
+                break
+            if candidate in basename_lookup:
+                matched = basename_lookup[candidate]
+                break
+        if matched:
+            resolved.append(resource_name)
+            continue
+        missing.append(resource_name)
+
+    return resolved, missing
+
+
 def _gltf_accessor_bounds(payload: dict[str, Any]) -> tuple[dict[str, Any], int, int]:
     bounds = _new_bounds_tracker()
     accessors = payload.get("accessors", [])
@@ -532,6 +567,40 @@ def _validate_glb(filename: str, file_bytes: bytes) -> ModelValidationResult:
     )
 
 
+def _extract_bundle_resource_uris(file_format: str, file_bytes: bytes) -> list[str]:
+    if file_format == "gltf":
+        try:
+            payload = json.loads(file_bytes.decode("utf-8-sig"))
+        except json.JSONDecodeError:
+            return []
+        return _external_resource_uris(payload)
+
+    if file_format == "glb":
+        if len(file_bytes) < 20:
+            return []
+        try:
+            magic, _, declared_length = struct.unpack_from("<4sII", file_bytes, 0)
+        except struct.error:
+            return []
+        if magic != b"glTF" or declared_length != len(file_bytes):
+            return []
+        try:
+            json_chunk_length, json_chunk_type = struct.unpack_from("<I4s", file_bytes, 12)
+        except struct.error:
+            return []
+        if json_chunk_type != b"JSON":
+            return []
+        json_chunk_start = 20
+        json_chunk_end = json_chunk_start + json_chunk_length
+        try:
+            payload = json.loads(file_bytes[json_chunk_start:json_chunk_end].decode("utf-8"))
+        except json.JSONDecodeError:
+            return []
+        return _external_resource_uris(payload)
+
+    return []
+
+
 def validate_local_model_file(filename: str, file_bytes: bytes) -> ModelValidationResult:
     """Validate one locally staged model before the browser attempts to parse it."""
     file_format = _normalized_model_format(filename)
@@ -563,3 +632,78 @@ def validate_local_model_file(filename: str, file_bytes: bytes) -> ModelValidati
     if file_format == "glb":
         return _validate_glb(filename, file_bytes)
     raise ValueError(f"Unsupported 3D model format: {file_format}")
+
+
+def validate_local_model_bundle(main_filename: str, bundle_files: dict[str, bytes]) -> ModelValidationResult:
+    """Validate one locally selected bundle, allowing multi-file glTF or GLB packages."""
+    if not bundle_files:
+        raise ValueError("At least one local file is required for bundle validation.")
+    if main_filename not in bundle_files:
+        raise ValueError("The selected main model file was not included in the uploaded bundle.")
+
+    main_file_bytes = bundle_files[main_filename]
+    base_result = validate_local_model_file(main_filename, main_file_bytes)
+    file_format = base_result.file_format
+    if file_format not in {"gltf", "glb"}:
+        if len(bundle_files) > 1:
+            warnings = [
+                *base_result.warnings,
+                "Additional sidecar files were provided, but only glTF or GLB bundles currently resolve external resources during browser staging.",
+            ]
+            return base_result.model_copy(update={"warnings": warnings})
+        return base_result
+
+    external_resource_names = _extract_bundle_resource_uris(file_format, main_file_bytes)
+    if not external_resource_names:
+        return base_result
+
+    resolved_names, missing_names = _bundle_resource_report(external_resource_names, bundle_files)
+    base_metrics = dict(base_result.metrics)
+    base_metrics.update(
+        {
+            "bundle_file_count": len(bundle_files),
+            "resolved_external_resource_count": len(resolved_names),
+            "missing_external_resource_count": len(missing_names),
+        },
+    )
+
+    preserved_blockers = [
+        blocker
+        for blocker in base_result.blockers
+        if "External buffer or image references" not in blocker
+    ]
+    warnings = list(base_result.warnings)
+
+    if missing_names:
+        blockers = [
+            *preserved_blockers,
+            f"Bundle is missing {len(missing_names)} required external resources: {', '.join(missing_names[:6])}.",
+        ]
+        warnings.append(
+            "Select the main model file together with every referenced binary buffer and texture so the browser can stage the complete bundle.",
+        )
+        return base_result.model_copy(
+            update={
+                "can_stage_locally": False,
+                "summary": f"{base_result.format_label} bundle validation failed. Required sidecar resources are still missing.",
+                "resource_mode": "bundle-incomplete",
+                "warnings": warnings,
+                "blockers": blockers,
+                "metrics": base_metrics,
+            },
+        )
+
+    blockers = preserved_blockers
+    warnings.append(
+        "External resources were resolved from the selected local bundle, so direct browser staging can proceed without repackaging.",
+    )
+    return base_result.model_copy(
+        update={
+            "can_stage_locally": not blockers,
+            "summary": f"{base_result.format_label} bundle validation passed with all referenced sidecar resources present.",
+            "resource_mode": "bundle-resolved",
+            "warnings": warnings,
+            "blockers": blockers,
+            "metrics": base_metrics,
+        },
+    )

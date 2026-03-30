@@ -34,8 +34,8 @@
           </div>
           <label for="sample-model">Bundled 3D asset</label>
           <select id="sample-model"></select>
-          <label for="model-file">Local 3D file</label>
-          <input id="model-file" type="file" accept=".obj,.stl,.gltf,.glb">
+          <label for="model-file">Local 3D file or bundle</label>
+          <input id="model-file" type="file" accept=".obj,.stl,.gltf,.glb" multiple>
           <div class="button-row">
             <button id="load-selection" class="btn btn-primary" type="button">Load Into Scene</button>
             <button id="reset-camera" class="btn btn-secondary" type="button">Reset Camera</button>
@@ -189,7 +189,8 @@
         <ul>
           <li>Begin with a scene-native 3D launcher that pages through curated bundled demo models.</li>
           <li>Load bundled `OBJ`, `STL`, `glTF`, or `GLB` demos from the launcher or stage a local file through the outer controls.</li>
-          <li>Local uploads are validated through the backend before staging so unsupported external-resource packages can be blocked early.</li>
+          <li>For `glTF` packages with sidecar buffers or textures, select the main model file together with its referenced resources in the same local bundle.</li>
+          <li>Local uploads are validated through the backend before staging so unsupported or incomplete packages can be blocked early.</li>
           <li>The backend also derives a staging profile from available geometry metadata and can suggest a safer workspace scale for local exploration.</li>
           <li>Apply a haptic material profile grounded in current desktop haptic capabilities.</li>
           <li>Inspect the scene with orbit controls and move the pointer proxy with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>

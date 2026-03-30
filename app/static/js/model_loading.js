@@ -17,8 +17,6 @@ const FORMAT_LABELS = Object.freeze({
 
 const objLoader = new OBJLoader();
 const stlLoader = new STLLoader();
-const gltfLoader = new GLTFLoader();
-
 function normalizedModelFormat(formatOrFilename) {
   if (!formatOrFilename) {
     return null;
@@ -85,10 +83,75 @@ async function parseModelPayload(rawPayload, format, resourcePath = "") {
     return wrapStlGeometry(stlLoader.parse(rawPayload));
   }
   if (format === "gltf" || format === "glb") {
+    const gltfLoader = new GLTFLoader();
     const gltf = await gltfLoader.parseAsync(rawPayload, resourcePath);
     return gltf.scene ?? gltf.scenes?.[0] ?? new THREE.Group();
   }
   throw new Error(`Unsupported 3D model format: ${format}`);
+}
+
+function resourceNameCandidates(resourceName) {
+  const raw = String(resourceName ?? "").trim();
+  if (!raw) {
+    return [];
+  }
+  const normalized = raw.replaceAll("\\", "/");
+  let decoded = normalized;
+  try {
+    decoded = decodeURIComponent(normalized);
+  } catch {
+    decoded = normalized;
+  }
+  const basename = decoded.slice(decoded.lastIndexOf("/") + 1);
+  return [...new Set([normalized, decoded, basename])];
+}
+
+function resolveBundleResource(bundleFiles, resourceName) {
+  const bundleMap = new Map();
+  bundleFiles.forEach((file) => {
+    resourceNameCandidates(file.name).forEach((candidate) => {
+      if (!bundleMap.has(candidate)) {
+        bundleMap.set(candidate, file);
+      }
+    });
+  });
+
+  for (const candidate of resourceNameCandidates(resourceName)) {
+    if (bundleMap.has(candidate)) {
+      return bundleMap.get(candidate);
+    }
+  }
+  return null;
+}
+
+async function parseBundleModelPayload(rawPayload, format, bundleFiles) {
+  if (format !== "gltf" && format !== "glb") {
+    return parseModelPayload(rawPayload, format, "");
+  }
+
+  const loadingManager = new THREE.LoadingManager();
+  const objectUrls = new Map();
+  loadingManager.setURLModifier((url) => {
+    if (!url || url.startsWith("data:") || url.startsWith("blob:")) {
+      return url;
+    }
+    const matchedFile = resolveBundleResource(bundleFiles, url);
+    if (!matchedFile) {
+      return url;
+    }
+    if (!objectUrls.has(matchedFile.name)) {
+      objectUrls.set(matchedFile.name, URL.createObjectURL(matchedFile));
+    }
+    return objectUrls.get(matchedFile.name);
+  });
+
+  try {
+    const gltfLoader = new GLTFLoader(loadingManager);
+    const gltf = await gltfLoader.parseAsync(rawPayload, "");
+    return gltf.scene ?? gltf.scenes?.[0] ?? new THREE.Group();
+  } finally {
+    objectUrls.forEach((value) => URL.revokeObjectURL(value));
+  }
 }
 
 export function modelFormatLabel(formatOrFilename) {
@@ -123,6 +186,17 @@ export async function loadLocalModelFile(file) {
   const format = ensureSupportedModelFormat(file.name);
   const rawPayload = format === "obj" ? await file.text() : await file.arrayBuffer();
   const modelRoot = await parseModelPayload(rawPayload, format, "");
+  return {
+    format,
+    formatLabel: modelFormatLabel(format),
+    modelRoot,
+  };
+}
+
+export async function loadLocalModelBundle(mainFile, bundleFiles = [mainFile]) {
+  const format = ensureSupportedModelFormat(mainFile.name);
+  const rawPayload = format === "obj" ? await mainFile.text() : await mainFile.arrayBuffer();
+  const modelRoot = await parseBundleModelPayload(rawPayload, format, bundleFiles);
   return {
     format,
     formatLabel: modelFormatLabel(format),

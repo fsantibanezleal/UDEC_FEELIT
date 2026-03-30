@@ -46,8 +46,9 @@ Implemented:
 - bundled multi-format demo catalog exposed through the API
 - scene-native paged launcher for curated demo-model sessions
 - local `OBJ`, `STL`, self-contained `glTF`, and `GLB` upload and in-browser parsing
+- local `glTF` bundle staging when the main model and required sidecar resources are selected together
 - server-side validation and staging-profile analysis for local browser-staged uploads before scene parsing
-- early blocking for oversized local uploads and external-resource `glTF` or `GLB` packages
+- early blocking for oversized local uploads and incomplete external-resource `glTF` or `GLB` packages
 - backend-derived bounds and workspace-scale recommendations when enough geometry metadata is available
 - haptic material profile selection grounded in plausible current-device approximations
 - visible exploration plinth and adaptive scene bounds
@@ -57,7 +58,7 @@ Implemented:
 Still limited:
 
 - no preprocessing pipeline yet for heavy staged assets after validation and staging analysis
-- external-resource packages are detected and blocked rather than repackaged or repaired automatically
+- external-resource packages can be resolved only when the required sidecars are selected together locally; there is still no repackaging or repair pipeline
 - no native force model tied to real haptic hardware
 - no persistent model metadata or saved exploration sessions
 - local upload still enters through the surrounding web controls rather than a scene-native intake path

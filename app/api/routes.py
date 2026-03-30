@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,7 @@ from app.core.library_assets import (
     build_document_catalog,
     build_document_payload,
 )
-from app.core.model_validation import validate_local_model_file
+from app.core.model_validation import validate_local_model_bundle, validate_local_model_file
 from app.core.modes import build_mode_catalog
 
 router = APIRouter(prefix="/api")
@@ -112,6 +112,24 @@ async def validate_local_model_upload(file: UploadFile = File(...)) -> dict:
         payload = await file.read()
         filename = file.filename or "uploaded-model"
         return validate_local_model_file(filename, payload).model_dump()
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/models/validate-local-bundle")
+async def validate_local_model_bundle_upload(
+    main_filename: str = Form(...),
+    files: list[UploadFile] = File(...),
+) -> dict:
+    """Validate one local model bundle before browser-side staging."""
+    try:
+        bundle_payload: dict[str, bytes] = {}
+        for upload in files:
+            filename = upload.filename or ""
+            if not filename:
+                continue
+            bundle_payload[filename] = await upload.read()
+        return validate_local_model_bundle(main_filename, bundle_payload).model_dump()
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

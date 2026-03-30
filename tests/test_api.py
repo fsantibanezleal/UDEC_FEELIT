@@ -1,5 +1,7 @@
 """Tests for FeelIT API endpoints."""
 
+import json
+
 from fastapi.testclient import TestClient
 
 from app.core.version import APP_VERSION
@@ -177,6 +179,51 @@ def test_local_model_validation_endpoint_rejects_unsupported_format() -> None:
         )
     assert response.status_code == 400
     assert "Unsupported 3D model format" in response.json()["detail"]
+
+
+def test_local_model_bundle_validation_endpoint_accepts_gltf_with_sidecars() -> None:
+    gltf_payload = json.dumps(
+        {
+            "asset": {"version": "2.0"},
+            "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+            "accessors": [{"min": [0, 0, 0], "max": [1, 2, 1]}],
+            "meshes": [{"primitives": [{"attributes": {"POSITION": 0}}]}],
+        },
+    ).encode("utf-8")
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-bundle",
+            data={"main_filename": "bundle.gltf"},
+            files=[
+                ("files", ("bundle.gltf", gltf_payload, "model/gltf+json")),
+                ("files", ("mesh.bin", b"\x00" * 12, "application/octet-stream")),
+            ],
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is True
+    assert payload["resource_mode"] == "bundle-resolved"
+    assert payload["metrics"]["resolved_external_resource_count"] == 1
+
+
+def test_local_model_bundle_validation_endpoint_blocks_incomplete_gltf_bundle() -> None:
+    gltf_payload = json.dumps(
+        {
+            "asset": {"version": "2.0"},
+            "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+            "meshes": [{"primitives": [{}]}],
+        },
+    ).encode("utf-8")
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/models/validate-local-bundle",
+            data={"main_filename": "bundle.gltf"},
+            files=[("files", ("bundle.gltf", gltf_payload, "model/gltf+json"))],
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["can_stage_locally"] is False
+    assert payload["resource_mode"] == "bundle-incomplete"
 
 
 def test_braille_preview_returns_positioned_cells() -> None:

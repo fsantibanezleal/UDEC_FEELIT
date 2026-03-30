@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import json
 
-from app.core.model_validation import MAX_LOCAL_MODEL_FILE_BYTES, validate_local_model_file
+from app.core.model_validation import (
+    MAX_LOCAL_MODEL_FILE_BYTES,
+    validate_local_model_bundle,
+    validate_local_model_file,
+)
 
 
 def test_validate_obj_accepts_simple_geometry() -> None:
@@ -71,6 +75,43 @@ def test_validate_glb_with_invalid_header_is_blocked() -> None:
     result = validate_local_model_file("broken.glb", b"not-a-valid-glb")
     assert result.can_stage_locally is False
     assert any("too small" in blocker.lower() or "magic" in blocker.lower() for blocker in result.blockers)
+
+
+def test_validate_gltf_bundle_accepts_present_sidecar_resource() -> None:
+    payload = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"uri": "mesh.bin", "byteLength": 12}],
+        "accessors": [{"min": [0, 0, 0], "max": [1, 2, 1]}],
+        "meshes": [{"primitives": [{"attributes": {"POSITION": 0}}]}],
+    }
+    result = validate_local_model_bundle(
+        "bundle.gltf",
+        {
+            "bundle.gltf": json.dumps(payload).encode("utf-8"),
+            "mesh.bin": b"\x00" * 12,
+        },
+    )
+    assert result.can_stage_locally is True
+    assert result.resource_mode == "bundle-resolved"
+    assert result.metrics["resolved_external_resource_count"] == 1
+    assert result.metrics["missing_external_resource_count"] == 0
+
+
+def test_validate_gltf_bundle_blocks_when_sidecars_are_missing() -> None:
+    payload = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"uri": "nested/mesh.bin", "byteLength": 12}],
+        "meshes": [{"primitives": [{}]}],
+    }
+    result = validate_local_model_bundle(
+        "bundle.gltf",
+        {
+            "bundle.gltf": json.dumps(payload).encode("utf-8"),
+        },
+    )
+    assert result.can_stage_locally is False
+    assert result.resource_mode == "bundle-incomplete"
+    assert any("missing 1 required external resources" in blocker for blocker in result.blockers)
 
 
 def test_validate_oversized_model_is_blocked() -> None:
