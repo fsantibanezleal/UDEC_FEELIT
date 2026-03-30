@@ -95,6 +95,7 @@ def test_validate_gltf_bundle_accepts_present_sidecar_resource() -> None:
     assert result.resource_mode == "bundle-resolved"
     assert result.metrics["resolved_external_resource_count"] == 1
     assert result.metrics["missing_external_resource_count"] == 0
+    assert result.metrics["resolved_external_resources"] == ["mesh.bin"]
 
 
 def test_validate_gltf_bundle_blocks_when_sidecars_are_missing() -> None:
@@ -112,6 +113,7 @@ def test_validate_gltf_bundle_blocks_when_sidecars_are_missing() -> None:
     assert result.can_stage_locally is False
     assert result.resource_mode == "bundle-incomplete"
     assert any("missing 1 required external resources" in blocker for blocker in result.blockers)
+    assert result.metrics["missing_external_resources"] == ["nested/mesh.bin"]
 
 
 def test_validate_oversized_model_is_blocked() -> None:

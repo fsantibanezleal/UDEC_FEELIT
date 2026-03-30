@@ -204,6 +204,7 @@ def test_local_model_bundle_validation_endpoint_accepts_gltf_with_sidecars() -> 
     assert payload["can_stage_locally"] is True
     assert payload["resource_mode"] == "bundle-resolved"
     assert payload["metrics"]["resolved_external_resource_count"] == 1
+    assert payload["metrics"]["resolved_external_resources"] == ["mesh.bin"]
 
 
 def test_local_model_bundle_validation_endpoint_blocks_incomplete_gltf_bundle() -> None:
@@ -224,6 +225,7 @@ def test_local_model_bundle_validation_endpoint_blocks_incomplete_gltf_bundle() 
     payload = response.json()
     assert payload["can_stage_locally"] is False
     assert payload["resource_mode"] == "bundle-incomplete"
+    assert payload["metrics"]["missing_external_resources"] == ["mesh.bin"]
 
 
 def test_braille_preview_returns_positioned_cells() -> None:

@@ -662,6 +662,9 @@ def validate_local_model_bundle(main_filename: str, bundle_files: dict[str, byte
     base_metrics.update(
         {
             "bundle_file_count": len(bundle_files),
+            "declared_external_resources": external_resource_names,
+            "resolved_external_resources": resolved_names,
+            "missing_external_resources": missing_names,
             "resolved_external_resource_count": len(resolved_names),
             "missing_external_resource_count": len(missing_names),
         },

@@ -297,10 +297,21 @@ function setValidationTransportError(message) {
 }
 
 function updateValidationPanel(result) {
+  const metrics = result.metrics ?? {};
   const findings = [
     ...(result.blockers ?? []),
     ...(result.warnings ?? []),
   ];
+  if (Array.isArray(metrics.resolved_external_resources)) {
+    metrics.resolved_external_resources.slice(0, 6).forEach((resourceName) => {
+      findings.push(`Resolved bundle resource: ${resourceName}`);
+    });
+  }
+  if (Array.isArray(metrics.missing_external_resources)) {
+    metrics.missing_external_resources.slice(0, 6).forEach((resourceName) => {
+      findings.push(`Missing bundle resource: ${resourceName}`);
+    });
+  }
   byId("validation-status").textContent = result.can_stage_locally ? "Ready for staging" : "Blocked";
   byId("validation-format").textContent = result.format_label ?? result.file_format?.toUpperCase?.() ?? "--";
   byId("validation-size").textContent = formatBytes(result.file_size_bytes);

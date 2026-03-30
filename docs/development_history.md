@@ -15,6 +15,23 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### develop working tree after v2.12.000 (2026-03-30)
+
+This repository state currently includes local milestone work that has not yet been folded into a release-synced version bump.
+
+Delivered on `develop`:
+
+- Added server-side validation for local Object Explorer uploads before browser parsing.
+- Added backend-derived staging profiles with geometry bounds, dominant-axis detection, and suggested workspace-scale percentages for local staging.
+- Added bundle-aware local `glTF` support so the Object Explorer can validate and open a main `.gltf` file together with selected sidecar buffers or textures.
+- Extended the browser-side loader with local sidecar URL resolution for `glTF` bundles.
+- Expanded API coverage, model-validation coverage, and browser smoke validation while keeping the visual baseline policy sparse.
+
+Rationale:
+
+- The 3D import path needed to move from a binary "browser parse or fail" posture into an informed staging pipeline with validation, bounds awareness, and bundle handling.
+- These changes are meaningful product work, but the workspace release policy now allows them to accumulate locally until the next justified release-sync cycle instead of forcing an immediate version bump.
+
 ### v2.12.000 (2026-03-30)
 
 Extend the native bridge layer with a vendor-aware OpenHaptics probe that loads runtime libraries and reports non-scaffold capability states.
