@@ -70,7 +70,7 @@
   <text x="176" y="292" class="cardTitle">Object</text>
   <text x="176" y="318" class="cardTitle">Explorer</text>
   <text x="126" y="350" class="mono">/object-explorer</text>
-  <text x="126" y="386" class="body">OBJ staging, tactile</text>
+  <text x="126" y="386" class="body">OBJ, STL, glTF, GLB staging, tactile</text>
   <text x="126" y="410" class="body">materials, scale tuning,</text>
   <text x="126" y="434" class="body">and live 3D exploration.</text>
 

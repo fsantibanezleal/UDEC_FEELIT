@@ -100,13 +100,16 @@ def test_material_catalog_endpoint_exposes_realistic_profiles() -> None:
     assert any(material["slug"] == "polished_metal" for material in payload["materials"])
 
 
-def test_demo_model_endpoint_exposes_local_obj_assets() -> None:
+def test_demo_model_endpoint_exposes_multi_format_assets() -> None:
     with TestClient(app) as client:
         response = client.get("/api/demo-models")
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload["models"]) >= 9
-    assert all(model["file_url"].endswith(".obj") for model in payload["models"])
+    assert len(payload["models"]) >= 13
+    formats = {model["file_format"] for model in payload["models"]}
+    assert {"obj", "stl", "gltf", "glb"} <= formats
+    assert all(model["file_url"].endswith(f".{model['file_format']}") for model in payload["models"])
+    assert all(model["format_label"] for model in payload["models"])
 
 
 def test_demo_model_static_assets_are_served() -> None:
@@ -117,7 +120,14 @@ def test_demo_model_static_assets_are_served() -> None:
         for model in models:
             asset_response = client.get(model["file_url"])
             assert asset_response.status_code == 200
-            assert "v " in asset_response.text
+            if model["file_format"] == "obj":
+                assert "v " in asset_response.text
+            elif model["file_format"] == "stl":
+                assert asset_response.text.startswith("solid ")
+            elif model["file_format"] == "gltf":
+                assert '"asset"' in asset_response.text
+            elif model["file_format"] == "glb":
+                assert asset_response.content[:4] == b"glTF"
 
 
 def test_braille_preview_returns_positioned_cells() -> None:

@@ -60,12 +60,13 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 |---|---|
 | Routed workspaces | `4` |
 | Spatial routes with a real 3D primary pane | `3` |
-| Bundled OBJ demo models | `10` |
+| Bundled 3D demo models | `14` |
+| Bundled model formats | `obj`, `stl`, `gltf`, `glb` |
 | Bundled public-domain documents | `5` |
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Public port | `8101` |
-| Canonical version | `2.07.000` |
+| Canonical version | `2.08.000` |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
 | Current validation surface | `49` automated tests passing plus browser smoke validation across the `4` routed pages |
 
@@ -73,7 +74,7 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 
 ### Current Workspaces
 
-- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local OBJ geometry, and exposes tactile material cycling inside the 3D world.
+- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local `OBJ`, `STL`, `glTF`, and `GLB` geometry, and exposes tactile material cycling inside the 3D world.
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, and now surfaces registry diagnostics when registered descriptors are missing or invalid.
@@ -87,7 +88,7 @@ The preserved legacy archive in `legacy/Registro Software` most strongly verifie
 ### Current Boundaries
 
 - no native physical haptic backend is attached yet
-- 3D asset import is still centered on OBJ and local staging
+- 3D asset import is client-side and currently supports `obj`, `stl`, self-contained `gltf`, and `glb`, but it still lacks server-side validation and preprocessing
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub`
 - the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite
 - the desktop flow already opens models, text, and audio, but it is not yet a full desktop automation environment
@@ -175,7 +176,7 @@ The curated captures are expected to come from a stable canonical state per rout
 
 ### 3D models
 
-FeelIT ships `10` lightweight OBJ demos, including `WaltHead.obj`, `Cerberus.obj`, `tree.obj`, `terrain_peak.obj`, and low-poly book and vase samples. The full catalog and provenance are documented in [Asset Sources](docs/asset_sources.md).
+FeelIT ships `14` lightweight 3D demos across `OBJ`, `STL`, `glTF`, and `GLB`, including `WaltHead.obj`, `Cerberus.obj`, `tree.obj`, `tactile_bridge.stl`, `orientation_marker.gltf`, and `navigation_puck.glb`. The full catalog and provenance are documented in [Asset Sources](docs/asset_sources.md).
 
 ### Reading library
 

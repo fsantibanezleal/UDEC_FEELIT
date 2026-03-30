@@ -470,6 +470,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
             object_launcher_loaded = False
             object_launcher_paginated = False
             object_model_loaded = False
+            object_non_obj_model_loaded = False
             object_launcher_returned = False
             desktop_gallery_loaded = False
             desktop_gallery_paginated = False
@@ -567,6 +568,60 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             timeout=15_000,
                         )
                         object_launcher_returned = True
+                navigation_puck_page_loaded = page.evaluate(
+                    """
+                    async () => {
+                      const debug = window.__feelitObjectExplorerDebug;
+                      if (!debug?.navigateToLauncher) {
+                        return false;
+                      }
+                      await debug.navigateToLauncher(4);
+                      return true;
+                    }
+                    """,
+                )
+                if not navigation_puck_page_loaded:
+                    failures.append("/object-explorer could not jump to the non-OBJ launcher page")
+                else:
+                    page.wait_for_function(
+                        """
+                        () => (document.querySelector('#explorer-launcher-page')?.textContent?.trim() ?? '').startsWith('5 /')
+                        """,
+                        timeout=15_000,
+                    )
+                    if not object_explorer_activate_matching_target(page, title="Navigation Puck"):
+                        failures.append("/object-explorer could not activate the GLB launcher model target")
+                    else:
+                        page.wait_for_function(
+                            """
+                            () => (document.querySelector('#explorer-scene-mode')?.textContent?.trim() ?? '') === 'Exploration scene'
+                            """,
+                            timeout=15_000,
+                        )
+                        object_non_obj_model_loaded = True
+                        if not page.evaluate(
+                            """
+                            async () => {
+                              const debug = window.__feelitObjectExplorerDebug;
+                              if (!debug?.activateTarget) {
+                                return false;
+                              }
+                              return debug.activateTarget('exploration-launcher');
+                            }
+                            """,
+                        ):
+                            failures.append("/object-explorer could not return from the GLB scene to the launcher")
+                        else:
+                            page.wait_for_function(
+                                """
+                                () => {
+                                  const sceneMode = document.querySelector('#explorer-scene-mode')?.textContent?.trim() ?? '';
+                                  const launcherPage = document.querySelector('#explorer-launcher-page')?.textContent?.trim() ?? '';
+                                  return sceneMode === 'Scene launcher' && launcherPage.startsWith('5 /');
+                                }
+                                """,
+                                timeout=15_000,
+                            )
             if scene.route == "/braille-reader":
                 page.wait_for_function(
                     """
@@ -1013,8 +1068,8 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                                 """,
                                 timeout=15_000,
                             )
-                            if not desktop_activate_matching_target(page, type_name="3D Model"):
-                                failures.append("/haptic-desktop could not activate a supported model file from the file browser")
+                            if not desktop_activate_matching_target(page, title="locator_token.stl"):
+                                failures.append("/haptic-desktop could not activate the STL model file from the file browser")
                             else:
                                 page.wait_for_function(
                                     """
@@ -1108,6 +1163,8 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/object-explorer did not expose real launcher pagination")
                 if not object_model_loaded:
                     failures.append("/object-explorer did not open a scene-native model session from the launcher")
+                if not object_non_obj_model_loaded:
+                    failures.append("/object-explorer did not open a non-OBJ launcher model session")
                 if not object_launcher_returned:
                     failures.append("/object-explorer did not return from the exploration scene back to the launcher page")
             if scene.route == "/braille-reader":

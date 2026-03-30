@@ -31,10 +31,10 @@
           <div class="section-header">
             <h2>Demo Models</h2>
           </div>
-          <label for="sample-model">Bundled OBJ asset</label>
+          <label for="sample-model">Bundled 3D asset</label>
           <select id="sample-model"></select>
-          <label for="model-file">Local OBJ file</label>
-          <input id="model-file" type="file" accept=".obj">
+          <label for="model-file">Local 3D file</label>
+          <input id="model-file" type="file" accept=".obj,.stl,.gltf,.glb">
           <div class="button-row">
             <button id="load-selection" class="btn btn-primary" type="button">Load Into Scene</button>
             <button id="reset-camera" class="btn btn-secondary" type="button">Reset Camera</button>
@@ -84,7 +84,7 @@
         <div class="panel-heading">
           <div>
             <h2>3D Object Workspace</h2>
-            <p class="panel-subtitle">Scene-native launcher plus bounded exploration world for curated demo models, local OBJ staging, and tactile material inspection.</p>
+            <p class="panel-subtitle">Scene-native launcher plus bounded exploration world for curated demo models, local multi-format staging, and tactile material inspection.</p>
           </div>
           <div class="panel-heading-status">
             <span id="explorer-stage-pill" class="status-pill status-pill-cyan">Loading assets</span>
@@ -131,6 +131,7 @@
           </div>
           <dl class="info-grid">
             <div><dt>Name</dt><dd id="inspector-model-name">--</dd></div>
+            <div><dt>Format</dt><dd id="inspector-model-format">--</dd></div>
             <div><dt>Category</dt><dd id="inspector-model-category">--</dd></div>
             <div><dt>Source</dt><dd id="inspector-model-source">--</dd></div>
             <div><dt>Scale hint</dt><dd id="inspector-scale-hint">--</dd></div>
@@ -163,13 +164,13 @@
       <div class="modal-body">
         <h3>Purpose</h3>
         <p>
-          This workspace stages real OBJ assets inside a bounded 3D world. The visible scene is the
+          This workspace stages real 3D assets inside a bounded 3D world. The visible scene is the
           same spatial context the haptic pointer is expected to traverse in later hardware-backed builds.
         </p>
         <h3>Current Interaction</h3>
         <ul>
           <li>Begin with a scene-native 3D launcher that pages through curated bundled demo models.</li>
-          <li>Load a bundled demo OBJ from the launcher or stage a local OBJ through the outer controls.</li>
+          <li>Load bundled `OBJ`, `STL`, `glTF`, or `GLB` demos from the launcher or stage a local file through the outer controls.</li>
           <li>Apply a haptic material profile grounded in current desktop haptic capabilities.</li>
           <li>Inspect the scene with orbit controls and move the pointer proxy with `W`, `A`, `S`, `D`, `Q`, and `E`.</li>
           <li>Use scene-native Launcher and Material controls inside the 3D world once a model session is open.</li>
