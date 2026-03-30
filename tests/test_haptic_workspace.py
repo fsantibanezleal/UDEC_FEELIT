@@ -30,6 +30,7 @@ def test_demo_workspace_payload_resolves_bundled_libraries() -> None:
     assert any(item["kind"] == "audio" for item in payload["libraries"]["audio"])
     assert all(item["open_mode"] == "open-model" for item in payload["libraries"]["models"])
     assert all(item["shape_key"] == "polyhedral_model_tile" for item in payload["libraries"]["models"])
+    assert all(item["source"]["format"] in {"obj", "stl", "gltf", "glb"} for item in payload["libraries"]["models"])
     assert all(item["open_mode"] == "open-text" for item in payload["libraries"]["texts"])
     assert all(item["shape_key"] == "braille_document_tile" for item in payload["libraries"]["texts"])
     assert all(item["open_mode"] == "open-audio" for item in payload["libraries"]["audio"])
@@ -78,6 +79,9 @@ def test_create_workspace_file_auto_populates_supported_assets(tmp_path, monkeyp
     workspace_root = tmp_path / "workspace_root"
     workspace_root.mkdir()
     (workspace_root / "sample_model.obj").write_text("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n", encoding="utf-8")
+    (workspace_root / "sample_mesh.stl").write_text("solid sample\nendsolid sample\n", encoding="utf-8")
+    (workspace_root / "sample_scene.gltf").write_text('{"asset":{"version":"2.0"}}', encoding="utf-8")
+    (workspace_root / "sample_binary.glb").write_bytes(b"glTF\x02\x00\x00\x00")
     (workspace_root / "sample_text.txt").write_text("Accessible tactile reading sample.", encoding="utf-8")
     (workspace_root / "sample_audio.wav").write_bytes(b"RIFFdemoWAVEfmt ")
 
@@ -94,7 +98,12 @@ def test_create_workspace_file_auto_populates_supported_assets(tmp_path, monkeyp
     assert record["slug"] == "my_workspace"
 
     payload = haptic_workspace.build_haptic_workspace_payload("my_workspace")
-    assert any(item["kind"] == "model" for item in payload["libraries"]["models"])
+    assert {item["source"]["format"] for item in payload["libraries"]["models"]} == {
+        "obj",
+        "stl",
+        "gltf",
+        "glb",
+    }
     assert any(item["kind"] == "text" for item in payload["libraries"]["texts"])
     assert any(item["kind"] == "audio" for item in payload["libraries"]["audio"])
 
@@ -163,6 +172,7 @@ def test_haptic_workspace_create_and_register_endpoints_use_external_registry(tm
     created_root = tmp_path / "created_workspace"
     created_root.mkdir()
     (created_root / "scene.obj").write_text("v 0 0 0\nv 0 1 0\nv 1 0 0\nf 1 2 3\n", encoding="utf-8")
+    (created_root / "scene.glb").write_bytes(b"glTF\x02\x00\x00\x00")
     (created_root / "notes.txt").write_text("Braille library note.", encoding="utf-8")
 
     existing_root = tmp_path / "existing_workspace"
@@ -288,6 +298,12 @@ def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -
 def test_detect_entry_kind_maps_supported_file_types_to_modes(tmp_path) -> None:
     model_path = tmp_path / "shape.obj"
     model_path.write_text("v 0 0 0\n", encoding="utf-8")
+    stl_model_path = tmp_path / "shape.stl"
+    stl_model_path.write_text("solid shape\nendsolid shape\n", encoding="utf-8")
+    gltf_model_path = tmp_path / "shape.gltf"
+    gltf_model_path.write_text('{"asset":{"version":"2.0"}}', encoding="utf-8")
+    glb_model_path = tmp_path / "shape.glb"
+    glb_model_path.write_bytes(b"glTF\x02\x00\x00\x00")
     text_path = tmp_path / "notes.md"
     text_path.write_text("# sample", encoding="utf-8")
     audio_path = tmp_path / "clip.ogg"
@@ -300,6 +316,9 @@ def test_detect_entry_kind_maps_supported_file_types_to_modes(tmp_path) -> None:
     assert haptic_workspace.detect_entry_kind(folder_path) == "directory"
     assert haptic_workspace.build_kind_contract("directory")["open_mode"] == "file-browser"
     assert haptic_workspace.detect_entry_kind(model_path) == "model"
+    assert haptic_workspace.detect_entry_kind(stl_model_path) == "model"
+    assert haptic_workspace.detect_entry_kind(gltf_model_path) == "model"
+    assert haptic_workspace.detect_entry_kind(glb_model_path) == "model"
     assert haptic_workspace.build_kind_contract("model")["open_mode"] == "open-model"
     assert haptic_workspace.detect_entry_kind(text_path) == "text"
     assert haptic_workspace.build_kind_contract("text")["open_mode"] == "open-text"

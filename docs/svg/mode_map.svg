@@ -53,10 +53,10 @@
   <text x="110" y="336" class="mono">/object-explorer</text>
   <text x="110" y="382" class="section">PRIMARY ROLE</text>
   <text x="110" y="410" class="body">Start bounded tactile exploration sessions from a</text>
-  <text x="110" y="434" class="body">scene-native launcher for real OBJ geometry and</text>
+  <text x="110" y="434" class="body">scene-native launcher for real multi-format geometry and</text>
   <text x="110" y="458" class="body">material-focused object study.</text>
   <text x="110" y="482" class="section">CURRENT BASELINE</text>
-  <text x="110" y="510" class="body">Paged session launcher, local OBJ staging, persistent</text>
+  <text x="110" y="510" class="body">Paged session launcher, local multi-format staging, persistent</text>
   <text x="110" y="534" class="body">camera view, scene pointer traversal, and in-world</text>
   <text x="110" y="558" class="body">material plus launcher return controls.</text>
 

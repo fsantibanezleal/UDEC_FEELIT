@@ -1,5 +1,9 @@
 import { bootWorkspace } from "./app.js";
-import { OBJLoader } from "../vendor/three/OBJLoader.js";
+import {
+  loadLocalModelFile,
+  loadModelFromUrl,
+  modelFileAcceptString,
+} from "./model_loading.js";
 import {
   THREE,
   attachPointerEmulation,
@@ -101,6 +105,7 @@ function updateModelInspector(model) {
     return;
   }
   byId("inspector-model-name").textContent = model.title;
+  byId("inspector-model-format").textContent = model.format_label ?? model.file_format?.toUpperCase?.() ?? "--";
   byId("inspector-model-category").textContent = model.category;
   byId("inspector-model-source").textContent = model.source_name;
   byId("inspector-scale-hint").textContent = `${model.scale_hint.toFixed(2)}x`;
@@ -112,7 +117,7 @@ function populateSelect(select, items, valueField, labelField) {
   items.forEach((item) => {
     const option = document.createElement("option");
     option.value = item[valueField];
-    option.textContent = item[labelField];
+    option.textContent = typeof labelField === "function" ? labelField(item) : item[labelField];
     select.appendChild(option);
   });
 }
@@ -164,22 +169,12 @@ async function fetchJson(url) {
   return response.json();
 }
 
-async function fetchText(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${url}`);
-  }
-  return response.text();
-}
-
 async function loadDemoObjectTemplate(model) {
   const cached = state.modelTemplateCache.get(model.slug);
   if (cached) {
     return cached;
   }
-  const loader = new OBJLoader();
-  const text = await fetchText(model.file_url);
-  const template = loader.parse(text);
+  const { modelRoot: template } = await loadModelFromUrl(model.file_url, model.file_format);
   state.modelTemplateCache.set(model.slug, template);
   return template;
 }
@@ -931,22 +926,27 @@ async function openDemoSession(sceneApi, model, options = {}) {
 }
 
 async function openLocalUploadSession(sceneApi, localFile) {
-  const loader = new OBJLoader();
-  const text = await localFile.text();
   const baseModel = modelBySlug(byId("sample-model").value) ?? state.models[0];
+  const { modelRoot: object, format, formatLabel } = await loadLocalModelFile(localFile);
   const localModel = {
     ...baseModel,
-    slug: "local_obj_session",
+    slug: "local_model_session",
     title: localFile.name,
-    category: "local_obj",
-    source_name: "Local upload",
-    description: "Local OBJ file parsed in-browser for visual and future haptic staging.",
+    category: "local_model",
+    file_format: format,
+    format_label: formatLabel,
+    source_name: `Local ${formatLabel} upload`,
+    description: `Local ${formatLabel} file parsed in-browser for visual and future haptic staging.`,
     scale_hint: 1.0,
   };
   setSelectedModel(baseModel.slug, { syncSelect: true, useDefaultMaterial: false });
-  setStatus(`Loading local OBJ ${localFile.name} into the exploration scene...`);
-  const object = loader.parse(text);
-  await loadObjectIntoScene(sceneApi, object, localModel, `Loaded local OBJ ${localFile.name} into the bounded scene.`);
+  setStatus(`Loading local ${formatLabel} ${localFile.name} into the exploration scene...`);
+  await loadObjectIntoScene(
+    sceneApi,
+    object,
+    localModel,
+    `Loaded local ${formatLabel} ${localFile.name} into the bounded scene.`,
+  );
 }
 
 async function loadSelectedModel(sceneApi) {
@@ -1036,7 +1036,8 @@ document.addEventListener("DOMContentLoaded", () => {
       state.models = modelPayload.models;
 
       populateSelect(byId("material-select"), state.materials, "slug", "title");
-      populateSelect(byId("sample-model"), state.models, "slug", "title");
+      populateSelect(byId("sample-model"), state.models, "slug", (model) => `${model.title} (${model.format_label})`);
+      byId("model-file").setAttribute("accept", modelFileAcceptString());
 
       const initialModel = state.models[0];
       setSelectedModel(initialModel.slug, { syncSelect: true, useDefaultMaterial: true });

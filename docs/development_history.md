@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.08.000 (2026-03-29)
+
+Expand FeelIT model loading beyond OBJ with bundled STL, glTF, and GLB demos across Object Explorer and Haptic Desktop.
+
+Delivered:
+
+- Added a shared browser-side model-loading layer that resolves OBJ, STL, glTF, and GLB assets for Object Explorer and Haptic Desktop.
+- Bundled new lightweight internal STL, glTF, and GLB demo models and exposed their format metadata through the demo-model API and workspace payloads.
+- Extended browser smoke validation to open a GLB session in Object Explorer and an STL file through the Haptic Desktop file browser.
+
+Rationale:
+
+- This release materially expands the 3D asset capability of FeelIT instead of only refining an existing flow, so it warrants a minor-version increment.
+- The desktop and explorer should share one consistent model-ingestion contract so workspace browsing and curated demos do not diverge by format.
+- Non-OBJ support needed to be proven through bundled demos and browser automation, not only through static catalog metadata.
+
 ### v2.07.000 (2026-03-29)
 
 Add a scene-native object-session launcher and blind-first session flow to the 3D Object Explorer.

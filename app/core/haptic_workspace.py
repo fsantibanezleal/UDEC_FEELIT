@@ -23,7 +23,7 @@ WORKSPACES_DIR = STATIC_DIR / "assets" / "workspaces"
 DEMO_WORKSPACE_FILE = WORKSPACES_DIR / "feelit_demo.haptic_workspace.json"
 WORKSPACE_FORMAT = "feelit_haptic_workspace"
 WORKSPACE_SUFFIX = ".haptic_workspace.json"
-SUPPORTED_MODEL_SUFFIXES = {".obj"}
+SUPPORTED_MODEL_SUFFIXES = {".obj", ".stl", ".gltf", ".glb"}
 SUPPORTED_TEXT_SUFFIXES = {".txt", ".html", ".htm", ".epub", ".md"}
 SUPPORTED_AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".m4a"}
 DEFAULT_SEGMENT_CHARS = 1200
@@ -54,6 +54,12 @@ KIND_OPEN_LABELS = {
     "text": "Open in the Braille reading scene",
     "audio": "Open in the audio transport scene",
     "unsupported": "Inspect unsupported file details",
+}
+MODEL_FORMAT_LABELS = {
+    "obj": "OBJ",
+    "stl": "STL",
+    "gltf": "glTF",
+    "glb": "GLB",
 }
 
 
@@ -352,7 +358,9 @@ def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], categor
                 "demo_model_slug": model["slug"],
                 "file_url": model["file_url"],
                 "title": model["title"],
-                "extension": ".obj",
+                "format": model["file_format"],
+                "format_label": model["format_label"],
+                "extension": f".{model['file_format']}",
             },
         )
         return payload
@@ -403,6 +411,12 @@ def _resolve_workspace_item(workspace_slug: str, record: dict[str, Any], categor
                 "extension": file_path.suffix.lower(),
             },
         )
+        if payload["kind"] == "model":
+            file_format = file_path.suffix.lower().lstrip(".")
+            payload["source"]["format"] = file_format
+            payload["source"]["format_label"] = MODEL_FORMAT_LABELS.get(
+                file_format, file_format.upper()
+            )
         if payload["kind"] == "text":
             payload["source"]["text_endpoint"] = (
                 f"/api/haptic-workspaces/{workspace_slug}/text-file?path={relative_path}"
@@ -490,6 +504,12 @@ def build_workspace_browser_payload(slug: str, relative_path: str = "") -> dict[
                 "raw_file_endpoint": f"/api/haptic-workspaces/{slug}/raw-file?path={child_relative}",
                 "extension": child.suffix.lower(),
             }
+            if kind == "model":
+                file_format = child.suffix.lower().lstrip(".")
+                entry["source"]["format"] = file_format
+                entry["source"]["format_label"] = MODEL_FORMAT_LABELS.get(
+                    file_format, file_format.upper()
+                )
             if kind == "text":
                 entry["source"]["text_endpoint"] = (
                     f"/api/haptic-workspaces/{slug}/text-file?path={child_relative}"

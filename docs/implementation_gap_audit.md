@@ -42,9 +42,9 @@ Notable evidence:
 
 Implemented:
 
-- bundled local OBJ demo catalog exposed through the API
+- bundled multi-format demo catalog exposed through the API
 - scene-native paged launcher for curated demo-model sessions
-- local OBJ upload and in-browser parsing
+- local `OBJ`, `STL`, self-contained `glTF`, and `GLB` upload and in-browser parsing
 - haptic material profile selection grounded in plausible current-device approximations
 - visible exploration plinth and adaptive scene bounds
 - in-scene Launcher plus material-cycling controls inside the exploration world
@@ -53,7 +53,7 @@ Implemented:
 Still limited:
 
 - no server-side asset validation
-- no support beyond OBJ
+- no preprocessing pipeline for heavy or externally referenced assets
 - no native force model tied to real haptic hardware
 - no persistent model metadata or saved exploration sessions
 - local upload still enters through the surrounding web controls rather than a scene-native intake path
@@ -160,5 +160,5 @@ Those belong to the modernization path, not to the verified archived implementat
 
 1. Build a first native backend integration boundary so the material and workspace models can move beyond visual approximation.
 2. Extend the Braille library with richer compatibility beyond the current TXT, HTML, and EPUB support.
-3. Extend the 3D asset pipeline with server-side validation and additional formats.
+3. Extend the 3D asset pipeline with server-side validation, preprocessing, and safer handling for external-resource packages.
 4. Expand the workspace manager into a richer editor with descriptor validation, asset previews, and safer authoring affordances.

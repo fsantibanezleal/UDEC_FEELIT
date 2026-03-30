@@ -11,7 +11,9 @@ This document records the provenance of the bundled demo geometry and internal l
 - Bundled documents and audio must come from public-domain or equivalently safe-to-bundle sources, with provenance preserved in this file.
 - Before public redistribution through packaged installers, the final release process must re-check the attribution and redistribution status of every third-party asset.
 
-## Bundled OBJ Models
+## Bundled 3D Models
+
+### Bundled OBJ Models
 
 ### Walt Head
 
@@ -82,6 +84,38 @@ This document records the provenance of the bundled demo geometry and internal l
 - source: FeelIT internal lightweight geometry
 - upstream URL: generated in repository
 - use in FeelIT: household-object profile exploration with neck and shoulder transitions
+
+### Bundled STL Models
+
+### Tactile Bridge
+
+- local file: `app/static/assets/models/demo/tactile_bridge.stl`
+- source: FeelIT internal generated geometry
+- upstream URL: generated in repository
+- use in FeelIT: tactile path-following trials with supports and one raised guide rail
+
+### Locator Token
+
+- local file: `app/static/assets/models/demo/locator_token.stl`
+- source: FeelIT internal generated geometry
+- upstream URL: generated in repository
+- use in FeelIT: compact navigation token for orientation and rotational recognition trials
+
+### Bundled glTF And GLB Models
+
+### Orientation Marker
+
+- local file: `app/static/assets/models/demo/orientation_marker.gltf`
+- source: FeelIT internal generated geometry
+- upstream URL: generated in repository
+- use in FeelIT: self-contained glTF marker for direction and anchor-cue exploration
+
+### Navigation Puck
+
+- local file: `app/static/assets/models/demo/navigation_puck.glb`
+- source: FeelIT internal generated geometry
+- upstream URL: generated in repository
+- use in FeelIT: binary glTF stepped token used to validate non-OBJ runtime loading in bounded scenes
 
 ## Bundled Public-Domain Documents
 

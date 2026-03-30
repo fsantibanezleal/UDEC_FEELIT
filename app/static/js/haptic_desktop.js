@@ -1,5 +1,5 @@
 import { bootWorkspace } from "./app.js";
-import { OBJLoader } from "../vendor/three/OBJLoader.js";
+import { loadModelFromUrl, modelFormatLabel } from "./model_loading.js";
 import {
   THREE,
   attachPointerEmulation,
@@ -68,7 +68,6 @@ const state = {
   fallbackFocusIndex: -1,
   pointerController: null,
   sceneApi: null,
-  loader: new OBJLoader(),
   speechEnabled: true,
   lastStatusKey: "",
   lastAnnouncementKey: "",
@@ -1177,6 +1176,28 @@ function itemRawFileUrl(item) {
   return item.source?.file_url ?? "";
 }
 
+function itemModelFormat(item) {
+  const explicitFormat = item.source?.format;
+  if (explicitFormat) {
+    return explicitFormat;
+  }
+  const extension = item.source?.extension;
+  if (extension) {
+    return extension.replace(/^\./, "");
+  }
+  const rawUrl = itemRawFileUrl(item);
+  const match = /\.([a-z0-9]+)(?:$|[?#])/i.exec(rawUrl);
+  return match ? match[1].toLowerCase() : "obj";
+}
+
+function itemModelFormatLabel(item) {
+  try {
+    return item.source?.format_label ?? modelFormatLabel(itemModelFormat(item));
+  } catch {
+    return item.source?.format_label ?? "3D";
+  }
+}
+
 function itemTextEndpoint(item, offset, maxChars) {
   if (item.source?.kind === "library_document") {
     return `${item.source.text_endpoint}?offset=${offset}&max_chars=${maxChars}`;
@@ -1841,10 +1862,9 @@ async function navigateToDetail(item, origin) {
   publishStatus(`${item.title}. ${item.summary || meta.title}.`, "Ready", `detail-${item.slug}`);
 }
 
-async function loadObj(url) {
-  return new Promise((resolve, reject) => {
-    state.loader.load(url, resolve, undefined, reject);
-  });
+async function loadModelSceneAsset(item) {
+  const { modelRoot } = await loadModelFromUrl(itemRawFileUrl(item), itemModelFormat(item));
+  return modelRoot;
 }
 
 async function navigateToModelScene(item, origin) {
@@ -1858,7 +1878,7 @@ async function navigateToModelScene(item, origin) {
     [0, 0.72, 0],
   );
 
-  const object = await loadObj(itemRawFileUrl(item));
+  const object = await loadModelSceneAsset(item);
   object.traverse((node) => {
     if (node.isMesh) {
       node.material = new THREE.MeshStandardMaterial({
@@ -1950,7 +1970,11 @@ async function navigateToModelScene(item, origin) {
     idleMessage: `Pointer moving across the opened 3D model ${item.title}.`,
   });
   focusTarget("model-return", { source: "scene", movePointer: false });
-  publishStatus(`Opened ${item.title} in the model scene.`, "Ready", `open-model-${item.slug}`);
+  publishStatus(
+    `Opened ${item.title} in the model scene as ${itemModelFormatLabel(item)} geometry.`,
+    "Ready",
+    `open-model-${item.slug}`,
+  );
 }
 
 function textPageCount(textScene) {

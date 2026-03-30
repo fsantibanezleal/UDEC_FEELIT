@@ -128,7 +128,7 @@ The current baseline already delivers:
 - scene-native tactile controls inside the Braille reading world
 - structured `haptic_workspace` descriptors plus a dedicated manager route
 - workspace-driven Haptic Desktop scenes for launcher, galleries, file browsing, and content opening
-- bundled OBJ demo models and local OBJ staging
+- bundled multi-format demo models plus local `OBJ`, `STL`, `glTF`, and `GLB` staging
 - initial haptic material profiles grounded in current desktop-haptics capabilities
 - a null backend strategy for hardware-safe execution
 

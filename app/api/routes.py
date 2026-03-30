@@ -91,7 +91,7 @@ async def materials() -> dict:
 
 @router.get("/demo-models")
 async def demo_models() -> dict:
-    """Return bundled real OBJ demo assets for the 3D explorer."""
+    """Return bundled multi-format demo assets for the 3D explorer."""
     return {"models": build_demo_model_catalog()}
 
 

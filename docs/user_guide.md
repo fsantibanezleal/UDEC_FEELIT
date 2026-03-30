@@ -30,7 +30,7 @@ Route:
 Current use:
 
 - start from a scene-native 3D launcher with paged demo-model session targets
-- open a bundled demo object directly from the 3D world or stage a local OBJ file from the outer controls
+- open a bundled demo object directly from the 3D world or stage a local `OBJ`, `STL`, `glTF`, or `GLB` file from the outer controls
 - select a tactile material profile or cycle materials from the in-scene controls once a session is open
 - adjust bounded workspace scale
 - move the stylus-style pointer proxy with keyboard support
@@ -43,7 +43,7 @@ Current keyboard cues:
 - `Q`, `E`: move vertically
 - `Space` or `Enter`: emulate contact near the current object surface
 
-This workspace now has a blind-first entry path for curated demo models, but local uploads and broader asset-format support remain secondary to that launcher flow.
+This workspace now has a blind-first entry path for curated demo models, while local uploads support `OBJ`, `STL`, self-contained `glTF`, and `GLB` as a secondary outer-panel intake path.
 
 ### 2. Braille Reader
 
@@ -186,7 +186,7 @@ GET /api/modes
 GET /api/materials
 ```
 
-### Demo OBJ Models
+### Demo 3D Models
 
 ```text
 GET /api/demo-models
@@ -276,7 +276,7 @@ POST /api/haptic-workspaces/register
 ## Current Limitations
 
 - no physical device bridge is connected yet
-- 3D object staging is currently client-side and focused on `.obj`
+- 3D object staging is currently client-side and focused on `obj`, `stl`, self-contained `gltf`, and `glb`
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
 - workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances
 - desktop actions are limited to models, text, audio, and file browsing rather than full desktop automation
