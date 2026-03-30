@@ -131,16 +131,16 @@ Status:
 
 Interpretation:
 
-FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. This is a real architectural and product step, but it still stops before live device enumeration or force rendering.
+FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. It also now has a first vendor-aware Force Dimension runtime path that can load the DHD runtime and enumerate devices through the probe contract. This is a real architectural and product step, but it still stops before force rendering or live scene-coupled control.
 
-The current bridge scaffold is meaningful because it proves four things end to end:
+The current bridge path is meaningful because it proves four things end to end:
 
 - FeelIT can discover or configure a bridge executable
 - FeelIT can compile that executable locally through a documented bootstrap script
 - FeelIT can invoke the bridge and parse JSON results back into the API and frontend
-- FeelIT can distinguish scaffold-only bridge readiness from real device-backed capability
+- FeelIT can distinguish scaffold-only bridge readiness from runtime-loaded and device-backed capability
 
-The remaining gap is therefore narrower and more concrete: vendor-aware bridge logic, not generic bootstrap uncertainty.
+The remaining gap is therefore narrower and more concrete: extend vendor-aware probing to the other stacks, then move from enumeration into the actual haptic-control loop.
 
 ### Pointer Emulation
 

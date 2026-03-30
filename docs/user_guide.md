@@ -150,6 +150,7 @@ Current use:
 - inspect build-tool readiness for the native bridge workflow
 - review the native bridge source root, build-root pattern, and recommended bootstrap commands
 - inspect per-backend bridge-probe state before claiming that a physical runtime exists
+- review vendor-aware probe summaries and detected-device identities when a supported runtime is present
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - inspect the current design baseline for collision, contact, and material rendering
 - keep the built-in visual emulator as the safe default runtime until a native bridge is ready
@@ -161,6 +162,7 @@ Bridge-bootstrap commands:
 ```powershell
 python scripts\haptic_bridge_diagnostics.py
 .\scripts\Bootstrap_HapticBridge.ps1 -Backend openhaptics-touch -Build
+.\scripts\Bootstrap_HapticBridge.ps1 -Backend forcedimension-dhd -Build
 ```
 
 ## Runtime Information
@@ -312,8 +314,9 @@ POST /api/haptic-workspaces/register
 
 ## Current Limitations
 
-- no physical device bridge is connected yet, even though the haptic-configuration route now tracks backend selection intent, vendor dependency readiness, bridge-probe state, and toolchain availability
-- the compiled bridge probe is scaffold-only and currently validates the probe contract rather than enumerating or driving hardware
+- no physical device loop is connected to the scene runtime yet, even though the haptic-configuration route now tracks backend selection intent, vendor dependency readiness, bridge-probe state, and toolchain availability
+- the Force Dimension DHD path can now load the runtime library and enumerate devices through the native probe, but OpenHaptics and CHAI3D remain scaffold-level probe paths
+- no current probe drives force output, calibration, homing, or scene-coupled haptic interaction
 - 3D object staging is currently client-side and focused on `obj`, `stl`, self-contained `gltf`, and `glb`
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
 - workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances

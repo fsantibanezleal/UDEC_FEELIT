@@ -194,7 +194,7 @@
   <text x="1164" y="492" class="cardTitle">Runtime Manager And Backend Boundary</text>
   <text x="1164" y="520" class="mono">runtime_manager.py   bridge_probe.py   toolchain.py</text>
   <text x="1120" y="556" class="body">Tracks requested backend, active fallback backend, SDK roots,</text>
-  <text x="1120" y="580" class="body">bridge paths, toolchain readiness, and bridge-probe state</text>
+  <text x="1120" y="580" class="body">bridge paths, toolchain readiness, and vendor-aware probe state</text>
   <text x="1120" y="604" class="body">while keeping the visual emulator as the safe no-device runtime.</text>
 
   <rect x="1098" y="692" width="382" height="202" rx="18" fill="url(#panelSoft)" stroke="#ff7b72"/>

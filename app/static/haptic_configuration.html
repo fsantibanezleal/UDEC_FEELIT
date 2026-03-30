@@ -191,8 +191,10 @@
             <div><dt>Availability</dt><dd id="selected-backend-availability">--</dd></div>
             <div><dt>Dependencies</dt><dd id="selected-backend-dependencies">--</dd></div>
             <div><dt>Driver</dt><dd id="selected-backend-driver">--</dd></div>
-            <div><dt>Devices</dt><dd id="selected-backend-devices">--</dd></div>
+            <div><dt>Device state</dt><dd id="selected-backend-devices">--</dd></div>
+            <div><dt>Detected devices</dt><dd id="selected-backend-detected-devices">--</dd></div>
             <div><dt>Bridge probe</dt><dd id="selected-backend-bridge-probe">--</dd></div>
+            <div><dt>Probe summary</dt><dd id="selected-backend-probe-summary">--</dd></div>
             <div><dt>Device count</dt><dd id="selected-backend-device-count">--</dd></div>
           </dl>
         </section>
@@ -227,7 +229,7 @@
           <li>Record SDK roots and bridge executables for OpenHaptics, Force Dimension, or CHAI3D-based paths.</li>
           <li>Inspect which native build tools are available on the current Windows host for the bridge workflow.</li>
           <li>Review the native bridge workspace and the commands used to configure or build the bridge scaffold.</li>
-          <li>See whether a bridge executable is missing, failing, scaffold-only, or reporting real device-ready probe data.</li>
+          <li>See whether a bridge executable is missing, failing, scaffold-only, runtime-loaded-without-devices, or reporting real device-ready probe data.</li>
           <li>Inspect the current collision, contact, and material-rendering baseline that the native backend must honor.</li>
           <li>Keep the built-in visual emulator as the safe default while physical-device integration is still under construction.</li>
         </ul>

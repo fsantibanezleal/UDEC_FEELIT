@@ -1239,6 +1239,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 requested_backend = (page.locator("#config-requested-backend").text_content() or "").strip()
                 active_backend = (page.locator("#config-active-backend").text_content() or "").strip()
                 selected_backend_title = (page.locator("#selected-backend-title").text_content() or "").strip()
+                selected_backend_probe_summary = (
+                    page.locator("#selected-backend-probe-summary").text_content() or ""
+                ).strip()
                 bridge_source_root = (page.locator("#bridge-source-root").text_content() or "").strip()
                 bridge_command = (page.locator("#bridge-build-command").text_content() or "").strip()
                 if backend_cards == 0:
@@ -1255,6 +1258,8 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-configuration did not initialize the active backend summary")
                 if selected_backend_title in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected backend inspector")
+                if selected_backend_probe_summary in {"", "--"}:
+                    failures.append("/haptic-configuration did not initialize the selected bridge-probe summary")
                 if bridge_source_root in {"", "Loading source root."}:
                     failures.append("/haptic-configuration did not initialize the native bridge workspace summary")
                 if bridge_command in {"", "Loading build command."}:

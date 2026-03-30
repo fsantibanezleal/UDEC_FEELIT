@@ -24,7 +24,7 @@ FeelIT now ships:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs.
+Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The probe now also contains a first vendor-aware Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
 
 ## Bootstrap Workflow
 
@@ -79,7 +79,7 @@ The bridge scaffold is intentionally narrow and explicit. The executable is expe
 feelit_bridge_probe.exe --backend <backend-slug> --sdk-root <sdk-root> --emit-json
 ```
 
-The current scaffold returns a JSON payload with:
+The current probe returns a JSON payload with:
 
 - backend slug
 - status
@@ -87,21 +87,23 @@ The current scaffold returns a JSON payload with:
 - SDK-root presence
 - marker hits
 - runtime-marker hits
+- runtime-library path
+- runtime-load state
+- SDK version string when the vendor runtime exposes one
 - device count
 - device list
 
-Today, that response is allowed to remain `scaffold-only`. The purpose is to prove that FeelIT can:
+Depending on the backend and installed runtime, that response may remain `scaffold-only` or may advance to vendor-aware runtime states such as `runtime-loaded-no-devices` or `ready`. The purpose is to prove that FeelIT can:
 
 - find a bridge executable
 - invoke it safely
 - parse probe JSON
 - present the result in the configuration UI and API
 
-## What The Scaffold Does Not Claim
+## What The Bridge Still Does Not Claim
 
-The bridge scaffold does **not** yet claim:
+The bridge system does **not** yet claim:
 
-- live device enumeration
 - force output
 - button input
 - workspace calibration
@@ -109,7 +111,7 @@ The bridge scaffold does **not** yet claim:
 - servo-loop execution
 - real collision or material rendering
 
-Those capabilities still belong to the next backend stage tracked in the native haptic issues.
+The Force Dimension path can now load and enumerate, but those richer runtime capabilities still belong to the next backend stage tracked in the native haptic issues.
 
 ## Vendor Paths
 
@@ -126,8 +128,9 @@ Current bootstrap scope:
 Current bootstrap scope:
 
 - detect DHD headers such as `dhdc.h` and `drdc.h`
-- preserve the bridge path and readiness surface for a future device-aware implementation
-- align the future bridge contract with the DHD device-count and open-device flow documented by the vendor SDK
+- dynamically load the DHD runtime library from the configured SDK root when it is present
+- report SDK version, device count, and device identity through the bridge JSON contract
+- preserve the path for future force, calibration, and scene-coupled backend behavior after enumeration succeeds
 
 ### CHAI3D Bridge Stack
 
@@ -139,10 +142,8 @@ Current bootstrap scope:
 
 ## Next Technical Step
 
-The next bridge milestone is not "more scaffolding." It is a vendor-aware probe that can report:
+The next bridge milestone is to extend vendor-aware probing beyond the first Force Dimension path and move from enumeration into controlled backend activation. In practice that means:
 
-- SDK loaded or failed
-- runtime library loaded or failed
-- device count
-- device identity or capability summary
-- failure reasons that remain visible in the FeelIT UI and API
+- OpenHaptics and CHAI3D need the same kind of runtime-load and device-ready probe states
+- the probe contract should carry richer capability data once those stacks are live
+- the backend still needs calibration, homing, button-state, and force-output stages after enumeration
