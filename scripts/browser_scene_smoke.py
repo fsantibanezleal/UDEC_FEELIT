@@ -55,6 +55,12 @@ SCENES: tuple[SceneSpec, ...] = (
         min_unique_colors=1200,
         wait_until="commit",
     ),
+    SceneSpec(
+        route="/haptic-configuration",
+        canvas_selector=".workspace-grid",
+        min_unique_colors=1200,
+        wait_until="commit",
+    ),
 )
 
 
@@ -1104,6 +1110,18 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
+            if scene.route == "/haptic-configuration":
+                page.wait_for_function(
+                    """
+                    () => {
+                      const backends = document.querySelectorAll('#backend-list .backend-card').length;
+                      const runtime = document.querySelector('#config-runtime-pill')?.textContent?.trim() ?? '';
+                      const pageStatus = document.querySelector('#config-page-status')?.textContent?.trim() ?? '';
+                      return backends > 0 && runtime !== '' && runtime !== 'Loading' && pageStatus !== '' && pageStatus !== 'Waiting';
+                    }
+                    """,
+                    timeout=15_000,
+                )
             if scene.route != "/haptic-workspace-manager":
                 stabilize_scene_for_capture(page, scene.route)
             page.wait_for_timeout(1_200)
@@ -1213,6 +1231,25 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-workspace-manager did not initialize the page status")
                 if selected_title in {"", "--"}:
                     failures.append("/haptic-workspace-manager did not initialize the selected workspace summary")
+            if scene.route == "/haptic-configuration":
+                backend_cards = page.locator("#backend-list .backend-card").count()
+                runtime_pill = (page.locator("#config-runtime-pill").text_content() or "").strip()
+                page_status = (page.locator("#config-page-status").text_content() or "").strip()
+                requested_backend = (page.locator("#config-requested-backend").text_content() or "").strip()
+                active_backend = (page.locator("#config-active-backend").text_content() or "").strip()
+                selected_backend_title = (page.locator("#selected-backend-title").text_content() or "").strip()
+                if backend_cards == 0:
+                    failures.append("/haptic-configuration did not render any backend diagnostics cards")
+                if runtime_pill in {"", "Loading", "Runtime error"}:
+                    failures.append("/haptic-configuration did not initialize the runtime pill")
+                if page_status in {"", "Waiting", "Boot failed"}:
+                    failures.append("/haptic-configuration did not initialize the page status")
+                if requested_backend in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the requested backend summary")
+                if active_backend in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the active backend summary")
+                if selected_backend_title in {"", "--"}:
+                    failures.append("/haptic-configuration did not initialize the selected backend inspector")
 
             print(
                 f"{scene.route}: unique_colors={unique_colors} "

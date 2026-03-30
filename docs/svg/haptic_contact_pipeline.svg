@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940" role="img" aria-labelledby="title desc">
+  <title id="title">FeelIT haptic contact pipeline</title>
+  <desc id="desc">Diagram showing the proxy-first contact and material-rendering pipeline for the future FeelIT native haptic backend.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#152132"/>
+      <stop offset="100%" stop-color="#101722"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#79c0ff"/>
+    </marker>
+    <style>
+      .title { font: 700 38px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .subtitle { font: 400 18px 'Segoe UI', sans-serif; fill: #8b949e; }
+      .cardTitle { font: 700 22px 'Segoe UI', sans-serif; fill: #e6edf3; }
+      .body { font: 400 16px 'Segoe UI', sans-serif; fill: #9fb0c3; }
+      .small { font: 400 14px 'Segoe UI', sans-serif; fill: #8b949e; }
+      .badge { font: 700 12px 'Segoe UI', sans-serif; fill: #0d1117; letter-spacing: 1px; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="940" fill="url(#bg)"/>
+  <circle cx="1440" cy="150" r="220" fill="#58a6ff" opacity="0.06"/>
+  <circle cx="180" cy="820" r="200" fill="#c297ff" opacity="0.05"/>
+
+  <text x="78" y="102" class="title">FeelIT Haptic Contact Pipeline</text>
+  <text x="78" y="136" class="subtitle">The future native backend should solve contact against simplified haptic proxies, then synthesize forces and material cues that remain stable inside the servo loop.</text>
+
+  <rect x="92" y="220" width="246" height="228" rx="22" fill="url(#card)" stroke="#58a6ff" filter="url(#shadow)"/>
+  <rect x="396" y="220" width="246" height="228" rx="22" fill="url(#card)" stroke="#7ee787" filter="url(#shadow)"/>
+  <rect x="700" y="220" width="246" height="228" rx="22" fill="url(#card)" stroke="#c297ff" filter="url(#shadow)"/>
+  <rect x="1004" y="220" width="246" height="228" rx="22" fill="url(#card)" stroke="#ffa657" filter="url(#shadow)"/>
+  <rect x="1308" y="220" width="200" height="228" rx="22" fill="url(#card)" stroke="#f2cc60" filter="url(#shadow)"/>
+
+  <text x="122" y="270" class="cardTitle">1. Asset Intake</text>
+  <text x="122" y="310" class="body">Curated models, Braille boards,</text>
+  <text x="122" y="334" class="body">desktop tiles, and scene controls</text>
+  <text x="122" y="358" class="body">enter the runtime.</text>
+
+  <text x="426" y="270" class="cardTitle">2. Proxy Reduction</text>
+  <text x="426" y="310" class="body">Reduce or replace render meshes</text>
+  <text x="426" y="334" class="body">with planes, rails, buttons,</text>
+  <text x="426" y="358" class="body">convex parts, and safe surfaces.</text>
+
+  <text x="730" y="270" class="cardTitle">3. Contact Solve</text>
+  <text x="730" y="310" class="body">Solve penetration, boundaries,</text>
+  <text x="730" y="334" class="body">surface following, and actuation</text>
+  <text x="730" y="358" class="body">at the high-frequency servo loop.</text>
+  <rect x="730" y="390" width="134" height="28" rx="14" fill="#c297ff"/>
+  <text x="754" y="408" class="badge">~1000 HZ TARGET</text>
+
+  <text x="1034" y="270" class="cardTitle">4. Material Synthesis</text>
+  <text x="1034" y="310" class="body">Map stiffness, damping, friction,</text>
+  <text x="1034" y="334" class="body">texture spacing, and vibration</text>
+  <text x="1034" y="358" class="body">into reproducible force channels.</text>
+
+  <text x="1338" y="270" class="cardTitle">5. Device Output</text>
+  <text x="1338" y="310" class="body">Send stable force or</text>
+  <text x="1338" y="334" class="body">constraint responses to</text>
+  <text x="1338" y="358" class="body">the physical device.</text>
+
+  <path d="M338 334 H396" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M642 334 H700" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M946 334 H1004" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+  <path d="M1250 334 H1308" fill="none" stroke="#79c0ff" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <rect x="104" y="522" width="1392" height="324" rx="24" fill="url(#card)" stroke="#30363d" filter="url(#shadow)"/>
+  <text x="136" y="572" class="cardTitle">Material Channels And Mode Mappings</text>
+
+  <text x="136" y="620" class="body">Rigid smooth surfaces</text>
+  <text x="136" y="644" class="small">Metal or ceramic style contact through stiffness, light drag, and shallow microtexture.</text>
+
+  <text x="136" y="698" class="body">Rigid textured surfaces</text>
+  <text x="136" y="722" class="small">Stone, polymer, and wood-like cues through friction contrast, periodic texture, and stable contact planes.</text>
+
+  <text x="136" y="776" class="body">Soft approximations</text>
+  <text x="136" y="800" class="small">Rubber and foam remain approximations driven by lower stiffness and stronger damping rather than full deformation.</text>
+
+  <text x="792" y="620" class="body">Braille Reader</text>
+  <text x="792" y="644" class="small">Raised dots, reading plane, rails, and navigation buttons should be modeled as explicit haptic primitives.</text>
+
+  <text x="792" y="698" class="body">3D Object Explorer</text>
+  <text x="792" y="722" class="small">Proxy geometry plus material overlays should dominate over direct raw-triangle contact against imported meshes.</text>
+
+  <text x="792" y="776" class="body">Haptic Desktop</text>
+  <text x="792" y="800" class="small">Folders, files, and launcher controls should feel like deliberate tactile tiles, not arbitrary scene meshes.</text>
+</svg>

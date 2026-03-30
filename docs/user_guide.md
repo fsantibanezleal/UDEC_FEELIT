@@ -135,6 +135,24 @@ Current use:
 - inspect registry diagnostics when a previously registered workspace file is missing or its descriptor is invalid
 - expect the manager to show descriptor labels and registry file labels by default rather than full absolute local paths
 
+### 5. Haptic Configuration
+
+Route:
+
+```text
+/haptic-configuration
+```
+
+Current use:
+
+- inspect the requested runtime backend separately from the currently active fallback backend
+- configure SDK roots and bridge paths for the first tracked vendor stacks
+- review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
+- inspect the current design baseline for collision, contact, and material rendering
+- keep the built-in visual emulator as the safe default runtime until a native bridge is ready
+
+This route is not a substitute for the future native backend. Its role is to make the hardware path explicit, testable, and documentable before real devices are attached.
+
 ## Runtime Information
 
 All pages expose:
@@ -198,6 +216,13 @@ GET /api/demo-models
 
 ```text
 GET /api/device/status
+```
+
+### Haptic Runtime Configuration
+
+```text
+GET /api/haptics/configuration
+POST /api/haptics/configuration
 ```
 
 ### Braille Preview
@@ -277,7 +302,7 @@ POST /api/haptic-workspaces/register
 
 ## Current Limitations
 
-- no physical device bridge is connected yet
+- no physical device bridge is connected yet, even though the haptic-configuration route now tracks backend selection intent and vendor dependency readiness
 - 3D object staging is currently client-side and focused on `obj`, `stl`, self-contained `gltf`, and `glb`
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
 - workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances

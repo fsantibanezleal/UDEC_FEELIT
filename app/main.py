@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.core.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
-from app.haptics.factory import create_haptic_backend
+from app.haptics.runtime_manager import HapticRuntimeManager
 
 static_dir = Path(__file__).parent / "static"
 
@@ -18,12 +18,13 @@ static_dir = Path(__file__).parent / "static"
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     """Manage application startup and shutdown resources."""
-    application.state.haptic_backend = create_haptic_backend()
-    application.state.haptic_backend.start()
+    application.state.haptic_runtime = HapticRuntimeManager()
+    application.state.haptic_runtime.start()
+    application.state.haptic_backend = application.state.haptic_runtime.backend
     try:
         yield
     finally:
-        application.state.haptic_backend.stop()
+        application.state.haptic_runtime.stop()
 
 
 def serve_static_page(filename: str) -> FileResponse:
@@ -76,6 +77,12 @@ async def haptic_desktop_page() -> FileResponse:
 async def haptic_workspace_manager_page() -> FileResponse:
     """Serve the haptic workspace management page."""
     return serve_static_page("haptic_workspace_manager.html")
+
+
+@app.get("/haptic-configuration", include_in_schema=False)
+async def haptic_configuration_page() -> FileResponse:
+    """Serve the haptic runtime configuration page."""
+    return serve_static_page("haptic_configuration.html")
 
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")

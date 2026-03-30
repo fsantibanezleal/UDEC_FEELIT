@@ -140,12 +140,13 @@ function setElementText(id, text) {
 export async function loadShell() {
   bindModals();
   const [health, meta] = await Promise.all([fetchJson(healthUrl), fetchJson(metaUrl)]);
+  const backendLabel = health.haptics.backend_title || health.haptics.backend;
 
   updateRuntimeSlot("api-status", health.status);
   updateRuntimeSlot("version", `v${meta.version}`);
   updateRuntimeSlot("port", String(meta.public_port));
   updateRuntimeSlot("haptics-mode", health.haptics.mode);
-  updateRuntimeSlot("backend", health.haptics.backend);
+  updateRuntimeSlot("backend", backendLabel);
 
   return { health, meta };
 }

@@ -26,11 +26,17 @@
       "image": "haptic_workspace_manager.png",
       "archived": true,
       "visual_source_version": "2.08.001"
+    },
+    {
+      "route": "/haptic-configuration",
+      "image": "haptic_configuration.png",
+      "archived": false,
+      "visual_source_version": null
     }
   ],
   "history_policy": "sparse_changed_routes_only",
   "changed_routes": [
     "/haptic-workspace-manager"
   ],
-  "generated_at_utc": "2026-03-30T03:21:45+00:00"
+  "generated_at_utc": "2026-03-30T04:03:07+00:00"
 }
