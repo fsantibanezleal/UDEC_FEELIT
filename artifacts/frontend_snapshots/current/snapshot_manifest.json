@@ -1,6 +1,6 @@
 {
   "app": "FeelIT",
-  "version": "2.08.001",
+  "version": "2.09.000",
   "base_url": "local_smoke_capture",
   "routes": [
     {
@@ -26,7 +26,13 @@
       "image": "haptic_workspace_manager.png",
       "archived": true,
       "visual_source_version": null
+    },
+    {
+      "route": "/haptic-configuration",
+      "image": "haptic_configuration.png",
+      "archived": true,
+      "visual_source_version": null
     }
   ],
-  "generated_at_utc": "2026-03-30T03:21:45+00:00"
+  "generated_at_utc": "2026-03-30T04:07:21+00:00"
 }

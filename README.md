@@ -6,14 +6,15 @@ Modern accessibility-centered haptic application for tactile 3D object explorati
 
 FeelIT is a modernization of an accessibility project originally developed by Felipe Santibanez during his Electronic Engineering studies in Concepcion, Chile. The project focuses on giving people with visual impairment a richer way to access shape, texture, spatial structure, and text through bounded tactile interaction rather than relying only on visual interfaces or audio narration.
 
-The current repository is not a single long web page. It is a multi-workspace application with four dedicated routes:
+The current repository is not a single long web page. It is a multi-workspace application with five dedicated routes:
 
 - `/object-explorer`
 - `/braille-reader`
 - `/haptic-desktop`
 - `/haptic-workspace-manager`
+- `/haptic-configuration`
 
-The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, and a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries.
+The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness.
 
 ## Problem Framing
 
@@ -33,17 +34,25 @@ The core problem is not only that some information is visual. It is that many re
 
 ![FeelIT mode map](docs/svg/mode_map.svg)
 
-The mode map shows the four routed workspaces and how each one owns a different part of the accessibility problem: 3D object staging, Braille reading, haptic desktop interaction, and workspace authoring.
+The mode map shows the five routed workspaces and how each one owns a different part of the accessibility problem: 3D object staging, Braille reading, haptic desktop interaction, workspace authoring, and haptic-runtime configuration.
 
 ![FeelIT Braille pipeline](docs/svg/braille_pipeline.svg)
 
 The Braille pipeline shows a representative runtime path that is already implemented today: a scene-native library launcher selects content, the API clips a bounded segment, the Braille translator generates positioned cells, and the browser realizes them as a tactile 3D reading world with in-scene controls.
 
+![FeelIT haptic runtime pipeline](docs/svg/haptic_runtime_pipeline.svg)
+
+The runtime pipeline shows the new configuration route, the runtime manager, the active visual fallback backend, and the vendor stacks that can already be tracked for dependency readiness before the native bridge is live.
+
 ## Architecture
 
 ![FeelIT architecture](docs/svg/architecture.svg)
 
-FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-safe haptic abstraction boundary, and route-specific frontend modules. The architecture is intentionally release-governed: diagrams, README content, help text, and methodological history are all expected to move with the real shipped state rather than drifting behind it.
+FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, an explicit haptic runtime manager, a null-safe fallback backend, and route-specific frontend modules. The architecture is intentionally release-governed: diagrams, README content, help text, and methodological history are all expected to move with the real shipped state rather than drifting behind it.
+
+![FeelIT haptic contact pipeline](docs/svg/haptic_contact_pipeline.svg)
+
+The contact pipeline captures the current design rule for future native hardware: proxy-first collision geometry, servo-loop contact solving, and material rendering through controlled force channels rather than naïve raw-mesh contact.
 
 ## KPI Targets
 
@@ -58,7 +67,7 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 
 | Indicator | Current State |
 |---|---|
-| Routed workspaces | `4` |
+| Routed workspaces | `5` |
 | Spatial routes with a real 3D primary pane | `3` |
 | Bundled 3D demo models | `14` |
 | Bundled model formats | `obj`, `stl`, `gltf`, `glb` |
@@ -66,9 +75,9 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 | Bundled public-domain audio samples | `4` |
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Public port | `8101` |
-| Canonical version | `2.08.001` |
+| Canonical version | `2.09.000` |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `51` automated tests passing plus browser smoke validation across the `4` routed pages |
+| Current validation surface | `56` automated tests passing plus browser smoke validation across the `5` routed pages |
 
 ## Scope And Current Status
 
@@ -78,6 +87,7 @@ FeelIT uses a shared FastAPI backend, a shared Three.js scene runtime, a null-sa
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
+- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, and the current contact or material-rendering baseline that the future physical backend must respect.
 
 ### Legacy Boundary
 
@@ -87,12 +97,13 @@ The preserved legacy archive in `legacy/Registro Software` most strongly verifie
 
 ### Current Boundaries
 
-- no native physical haptic backend is attached yet
+- no native physical haptic backend is attached yet, although a dedicated configuration route now tracks requested backends, SDK roots, bridge paths, and contact-model assumptions
 - 3D asset import is client-side and currently supports `obj`, `stl`, self-contained `gltf`, and `glb`, but it still lacks server-side validation and preprocessing
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub`
 - the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite
 - the desktop flow already opens models, text, and audio, but it is not yet a full desktop automation environment
 - the current metrics are mostly engineering and delivery metrics, not yet a formal user-study outcome set
+- vendor SDK detection currently proves dependency readiness and configuration intent, not live device enumeration through a real native bridge
 
 ## Technical Quick Start
 
@@ -116,6 +127,7 @@ Open one of the routed workspaces:
 - `http://127.0.0.1:8101/braille-reader`
 - `http://127.0.0.1:8101/haptic-desktop`
 - `http://127.0.0.1:8101/haptic-workspace-manager`
+- `http://127.0.0.1:8101/haptic-configuration`
 
 ## Validation
 
@@ -149,6 +161,8 @@ The curated captures are expected to come from a stable canonical state per rout
 - `GET /api/meta`
 - `GET /api/modes`
 - `GET /api/device/status`
+- `GET /api/haptics/configuration`
+- `POST /api/haptics/configuration`
 
 ### Object and material staging
 
@@ -215,6 +229,7 @@ After building the executable:
 - [Scope And Motivation](docs/scope_and_motivation.md)
 - [Architecture](docs/architecture.md)
 - [Implementation Gap Audit](docs/implementation_gap_audit.md)
+- [Haptic Runtime Design](docs/haptic_runtime_design.md)
 - [Material Profiles](docs/material_profiles.md)
 - [Library Catalog](docs/library_catalog.md)
 - [Asset Sources](docs/asset_sources.md)

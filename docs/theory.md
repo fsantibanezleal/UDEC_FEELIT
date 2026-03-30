@@ -52,6 +52,8 @@ Therefore FeelIT uses a device abstraction boundary:
 - the application must remain useful without hardware
 - backend implementations can be swapped without rewriting the frontend or domain services
 
+The new configuration route turns that abstraction into an explicit runtime surface: requested backend, active backend, dependency readiness, and native-bridge prerequisites are now treated as first-class product state rather than hidden engineering assumptions.
+
 ## 5. Multimodal Accessibility
 
 Recent research indicates that non-visual interaction is stronger when haptics and audio are combined. This does not mean FeelIT should become audio-first. Instead:
@@ -89,6 +91,45 @@ They are weaker at reproducing:
 
 This is why FeelIT uses material profiles as controlled approximations rather than claiming a fully faithful simulation of foam, sponge, cloth, or similar materials.
 
+## 8. Proxy Geometry And Servo-Loop Separation
+
+Force-feedback contact is normally more demanding than visual rendering. A visually acceptable mesh can still be a bad haptic surface if it is too dense, too noisy, or too unstable for the servo loop.
+
+FeelIT therefore adopts these design assumptions for the future native backend:
+
+- the visual scene and the haptic collision scene can differ
+- contact-critical interactions should prefer simplified proxy geometry
+- Braille dots, rails, buttons, tiles, and workspace bounds should be explicit haptic primitives
+- the haptic servo loop should remain much faster than the visual frame loop
+
+Current design target:
+
+- haptic servo loop near `1000 Hz`
+- visual rendering near `60 Hz`
+
+The exact number depends on hardware and SDK constraints, but the separation of concerns is already encoded in the new runtime-design baseline.
+
+## 9. Force Channels For Material Rendering
+
+The current material profiles in FeelIT can be interpreted as combinations of a few reusable haptic channels:
+
+- stiffness
+- damping
+- static and dynamic friction
+- microtexture amplitude and spacing
+- vibration or periodic modulation
+- viscosity-like drag
+
+This matters because desktop haptic devices do not reproduce “materials” directly. They reproduce controlled force responses that the user interprets as material cues.
+
+Inference for the current design:
+
+- polished metal and ceramic map well to rigid contact plus low friction and shallow texture
+- stone and textured polymer map well to rigid contact plus stronger friction and periodic texture
+- wood-like contact needs directional or grain-like modulation more than bulk softness
+- rubber and foam rely on compliance approximation, damping, and limited deformation cues
+- paper-like contact works better as a thin, lightly resistant surface with shallow grain than as a true flexible sheet
+
 ## 8. Visual Scene As A Haptic Mirror
 
 For FeelIT, the rendered 3D world is not decorative. It is an explanatory mirror of the tactile world that the application is trying to create.
@@ -101,7 +142,17 @@ This matters because:
 
 Auxiliary 2D boards may help debugging or teaching, but they are secondary to the spatial scene.
 
-## 9. Braille Translation Layer Versus Scene Layer
+## 10. Contact Primitives Across Modes
+
+FeelIT now explicitly treats each routed mode as a combination of haptic primitives:
+
+- Object Explorer: rigid surface following plus material overlays
+- Braille Reader: raised-dot arrays, reading plane, rails, and page or segment buttons
+- Haptic Desktop: tiles, folders, launcher buttons, detail plaques, and return controls
+
+This is important because the user experience should feel coherent across modes. The same device should not have to learn a completely different interaction physics for every page.
+
+## 11. Braille Translation Layer Versus Scene Layer
 
 The current runtime intentionally separates two concerns:
 

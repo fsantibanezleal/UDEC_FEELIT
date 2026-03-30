@@ -46,4 +46,14 @@ def build_mode_catalog() -> list[dict[str, object]]:
                 "Haptic Desktop workspaces rooted in external user folders."
             ),
         },
+        {
+            "slug": "haptic-configuration",
+            "route": "/haptic-configuration",
+            "title": "Haptic Configuration",
+            "status": "active",
+            "summary": (
+                "Runtime-facing workspace for selecting the active haptic backend, "
+                "inspecting dependency readiness, and reviewing the contact-model baseline."
+            ),
+        },
     ]

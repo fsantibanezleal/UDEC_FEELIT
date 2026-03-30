@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FeelIT | Haptic Configuration</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="haptic-configuration">
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-group">
+        <h1>FeelIT</h1>
+        <p class="subtitle">Accessible haptic interaction platform</p>
+      </div>
+      <nav class="mode-nav" aria-label="FeelIT modes">
+        <a class="mode-link" href="/object-explorer">3D Object Explorer</a>
+        <a class="mode-link" href="/braille-reader">Braille Reader</a>
+        <a class="mode-link" href="/haptic-desktop">Haptic Desktop</a>
+        <a class="mode-link" href="/haptic-workspace-manager">Workspace Manager</a>
+        <a class="mode-link is-active" href="/haptic-configuration">Haptic Configuration</a>
+      </nav>
+      <div class="header-tools">
+        <span class="version-badge" data-runtime="version">v--</span>
+        <button class="help-btn" type="button" data-open-modal="help-modal" aria-label="Open help">?</button>
+      </div>
+    </header>
+
+    <main class="workspace-grid">
+      <aside class="control-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime Selection</h2>
+          </div>
+          <label for="requested-backend">Requested backend</label>
+          <select id="requested-backend"></select>
+          <div class="button-row">
+            <button id="apply-haptic-config" class="btn btn-primary" type="button">Apply Selection</button>
+            <button id="refresh-haptic-config" class="btn btn-secondary" type="button">Refresh Detection</button>
+          </div>
+          <p class="panel-text">
+            FeelIT currently keeps the visual pointer emulator as the active safe runtime when no
+            native bridge is available, but this page already tracks SDK and bridge readiness for
+            physical stacks.
+          </p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>SDK Roots</h2>
+          </div>
+          <label for="sdk-openhaptics">OpenHaptics SDK root</label>
+          <input id="sdk-openhaptics" type="text" placeholder="C:\Program Files\3D Systems\OpenHaptics">
+          <label for="sdk-forcedimension">Force Dimension SDK root</label>
+          <input id="sdk-forcedimension" type="text" placeholder="C:\Program Files\Force Dimension\sdk">
+          <label for="sdk-chai3d">CHAI3D root</label>
+          <input id="sdk-chai3d" type="text" placeholder="C:\chai3d">
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Bridge Paths</h2>
+          </div>
+          <label for="bridge-openhaptics">OpenHaptics bridge executable</label>
+          <input id="bridge-openhaptics" type="text" placeholder="D:\Bridges\feelit_openhaptics_bridge.exe">
+          <label for="bridge-forcedimension">Force Dimension bridge executable</label>
+          <input id="bridge-forcedimension" type="text" placeholder="D:\Bridges\feelit_forcedimension_bridge.exe">
+          <label for="bridge-chai3d">CHAI3D bridge executable</label>
+          <input id="bridge-chai3d" type="text" placeholder="D:\Bridges\feelit_chai3d_bridge.exe">
+        </section>
+      </aside>
+
+      <section class="workspace-panel workspace-panel-scroll">
+        <div class="panel-heading">
+          <div>
+            <h2>Haptic Backend Readiness</h2>
+            <p class="panel-subtitle">Track which stack is requested, which runtime is actually active, and how close each vendor path is to physical-device operation.</p>
+          </div>
+          <div class="panel-heading-status">
+            <span id="config-runtime-pill" class="status-pill status-pill-cyan">Loading</span>
+            <span id="config-page-status" class="status-pill">Waiting</span>
+          </div>
+        </div>
+
+        <div class="manager-surface">
+          <div class="subsurface-panel">
+            <div class="subsurface-header">
+              <h3>Runtime Summary</h3>
+              <span class="subsurface-note">Selection state, loop targets, and dependency readiness should stay explicit before native devices are attached.</span>
+            </div>
+            <div class="status-stack manager-summary-grid">
+              <div class="status-card">
+                <span class="status-label">Requested backend</span>
+                <span id="config-requested-backend" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Active backend</span>
+                <span id="config-active-backend" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Config file</span>
+                <span id="config-file-label" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Servo target</span>
+                <span id="config-servo-target" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Visual loop</span>
+                <span id="config-visual-target" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Tracked stacks</span>
+                <span id="config-backend-count" class="status-value">0</span>
+              </div>
+            </div>
+          </div>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Backend Catalog</h2>
+            </div>
+            <div id="backend-list" class="workspace-list"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Contact And Material Model</h2>
+            </div>
+            <div class="backend-split-grid">
+              <article class="workspace-card workspace-card-static">
+                <strong class="workspace-card-title">Collision Strategy</strong>
+                <span id="collision-summary" class="workspace-card-body">Loading collision baseline.</span>
+              </article>
+              <article class="workspace-card workspace-card-static">
+                <strong class="workspace-card-title">Material Rendering</strong>
+                <span id="material-rendering-summary" class="workspace-card-body">Loading material-response baseline.</span>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="inspector-panel">
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Runtime</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>API</dt><dd data-runtime="api-status">Loading</dd></div>
+            <div><dt>Version</dt><dd data-runtime="version">Loading</dd></div>
+            <div><dt>Port</dt><dd data-runtime="port">Loading</dd></div>
+            <div><dt>Backend</dt><dd data-runtime="backend">Loading</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Selected Stack</h2>
+          </div>
+          <dl class="info-grid">
+            <div><dt>Title</dt><dd id="selected-backend-title">--</dd></div>
+            <div><dt>Vendor</dt><dd id="selected-backend-vendor">--</dd></div>
+            <div><dt>Availability</dt><dd id="selected-backend-availability">--</dd></div>
+            <div><dt>Dependencies</dt><dd id="selected-backend-dependencies">--</dd></div>
+            <div><dt>Devices</dt><dd id="selected-backend-devices">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Diagnostics</h2>
+          </div>
+          <p id="config-status-bar" class="panel-text">Loading haptic runtime diagnostics.</p>
+          <div id="backend-evidence" class="pill-list"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <div id="help-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Haptic Configuration</h2>
+        <button class="modal-close" type="button" data-close-modal="help-modal" aria-label="Close help">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>Purpose</h3>
+        <p>
+          This page makes the haptic stack explicit. It separates the backend that FeelIT is
+          actively running, the vendor SDKs or bridges that may already be installed on the machine,
+          and the future native runtime needed to drive real hardware inside the same 3D worlds.
+        </p>
+        <h3>Current Interaction</h3>
+        <ul>
+          <li>Select which backend stack FeelIT should track as the requested runtime.</li>
+          <li>Record SDK roots and bridge executables for OpenHaptics, Force Dimension, or CHAI3D-based paths.</li>
+          <li>Inspect the current collision, contact, and material-rendering baseline that the native backend must honor.</li>
+          <li>Keep the built-in visual emulator as the safe default while physical-device integration is still under construction.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/static/js/haptic_configuration.js"></script>
+</body>
+</html>

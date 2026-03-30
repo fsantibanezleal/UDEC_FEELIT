@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.09.000 (2026-03-30)
+
+Add haptic runtime configuration, backend diagnostics, and contact-model baselines
+
+Delivered:
+
+- Added a dedicated haptic-configuration route with backend-selection intent, SDK and bridge tracking, and runtime diagnostics for the first serious physical-stack candidates.
+- Added a runtime manager that persists requested-backend configuration, reports vendor-stack readiness, and keeps the visual pointer emulator as the safe active fallback.
+- Documented and surfaced the proxy-first collision pipeline and material-rendering baseline through new API payloads, docs, SVG diagrams, and browser validation.
+
+Rationale:
+
+- This release materially expands FeelIT with a new routed workspace and a real haptic-runtime management surface rather than only refining an existing page.
+- The project now exposes the central physical-backend problem as part of the product and documentation surface, which is a substantial capability boundary change.
+
 ### v2.08.001 (2026-03-30)
 
 This patch improves Haptic Desktop workspace browsing with server-side pagination, reduces repeated external text extraction through freshness-aware caching, and stops exposing absolute local workspace paths by default in the workspace-facing frontend surfaces.

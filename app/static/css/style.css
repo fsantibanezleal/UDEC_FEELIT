@@ -806,6 +806,45 @@ input[type="range"] {
   font-size: 0.76rem;
 }
 
+.workspace-card-static {
+  cursor: default;
+}
+
+.backend-split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.backend-card {
+  cursor: pointer;
+}
+
+.backend-card-active {
+  border-color: rgba(242, 204, 96, 0.44);
+  box-shadow: 0 0 0 1px rgba(242, 204, 96, 0.14);
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.evidence-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(88, 166, 255, 0.32);
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
 .modal {
   display: none;
   position: fixed;
@@ -972,6 +1011,10 @@ input[type="range"] {
   }
 
   .manager-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .backend-split-grid {
     grid-template-columns: 1fr;
   }
 }

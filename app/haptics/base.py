@@ -11,6 +11,7 @@ class HapticBackendStatus(BaseModel):
     """Public status payload for a haptic backend."""
 
     backend: str
+    backend_title: str | None = None
     connected: bool
     mode: str
     summary: str
@@ -31,4 +32,3 @@ class HapticBackend(ABC):
     @abstractmethod
     def status(self) -> HapticBackendStatus:
         """Return the current backend status."""
-

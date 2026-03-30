@@ -13,7 +13,7 @@ This audit is based on:
 - repository source inspection
 - API and unit tests from `tests/`
 - local browser smoke validation through `scripts/browser_scene_smoke.py`
-- visible runtime behavior in the three shipped 3D workspaces plus the workspace manager route
+- visible runtime behavior in the three shipped 3D workspaces plus the workspace manager and haptic-configuration routes
 - preserved legacy evidence in `legacy/Registro Software`
 
 ## Delivered And Verifiable
@@ -25,10 +25,11 @@ Implemented:
 - FastAPI backend with public metadata, health, mode catalog, material catalog, demo-model catalog, and Braille preview endpoints
 - internal-library document and audio catalog endpoints for bundled public-domain assets
 - canonical padded version source with synchronized README and Windows packaging metadata
-- four-route frontend shell served from the backend on port `8101`
+- five-route frontend shell served from the backend on port `8101`
 - shared Three.js scene runtime with bounded workspace, orbit camera, and stylus-style pointer emulator
 - visual fallback execution when no haptic hardware is attached
-- browser smoke validation for the three primary 3D scenes with launcher or scene-transition checks plus desktop workspace bootstrap checks
+- browser smoke validation for the three primary 3D scenes with launcher or scene-transition checks plus workspace-manager and haptic-configuration bootstrap checks
+- dedicated runtime-manager layer that persists requested-backend intent and tracks vendor dependency readiness without pretending that a physical backend already exists
 
 Notable evidence:
 
@@ -121,6 +122,17 @@ Interpretation:
 
 The material catalog is real as an API and UI capability, but it remains a preparation layer until a native device backend exists.
 
+### Haptic Runtime Configuration
+
+Status:
+
+- delivered as a configuration and diagnostics surface
+- not yet delivered as a live physical-device runtime
+
+Interpretation:
+
+FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, and a formal contact-model baseline. This is a real architectural and product step, but it still stops before live device enumeration or force rendering.
+
 ### Pointer Emulation
 
 Status:
@@ -137,11 +149,22 @@ This is a valid operational fallback, not a replacement for real haptic executio
 The repository does not yet deliver:
 
 - a native haptic backend beside the null backend
-- runtime device capability detection beyond the null fallback report
+- runtime device capability detection beyond vendor-stack readiness and fallback status
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side import and validation for 3D assets
 - real desktop action execution semantics beyond content launching and playback control
 - hardware-backed tactile realization of the material profiles
+- validated physical collision, force, and material rendering against a real haptic device
+
+## Current Haptic Backend Boundary
+
+The repository now distinguishes three levels of truth:
+
+1. visual fallback execution that is genuinely implemented and testable today
+2. vendor-stack dependency readiness that can now be configured and inspected
+3. true native hardware actuation that is still pending
+
+That separation is important because it prevents the project from overclaiming hardware readiness while still forcing the backend problem into the visible product and documentation surface.
 
 ## Legacy Alignment
 

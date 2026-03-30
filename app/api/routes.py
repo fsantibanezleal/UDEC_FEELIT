@@ -54,6 +54,14 @@ class CreateHapticWorkspaceRequest(BaseModel):
     auto_populate: bool = True
 
 
+class HapticConfigurationRequest(BaseModel):
+    """Payload for haptic runtime backend selection and dependency overrides."""
+
+    requested_backend: str = Field(..., min_length=1, max_length=120)
+    sdk_roots: dict[str, str] = Field(default_factory=dict)
+    bridge_paths: dict[str, str] = Field(default_factory=dict)
+
+
 @router.get("/health")
 async def health(request: Request) -> dict:
     """Return application health and runtime metadata."""
@@ -233,6 +241,30 @@ async def device_status(request: Request) -> dict:
     """Return the current haptic backend state."""
     backend = request.app.state.haptic_backend
     return backend.status().model_dump()
+
+
+@router.get("/haptics/configuration")
+async def haptic_configuration(request: Request) -> dict:
+    """Return the current haptic runtime configuration snapshot."""
+    return request.app.state.haptic_runtime.configuration_snapshot().model_dump()
+
+
+@router.post("/haptics/configuration")
+async def update_haptic_configuration(
+    payload: HapticConfigurationRequest,
+    request: Request,
+) -> dict:
+    """Persist new haptic runtime preferences and return the refreshed snapshot."""
+    try:
+        snapshot = request.app.state.haptic_runtime.update_configuration(
+            requested_backend=payload.requested_backend,
+            sdk_roots=payload.sdk_roots,
+            bridge_paths=payload.bridge_paths,
+        )
+        request.app.state.haptic_backend = request.app.state.haptic_runtime.backend
+        return snapshot.model_dump()
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @router.post("/braille/preview")
