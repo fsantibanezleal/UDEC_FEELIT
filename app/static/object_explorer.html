@@ -36,8 +36,14 @@
           <select id="sample-model"></select>
           <label for="model-file">Local 3D file or bundle</label>
           <input id="model-file" type="file" accept=".obj,.stl,.gltf,.glb" multiple>
+          <div id="local-bundle-main-group" hidden>
+            <label for="model-main-file">Main model file</label>
+            <select id="model-main-file"></select>
+          </div>
+          <p id="local-bundle-summary" class="panel-text">No local bundle selected.</p>
           <div class="button-row">
             <button id="load-selection" class="btn btn-primary" type="button">Load Into Scene</button>
+            <button id="clear-local-bundle" class="btn btn-secondary" type="button">Clear Local Bundle</button>
             <button id="reset-camera" class="btn btn-secondary" type="button">Reset Camera</button>
           </div>
         </section>
@@ -147,6 +153,8 @@
             <div><dt>Status</dt><dd id="validation-status">No local file selected</dd></div>
             <div><dt>Format</dt><dd id="validation-format">--</dd></div>
             <div><dt>Size</dt><dd id="validation-size">--</dd></div>
+            <div><dt>Main file</dt><dd id="validation-main-file">--</dd></div>
+            <div><dt>Bundle</dt><dd id="validation-bundle">--</dd></div>
             <div><dt>Resources</dt><dd id="validation-resource-mode">--</dd></div>
             <div><dt>Geometry</dt><dd id="validation-geometry">--</dd></div>
             <div><dt>Bounds</dt><dd id="validation-bounds">--</dd></div>
@@ -189,6 +197,7 @@
         <ul>
           <li>Begin with a scene-native 3D launcher that pages through curated bundled demo models.</li>
           <li>Load bundled `OBJ`, `STL`, `glTF`, or `GLB` demos from the launcher or stage a local file through the outer controls.</li>
+          <li>If you select multiple supported model files, choose the intended main model file before staging the bundle.</li>
           <li>For `glTF` packages with sidecar buffers or textures, select the main model file together with its referenced resources in the same local bundle.</li>
           <li>Local uploads are validated through the backend before staging so unsupported or incomplete packages can be blocked early.</li>
           <li>The backend also derives a staging profile from available geometry metadata and can suggest a safer workspace scale for local exploration.</li>

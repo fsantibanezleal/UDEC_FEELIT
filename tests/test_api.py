@@ -61,6 +61,8 @@ def test_frontend_mode_routes_are_served() -> None:
     assert "Scene-native launcher plus bounded exploration world" in object_response.text
     assert "Scene mode" in object_response.text
     assert "Local Upload Validation" in object_response.text
+    assert "Main model file" in object_response.text
+    assert "Clear Local Bundle" in object_response.text
     assert 'type="module" src="/static/js/object_explorer.js"' in object_response.text
     assert '/static/js/app.js" defer' not in object_response.text
     assert braille_response.status_code == 200

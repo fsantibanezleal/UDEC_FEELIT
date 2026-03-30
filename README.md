@@ -94,7 +94,7 @@ The current README-facing screenshots use the tracked current-facing image set u
 
 ![FeelIT Object Explorer](docs/png/frontend_3d_objects.png)
 
-This route stages curated demo models and local uploads inside a bounded exploration world. In the current `develop` state it also exposes backend-driven upload validation, scale guidance derived from geometry bounds, and bundle-aware local `glTF` intake when sidecar resources are selected together with the main model.
+This route stages curated demo models and local uploads inside a bounded exploration world. In the current `develop` state it also exposes backend-driven upload validation, scale guidance derived from geometry bounds, explicit main-file selection when several supported local models are selected together, and bundle-aware local `glTF` intake when sidecar resources are selected together with the main model.
 
 ### Braille Reader Launcher
 
@@ -130,7 +130,7 @@ The configuration route makes the haptic backend problem explicit. It shows requ
 
 ### Current Workspaces
 
-- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local `OBJ`, `STL`, `glTF`, and `GLB` geometry, validates local uploads in the backend before staging, derives workspace-scale guidance from geometry bounds, and now resolves local `glTF` sidecar bundles when the required files are selected together.
+- `3D Object Explorer`: starts from a scene-native object-session launcher, opens bounded exploration scenes for curated or local `OBJ`, `STL`, `glTF`, and `GLB` geometry, validates local uploads in the backend before staging, derives workspace-scale guidance from geometry bounds, supports explicit main-file selection for local bundles, and now resolves local `glTF` sidecar bundles when the required files are selected together.
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
@@ -147,7 +147,7 @@ The preserved legacy archive in `legacy/Registro Software` most strongly verifie
 - no native physical haptic backend is attached yet, although a dedicated configuration route now tracks requested backends, SDK roots, bridge paths, toolchain readiness, and contact-model assumptions
 - the shipped bridge system now includes a vendor-aware Force Dimension DHD probe that can load the runtime library and enumerate devices plus a vendor-aware OpenHaptics probe that can load the HD runtime library set and validate minimal symbols, but CHAI3D still remains a scaffold-level probe path
 - no probe currently drives force output, calibration, homing, or a live scene-coupled servo loop
-- 3D asset import now has server-side validation, staging guidance, and bundle-aware local `gltf` sidecar resolution on `develop`, but it still lacks a full server-side preprocessing or repair pipeline
+- 3D asset import now has server-side validation, staging guidance, explicit local-bundle main-file selection, and bundle-aware local `gltf` sidecar resolution on `develop`, but it still lacks a full server-side preprocessing or repair pipeline
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub`
 - the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite
 - the desktop flow already opens models, text, and audio, but it is not yet a full desktop automation environment

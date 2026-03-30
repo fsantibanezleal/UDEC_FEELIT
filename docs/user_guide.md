@@ -31,6 +31,7 @@ Current use:
 
 - start from a scene-native 3D launcher with paged demo-model session targets
 - open a bundled demo object directly from the 3D world or stage a local `OBJ`, `STL`, `glTF`, or `GLB` file from the outer controls
+- if multiple supported local model files are selected together, choose which one is the main model before loading the bundle
 - select a local `glTF` main file together with its sidecar buffers or textures when the asset is not self-contained
 - select a tactile material profile or cycle materials from the in-scene controls once a session is open
 - adjust bounded workspace scale

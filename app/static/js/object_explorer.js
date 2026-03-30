@@ -123,19 +123,15 @@ function fileFingerprint(file) {
   return `${file.name}:${file.size}:${file.lastModified}`;
 }
 
-function bundleFingerprint(files) {
+function bundleFingerprint(mainFilename, files) {
   return Array.from(files ?? [])
     .map((file) => fileFingerprint(file))
     .sort()
-    .join("|");
+    .join("|") + `::${mainFilename ?? ""}`;
 }
 
-function selectedLocalBundle() {
-  const files = Array.from(byId("model-file").files ?? []);
-  if (!files.length) {
-    return null;
-  }
-  const mainCandidates = files.filter((file) => {
+function supportedMainCandidates(files) {
+  return Array.from(files ?? []).filter((file) => {
     try {
       modelFormatFromFilename(file.name);
       return true;
@@ -143,17 +139,68 @@ function selectedLocalBundle() {
       return false;
     }
   });
+}
+
+function updateLocalBundleSummary(message) {
+  byId("local-bundle-summary").textContent = message;
+}
+
+function resetLocalBundleControls() {
+  byId("local-bundle-main-group").hidden = true;
+  byId("model-main-file").innerHTML = "";
+  updateLocalBundleSummary("No local bundle selected.");
+}
+
+function refreshLocalBundleControls() {
+  const files = Array.from(byId("model-file").files ?? []);
+  if (!files.length) {
+    resetLocalBundleControls();
+    return [];
+  }
+
+  const mainCandidates = supportedMainCandidates(files);
+  const mainSelect = byId("model-main-file");
+  if (mainCandidates.length > 1) {
+    const previousSelection = mainSelect.value;
+    populateSelect(mainSelect, mainCandidates, "name", "name");
+    if (mainCandidates.some((file) => file.name === previousSelection)) {
+      mainSelect.value = previousSelection;
+    }
+    byId("local-bundle-main-group").hidden = false;
+  } else {
+    byId("local-bundle-main-group").hidden = true;
+    mainSelect.innerHTML = "";
+  }
+
+  const sidecarCount = Math.max(0, files.length - mainCandidates.length);
+  updateLocalBundleSummary(
+    `${files.length} selected file${files.length === 1 ? "" : "s"} / ${mainCandidates.length} supported model candidate${mainCandidates.length === 1 ? "" : "s"} / ${sidecarCount} sidecar resource${sidecarCount === 1 ? "" : "s"}.`,
+  );
+  return mainCandidates;
+}
+
+function selectedLocalBundle() {
+  const files = Array.from(byId("model-file").files ?? []);
+  if (!files.length) {
+    return null;
+  }
+  const mainCandidates = refreshLocalBundleControls();
 
   if (!mainCandidates.length) {
     throw new Error("Select one supported main 3D model file together with any required sidecar resources.");
   }
-  if (mainCandidates.length > 1) {
-    throw new Error("Select only one main 3D model file at a time. Additional selected files must be sidecar resources for that model.");
-  }
+
+  const selectedMainName =
+    mainCandidates.length === 1 ? mainCandidates[0].name : byId("model-main-file").value || mainCandidates[0].name;
+  const mainFile = mainCandidates.find((file) => file.name === selectedMainName) ?? mainCandidates[0];
+  const sidecarCount = Math.max(0, files.length - 1);
 
   return {
-    mainFile: mainCandidates[0],
+    mainFile,
     files,
+    mainCandidates,
+    sidecarCount,
+    bundleFileCount: files.length,
   };
 }
 
@@ -257,6 +304,8 @@ function resetValidationPanel(message = "Select a local model to inspect whether
   byId("validation-status").textContent = "No local file selected";
   byId("validation-format").textContent = "--";
   byId("validation-size").textContent = "--";
+  byId("validation-main-file").textContent = "--";
+  byId("validation-bundle").textContent = "--";
   byId("validation-resource-mode").textContent = "--";
   byId("validation-geometry").textContent = "--";
   byId("validation-bounds").textContent = "--";
@@ -265,7 +314,8 @@ function resetValidationPanel(message = "Select a local model to inspect whether
   setValidationFindingItems([]);
 }
 
-function setValidationPending(file) {
+function setValidationPending(bundleSelection) {
+  const file = bundleSelection?.mainFile ?? null;
   const filename = file?.name ?? "selected model";
   let formatLabel = "--";
   try {
@@ -276,6 +326,8 @@ function setValidationPending(file) {
   byId("validation-status").textContent = "Validating";
   byId("validation-format").textContent = formatLabel;
   byId("validation-size").textContent = file ? formatBytes(file.size) : "--";
+  byId("validation-main-file").textContent = file?.name ?? "--";
+  byId("validation-bundle").textContent = bundleSelection ? `${bundleSelection.bundleFileCount} files / ${bundleSelection.sidecarCount} sidecars` : "--";
   byId("validation-resource-mode").textContent = "--";
   byId("validation-geometry").textContent = "--";
   byId("validation-bounds").textContent = "--";
@@ -288,6 +340,8 @@ function setValidationTransportError(message) {
   state.localValidation = null;
   byId("validation-status").textContent = "Validation failed";
   byId("validation-format").textContent = "--";
+  byId("validation-main-file").textContent = "--";
+  byId("validation-bundle").textContent = "--";
   byId("validation-resource-mode").textContent = "--";
   byId("validation-geometry").textContent = "--";
   byId("validation-bounds").textContent = "--";
@@ -296,7 +350,7 @@ function setValidationTransportError(message) {
   setValidationFindingItems([message], "danger");
 }
 
-function updateValidationPanel(result) {
+function updateValidationPanel(result, bundleSelection = null) {
   const metrics = result.metrics ?? {};
   const findings = [
     ...(result.blockers ?? []),
@@ -315,6 +369,10 @@ function updateValidationPanel(result) {
   byId("validation-status").textContent = result.can_stage_locally ? "Ready for staging" : "Blocked";
   byId("validation-format").textContent = result.format_label ?? result.file_format?.toUpperCase?.() ?? "--";
   byId("validation-size").textContent = formatBytes(result.file_size_bytes);
+  byId("validation-main-file").textContent = result.filename ?? bundleSelection?.mainFile?.name ?? "--";
+  const bundleFileCount = metrics.bundle_file_count ?? bundleSelection?.bundleFileCount ?? 1;
+  const sidecarCount = Math.max(0, bundleFileCount - 1);
+  byId("validation-bundle").textContent = `${bundleFileCount} files / ${sidecarCount} sidecars`;
   byId("validation-resource-mode").textContent = humanizeResourceMode(result.resource_mode);
   byId("validation-geometry").textContent = geometrySummary(result);
   byId("validation-bounds").textContent = boundsSummary(result);
@@ -388,13 +446,13 @@ async function fetchJson(url) {
 async function validateLocalUpload(bundleSelection, options = {}) {
   const { announce = true, applySuggestedScale = false } = options;
   const { mainFile, files } = bundleSelection;
-  const fingerprint = bundleFingerprint(files);
+  const fingerprint = bundleFingerprint(mainFile.name, files);
   if (state.localValidation && state.localValidationFingerprint === fingerprint) {
     return state.localValidation;
   }
 
   state.localValidationFingerprint = fingerprint;
-  setValidationPending(mainFile);
+  setValidationPending(bundleSelection);
 
   const formData = new FormData();
   const isBundle = files.length > 1;
@@ -417,7 +475,7 @@ async function validateLocalUpload(bundleSelection, options = {}) {
       throw new Error(payload.detail ?? "The backend validation request failed.");
     }
     state.localValidation = payload;
-    updateValidationPanel(payload);
+    updateValidationPanel(payload, bundleSelection);
     const suggestedScaleApplied = applySuggestedScale && payload.can_stage_locally && applySuggestedWorkspaceScale(payload);
     if (announce) {
       setStatus(
@@ -1319,6 +1377,7 @@ document.addEventListener("DOMContentLoaded", () => {
       populateSelect(byId("material-select"), state.materials, "slug", "title");
       populateSelect(byId("sample-model"), state.models, "slug", (model) => `${model.title} (${model.format_label})`);
       byId("model-file").setAttribute("accept", modelFileAcceptString());
+      resetLocalBundleControls();
       resetValidationPanel();
 
       const initialModel = state.models[0];
@@ -1348,6 +1407,30 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
         validateLocalUpload(bundleSelection, { applySuggestedScale: true }).catch(() => {});
+      });
+
+      byId("model-main-file").addEventListener("change", () => {
+        let bundleSelection = null;
+        try {
+          bundleSelection = selectedLocalBundle();
+        } catch (error) {
+          resetValidationPanel();
+          setStatus(error instanceof Error ? error.message : "Local bundle selection is invalid.");
+          return;
+        }
+        if (!bundleSelection) {
+          resetValidationPanel();
+          return;
+        }
+        setStatus(`Selected ${bundleSelection.mainFile.name} as the main model file for the current local bundle.`);
+        validateLocalUpload(bundleSelection, { applySuggestedScale: true }).catch(() => {});
+      });
+
+      byId("clear-local-bundle").addEventListener("click", () => {
+        byId("model-file").value = "";
+        resetLocalBundleControls();
+        resetValidationPanel();
+        setStatus("Local bundle cleared. Select a bundled demo or choose another local file set.");
       });
 
       byId("reset-camera").addEventListener("click", () => {
