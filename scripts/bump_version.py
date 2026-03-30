@@ -21,7 +21,10 @@ HISTORY_FILE = ROOT / "docs" / "development_history.md"
 
 VERSION_SOURCE_PATTERN = re.compile(r'APP_VERSION = "(\d+\.\d{2}\.\d{3})"')
 README_HEADING_VERSION_PATTERN = re.compile(r"(## Current Version\s+`)([^`]+)(`)", re.MULTILINE)
-README_TABLE_VERSION_PATTERN = re.compile(r"(\| Canonical version \| `)([^`]+)(` \|)", re.MULTILINE)
+README_TABLE_VERSION_PATTERN = re.compile(
+    r"(\| (?:Canonical|Release-synced) version \| `)([^`]+)(` \|)",
+    re.MULTILINE,
+)
 
 
 def replace_once_or_fail(
@@ -78,7 +81,7 @@ def update_readme_version(new_version: str) -> None:
     source = README_FILE.read_text(encoding="utf-8")
     patterns = (
         (README_HEADING_VERSION_PATTERN, "README current version heading"),
-        (README_TABLE_VERSION_PATTERN, "README canonical version row"),
+        (README_TABLE_VERSION_PATTERN, "README version table row"),
     )
     updated = None
     for pattern, anchor_label in patterns:

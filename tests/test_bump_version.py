@@ -45,3 +45,16 @@ def test_update_readme_version_rewrites_the_canonical_version_table_row(tmp_path
     bump_version.update_readme_version("2.06.001")
 
     assert "`2.06.001`" in readme_file.read_text(encoding="utf-8")
+
+
+def test_update_readme_version_rewrites_the_release_synced_version_table_row(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    readme_file = tmp_path / "README.md"
+    readme_file.write_text("| Release-synced version | `2.12.000` |\n", encoding="utf-8")
+    monkeypatch.setattr(bump_version, "README_FILE", readme_file)
+
+    bump_version.update_readme_version("2.13.000")
+
+    assert "`2.13.000`" in readme_file.read_text(encoding="utf-8")
