@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### develop (unreleased local iteration)
+
+Deepen the OpenHaptics bridge probe from runtime-loaded symbol validation into conservative default-device probing with explicit capability reporting.
+
+Delivered locally:
+
+- Extended the native OpenHaptics probe so it can attempt a conservative default-device open after runtime loading instead of stopping at minimal symbol validation.
+- Added explicit probe payload fields for enumeration mode, capability scope, resolved native symbols, attempted selectors, reported capability channels, and probe notes.
+- Extended the runtime manager and the haptic-configuration page so the new capability-reporting surface is visible inside the product instead of remaining hidden in raw probe JSON.
+- Added and updated native integration coverage so the mock OpenHaptics SDK now validates the new device-ready path and the richer runtime payload surface.
+
+Rationale:
+
+- The haptic configuration route must reflect not just whether a bridge exists, but how far each vendor path can actually go without overclaiming full hardware control.
+- Moving OpenHaptics beyond symbol-only validation gives FeelIT a more meaningful readiness boundary while still preserving an honest separation from live scene-coupled force output.
+
 ### v2.13.000 (2026-03-30)
 
 Expand the Object Explorer import pipeline with server-side validation, staging guidance, and bundle-aware local glTF intake.

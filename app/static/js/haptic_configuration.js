@@ -44,6 +44,9 @@ function renderSelectedBackend() {
     byId("selected-backend-bridge-probe").textContent = "--";
     byId("selected-backend-probe-summary").textContent = "--";
     byId("selected-backend-device-count").textContent = "--";
+    byId("selected-backend-probe-mode").textContent = "--";
+    byId("selected-backend-capability-scope").textContent = "--";
+    byId("selected-backend-probe-capabilities").textContent = "--";
     byId("backend-evidence").innerHTML = "";
     return;
   }
@@ -63,6 +66,14 @@ function renderSelectedBackend() {
     backend.bridge_probe_summary || "No bridge-probe summary recorded.";
   byId("selected-backend-device-count").textContent =
     backend.detected_device_count == null ? "0" : String(backend.detected_device_count);
+  byId("selected-backend-probe-mode").textContent =
+    backend.probe_enumeration_mode || "No probe mode reported.";
+  byId("selected-backend-capability-scope").textContent =
+    backend.probe_capability_scope || "No capability scope reported.";
+  byId("selected-backend-probe-capabilities").textContent =
+    backend.reported_capabilities.length
+      ? backend.reported_capabilities.join(" | ")
+      : "No runtime-reported capability channels yet.";
 
   const evidenceContainer = byId("backend-evidence");
   evidenceContainer.innerHTML = "";

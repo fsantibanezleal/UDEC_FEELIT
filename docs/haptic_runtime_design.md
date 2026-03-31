@@ -68,7 +68,7 @@ FeelIT now includes a first reproducible local bridge-bootstrap path:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now includes a vendor-aware OpenHaptics path that can dynamically load the HD runtime library set and validate minimal HDAPI symbols, plus a vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
+The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now includes a vendor-aware OpenHaptics path that can dynamically load the HD runtime library set, attempt a conservative default-device open, and report stack-level capability channels, plus a vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
 
 ## Contact Model Baseline
 
@@ -132,8 +132,10 @@ The bridge executable is now expected to answer a small JSON probe contract befo
 - whether the bridge is scaffold-only, runtime-loaded-without-devices, probe-failed, or device-ready
 - how many devices were enumerated
 - which device labels were reported
+- which probe mode and capability scope were used
+- which haptic-capability channels the bridge reports at the current maturity level
 
-That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension is the first tracked stack that can reach device-ready enumeration, while OpenHaptics can now move beyond scaffold-only into a vendor-aware runtime-loaded capability state.
+That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension can reach device-ready enumeration through the DHD runtime, while OpenHaptics can now move beyond symbol-only validation into a conservative default-device open path with explicit capability reporting.
 
 ## Validation Expectations
 

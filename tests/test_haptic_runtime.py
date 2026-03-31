@@ -113,7 +113,11 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
                 "status": "scaffold-only",
                 "summary": "Mock bridge responded successfully.",
                 "device_count": 0,
-                "devices": []
+                "devices": [],
+                "enumeration_mode": "analysis-only",
+                "capability_scope": "probe-contract",
+                "reported_capabilities": ["diagnostics-only"],
+                "probe_notes": ["Mock note"]
             }))
             """,
         ).strip(),
@@ -132,3 +136,7 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
     assert openhaptics.detected_bridge_path == str(bridge_script.resolve())
     assert openhaptics.bridge_probe_state == "scaffold-only"
     assert openhaptics.bridge_probe_summary == "Mock bridge responded successfully."
+    assert openhaptics.probe_enumeration_mode == "analysis-only"
+    assert openhaptics.probe_capability_scope == "probe-contract"
+    assert openhaptics.reported_capabilities == ["diagnostics-only"]
+    assert openhaptics.probe_notes == ["Mock note"]
