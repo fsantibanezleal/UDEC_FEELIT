@@ -80,7 +80,7 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Local multi-file bundle intake | bundle-aware `gltf` sidecar resolution with explicit main-file selection |
 | Public port | `8101` |
-| Release-synced version | `2.13.000` |
+| Release-synced version | `2.14.000` |
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
