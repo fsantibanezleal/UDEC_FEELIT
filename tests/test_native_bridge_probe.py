@@ -126,6 +126,9 @@ def _build_mock_openhaptics_sdk(sdk_root: Path, clang_path: str) -> None:
               if (!selector) {
                 return nullptr;
               }
+              if (selector[0] == 'B') {
+                return nullptr;
+              }
               return reinterpret_cast<void*>(0x1);
             }
             EXPORT void hdDisableDevice(void*) {}
@@ -303,6 +306,7 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
         str(probe_path),
         backend_slug="openhaptics-touch",
         sdk_root=str(sdk_root),
+        device_selector="Beta Touch",
     )
     assert probe.state == "ready"
     assert probe.detected_device_count == 1
@@ -310,6 +314,8 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert probe.payload["runtime_library"].endswith("hd.dll")
     assert probe.payload["enumeration_mode"] == "default-device-open"
     assert probe.payload["capability_scope"] == "runtime-and-default-device-open"
+    assert probe.payload["configured_device_selector"] == "Beta Touch"
+    assert probe.payload["effective_device_selector"] == "DEFAULT"
     assert "force-output-path" in probe.payload["reported_capabilities"]
     assert "hdGetString" in probe.payload["resolved_symbols"]
     assert "scheduler-control" in probe.payload["reported_capabilities"]
@@ -324,6 +330,7 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
         requested_backend="openhaptics-touch",
         sdk_roots={"openhaptics": str(sdk_root)},
         bridge_paths={"openhaptics": str(probe_path)},
+        device_selectors={"openhaptics": "Beta Touch"},
     )
 
     openhaptics = next(
@@ -332,6 +339,7 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert openhaptics.bridge_probe_state == "ready"
     assert openhaptics.availability == "devices-detected"
     assert openhaptics.device_detection_state == "devices-detected"
+    assert openhaptics.configured_device_selector == "Beta Touch"
     assert openhaptics.probe_enumeration_mode == "default-device-open"
     assert openhaptics.probe_capability_scope == "runtime-and-default-device-open"
     assert "force-output-path" in openhaptics.reported_capabilities

@@ -137,6 +137,10 @@ Interpretation:
 
 FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. It also now has a vendor-aware Force Dimension runtime path that can load the DHD runtime and enumerate devices through the probe contract, plus a vendor-aware OpenHaptics path that can load the HD runtime library set, attempt a conservative default-device open, and report stack-level capability channels. This is a real architectural and product step, but it still stops before force rendering or live scene-coupled control.
 
+The runtime now also carries an explicit scene-to-backend contract baseline. That means the repo can already name which tactile primitives and event transitions a future backend must consume for Object Explorer, Braille Reader, and Haptic Desktop, even though the native loop itself is still pending. That contract is no longer just a flat list; it now includes reusable primitive families and a backend-readiness matrix, which makes the remaining gap to scene-coupled force work more auditable.
+
+On top of that, the runtime now computes a first backend-aware contact rollout plan. This is still not live force output, but it materially improves engineering clarity because each stack now names one bounded pilot primitive, one bridge-facing pilot profile, one required runtime-feature set, and one next step instead of stopping at a generic "future work" label.
+
 The current bridge path is meaningful because it proves four things end to end:
 
 - FeelIT can discover or configure a bridge executable

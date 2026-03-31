@@ -43,6 +43,8 @@ struct ProbeResult {
   std::string enumeration_mode = "not-applicable";
   std::string device_identity_source = "not-applicable";
   std::string capability_scope = "none";
+  std::string configured_device_selector;
+  std::string effective_device_selector;
 };
 
 static std::map<std::string, BackendProfile> build_profiles() {
@@ -414,7 +416,11 @@ static bool probe_handle_is_valid(void* handle) {
   return value != (std::numeric_limits<std::uintptr_t>::max)();
 }
 
-static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const std::string& configured_sdk_root, const BackendProfile& profile) {
+static ProbeResult run_openhaptics_probe(
+    const std::string& backend_slug,
+    const std::string& configured_sdk_root,
+    const std::string& configured_device_selector,
+    const BackendProfile& profile) {
   using hdInitDeviceFn = void* (*)(const char*);
   using hdDisableDeviceFn = void (*)(void*);
   using hdGetErrorStringFn = const char* (*)(int);
@@ -432,6 +438,7 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
   using hdUpdateCalibrationFn = int (*)(int);
 
   ProbeResult result = build_default_probe_result(backend_slug, configured_sdk_root);
+  result.configured_device_selector = configured_device_selector;
   result.runtime_load_state = "not-attempted";
   apply_marker_hits(&result, profile);
 
@@ -576,7 +583,12 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
   result.probe_notes.push_back(
       "OpenHaptics capability reporting is currently based on exported HDAPI symbol availability plus a conservative default-device open attempt. It does not yet claim live scene-coupled force output.");
 
-  const std::vector<const char*> device_selectors = {"DEFAULT", "Default PHANToM"};
+  std::vector<const char*> device_selectors;
+  if (!result.configured_device_selector.empty()) {
+    device_selectors.push_back(result.configured_device_selector.c_str());
+  }
+  device_selectors.push_back("DEFAULT");
+  device_selectors.push_back("Default PHANToM");
   void* device_handle = nullptr;
   std::string selector_used;
   for (const auto* selector : device_selectors) {
@@ -592,6 +604,7 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
     result.status = "ready";
     result.device_count = 1;
     result.device_identity_source = "fallback-default-open-label";
+    result.effective_device_selector = selector_used;
     result.devices.push_back(
         selector_used.empty() ? "OpenHaptics default device" : "OpenHaptics default device (" + selector_used + ")");
     result.summary =
@@ -666,6 +679,7 @@ int main(int argc, char* argv[]) {
   const std::string default_backend = FEELIT_BRIDGE_DEFAULT_BACKEND;
   const std::string backend_slug = arg_value(argc, argv, "--backend", default_backend.empty() ? "openhaptics-touch" : default_backend);
   const std::string configured_sdk_root = arg_value(argc, argv, "--sdk-root", FEELIT_VENDOR_SDK_ROOT);
+  const std::string configured_device_selector = arg_value(argc, argv, "--device-selector");
   const bool emit_json = has_flag(argc, argv, "--emit-json");
 
   const auto profile_it = profiles.find(backend_slug);
@@ -679,8 +693,15 @@ int main(int argc, char* argv[]) {
       backend_slug == "forcedimension-dhd"
           ? run_forcedimension_probe(backend_slug, configured_sdk_root, profile)
           : backend_slug == "openhaptics-touch"
-                ? run_openhaptics_probe(backend_slug, configured_sdk_root, profile)
+                ? run_openhaptics_probe(
+                      backend_slug,
+                      configured_sdk_root,
+                      configured_device_selector,
+                      profile)
           : run_scaffold_probe(backend_slug, configured_sdk_root, profile);
+  if (backend_slug != "openhaptics-touch") {
+    result.configured_device_selector = configured_device_selector;
+  }
 
   if (!emit_json) {
     std::cout << result.summary << std::endl;
@@ -710,6 +731,8 @@ int main(int argc, char* argv[]) {
   append_json_string(&output, "enumeration_mode", result.enumeration_mode, &first_field);
   append_json_string(&output, "device_identity_source", result.device_identity_source, &first_field);
   append_json_string(&output, "capability_scope", result.capability_scope, &first_field);
+  append_json_string(&output, "configured_device_selector", result.configured_device_selector, &first_field);
+  append_json_string(&output, "effective_device_selector", result.effective_device_selector, &first_field);
   output << "}";
 
   std::cout << output.str() << std::endl;

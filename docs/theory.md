@@ -158,6 +158,29 @@ FeelIT now explicitly treats each routed mode as a combination of haptic primiti
 
 This is important because the user experience should feel coherent across modes. The same device should not have to learn a completely different interaction physics for every page.
 
+## 12. Scene Contract As A Native Backend Boundary
+
+One practical problem in haptic systems is the gap between a visible 3D scene and a backend that is supposed to drive a device. If that bridge is left implicit, implementation work drifts into ad hoc callbacks and vendor-specific shortcuts.
+
+FeelIT now adopts an explicit intermediate layer:
+
+- scene-native primitives
+- backend-facing event transitions
+- telemetry fields preserved across those transitions
+- material or constraint channels expected by the backend
+
+The purpose of this layer is not to claim a finished hardware runtime. Its purpose is to prevent the future native backend from becoming vague. The scene should be able to say, in a disciplined way, what the backend must receive when the user touches a Braille dot, follows a rigid surface, presses a launcher tile, or crosses a threshold on a button-like control.
+
+This layer becomes more useful when it is not only page-specific. For that reason, FeelIT now treats the scene contract as three coupled views:
+
+- reusable primitive families
+- per-mode compositions of those families
+- backend-readiness statements that explain which hardware paths can already consume those families and which ones are still only diagnostic
+
+That matters because a mature haptic system is not just a collection of pages. It is a disciplined transformation from scene semantics into stable force semantics.
+
+One useful consequence is rollout discipline. If a backend has not yet proven a safe surface-following primitive or a thresholded button primitive, it should not pretend to support a whole scene. FeelIT now reflects that by computing backend-specific pilot primitives, bridge-facing pilot profiles, and readiness states instead of describing scene-coupled haptics as one undifferentiated future milestone.
+
 ## 11. Braille Translation Layer Versus Scene Layer
 
 The current runtime intentionally separates two concerns:

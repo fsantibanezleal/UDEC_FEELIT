@@ -51,6 +51,7 @@ The route currently exposes:
 - requested backend selection
 - vendor SDK-root inputs
 - vendor bridge-path inputs
+- preferred device-selector inputs
 - build-tool diagnostics
 - bridge workspace commands
 - bridge-probe state per backend
@@ -58,6 +59,7 @@ The route currently exposes:
 - per-backend diagnostics
 - proxy-first collision baseline
 - material-rendering baseline
+- scene-to-backend contract baseline for the routed haptic worlds
 
 ## Native Bridge Bootstrap
 
@@ -83,6 +85,37 @@ That means:
 - object exploration should favor reduced collision meshes or explicit proxy geometry
 - Braille dots, page rails, return buttons, and launcher controls should be explicit primitives
 - desktop folders, files, and launcher objects should be deliberate tactile tiles rather than arbitrary scene meshes
+
+## Scene-To-Backend Contract
+
+FeelIT now also defines a first scene-to-backend contract layer. This is still not live force output, but it narrows the architectural gap by making each mode declare:
+
+- which tactile primitives exist in the 3D world
+- which event transitions a backend should see
+- which telemetry fields the runtime should preserve
+- which material or constraint channels those primitives should map into
+
+The current contract models Object Explorer, Braille Reader, and Haptic Desktop as different compositions of the same primitive families rather than as unrelated pages with unrelated physics. It now also exposes:
+
+- a reusable primitive-family catalog
+- per-mode return-flow expectations
+- a backend-readiness matrix that explains which stacks are still diagnostic and which are closer to scene-coupled work
+
+## Contact Pilot Rollout
+
+FeelIT now computes a first backend-aware rollout layer on top of the static scene contract. The purpose is to prevent the next implementation step from becoming vague.
+
+Instead of saying only that a backend is "not ready yet", the runtime now names:
+
+- which mode should host the first pilot
+- which primitive should be implemented first
+- which force channels that primitive needs
+- which runtime features the current backend must expose
+- whether those features are currently aligned, partial, or still insufficient
+- which readiness state currently blocks or enables that pilot
+- which next engineering step follows from the current runtime state
+
+This keeps the first scene-coupled milestone bounded. A backend should first prove one safe tactile primitive before claiming support for a whole routed world.
 
 ## Loop Assumptions
 

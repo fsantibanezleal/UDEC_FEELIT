@@ -89,6 +89,9 @@ def test_frontend_mode_routes_are_served() -> None:
     assert configuration_response.status_code == 200
     assert "Haptic Configuration" in configuration_response.text
     assert "Runtime Selection" in configuration_response.text
+    assert "Scene Primitive Families" in configuration_response.text
+    assert "Backend Contract Readiness" in configuration_response.text
+    assert "Contact Pilot Rollout" in configuration_response.text
     assert 'type="module" src="/static/js/haptic_configuration.js"' in configuration_response.text
 
 

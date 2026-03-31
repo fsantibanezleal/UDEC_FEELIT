@@ -149,12 +149,14 @@ Current use:
 
 - inspect the requested runtime backend separately from the currently active fallback backend
 - configure SDK roots and bridge paths for the first tracked vendor stacks
+- persist preferred device selectors so a backend can probe a specific runtime label before falling back to its default selector path
 - inspect build-tool readiness for the native bridge workflow
 - review the native bridge source root, build-root pattern, and recommended bootstrap commands
 - inspect per-backend bridge-probe state before claiming that a physical runtime exists
 - review vendor-aware probe summaries, including OpenHaptics conservative default-device probe states plus reported capability channels and Force Dimension detected-device identities when a supported runtime is present
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
-- inspect the current design baseline for collision, contact, and material rendering
+- inspect the current design baseline for collision, contact, material rendering, reusable scene primitives, and backend readiness
+- inspect the backend-aware contact rollout plan that names one bounded pilot primitive, one pilot profile, and one next engineering step for each stack
 - keep the built-in visual emulator as the safe default runtime until a native bridge is ready
 
 This route is not a substitute for the future native backend. Its role is to make the hardware path explicit, testable, and documentable before real devices are attached.

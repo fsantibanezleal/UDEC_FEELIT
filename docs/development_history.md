@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.15.000 (2026-03-31)
+
+Deepen the haptic runtime surface with explicit scene contracts, backend-aware pilot rollout planning, and preferred vendor device selection for the next native-contact milestone.
+
+Delivered:
+
+- Added persisted preferred device selectors so OpenHaptics probing can start from an operator-defined target before falling back to its default selectors.
+- Added explicit scene-to-backend haptic contracts with reusable primitive families, backend-readiness rows, and mode-specific return-flow expectations.
+- Expanded the haptic configuration route with backend-aware contact rollout planning, pilot profiles, and runtime-feature coverage alignment against reported bridge capabilities.
+- Release-synced the preferred device selector path plus the richer OpenHaptics and Force Dimension diagnostics already accumulated on develop.
+
+Rationale:
+
+- This is a material expansion of FeelIT's haptic runtime capability surface, not just a small patch, because the app now exposes a coherent next-step boundary between diagnostics and scene-coupled haptics.
+- The release stays honest about what is still missing: native force execution is still pending, but the configuration route can now express the first bounded pilots in a backend-specific way.
+
 ### v2.14.000 (2026-03-31)
 
 Deepen the OpenHaptics native bridge with conservative default-device probing and richer capability diagnostics.

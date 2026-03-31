@@ -44,6 +44,7 @@ function renderSelectedBackend() {
     byId("selected-backend-bridge-probe").textContent = "--";
     byId("selected-backend-probe-summary").textContent = "--";
     byId("selected-backend-device-count").textContent = "--";
+    byId("selected-backend-device-selector").textContent = "--";
     byId("selected-backend-probe-mode").textContent = "--";
     byId("selected-backend-capability-scope").textContent = "--";
     byId("selected-backend-probe-capabilities").textContent = "--";
@@ -66,6 +67,8 @@ function renderSelectedBackend() {
     backend.bridge_probe_summary || "No bridge-probe summary recorded.";
   byId("selected-backend-device-count").textContent =
     backend.detected_device_count == null ? "0" : String(backend.detected_device_count);
+  byId("selected-backend-device-selector").textContent =
+    backend.configured_device_selector || "No preferred selector configured.";
   byId("selected-backend-probe-mode").textContent =
     backend.probe_enumeration_mode || "No probe mode reported.";
   byId("selected-backend-capability-scope").textContent =
@@ -184,6 +187,152 @@ function renderBridgeWorkspace() {
   byId("bridge-probe-command").textContent = workspace.run_probe_command;
 }
 
+function renderSceneContractList() {
+  const contract = state.snapshot.scene_contract;
+  const container = byId("scene-contract-list");
+  container.innerHTML = "";
+
+  contract.mode_contracts.forEach((modeContract) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${modeContract.mode} | ${modeContract.route}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = modeContract.bridge_goal;
+
+    const primitives = document.createElement("span");
+    primitives.className = "workspace-card-meta";
+    primitives.textContent =
+      `${modeContract.scene_primitives.length} bridge primitives | ${modeContract.scene_primitives.map((item) => item.slug).join(" | ")}`;
+
+    const events = document.createElement("span");
+    events.className = "workspace-card-body";
+    events.textContent =
+      `Return flow: launcher -> ${modeContract.return_contract.launcher_target} | home -> ${modeContract.return_contract.home_target}`;
+
+    const telemetry = document.createElement("span");
+    telemetry.className = "workspace-card-path";
+    telemetry.textContent =
+      modeContract.scene_primitives
+        .map((item) => `${item.slug}: ${item.telemetry_fields.join(", ")}`)
+        .join(" | ");
+
+    card.append(title, description, primitives, events, telemetry);
+    container.appendChild(card);
+  });
+}
+
+function renderScenePrimitiveList() {
+  const contract = state.snapshot.scene_contract;
+  const container = byId("scene-primitive-list");
+  container.innerHTML = "";
+
+  contract.primitive_families.forEach((family) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = family.title;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = family.summary;
+
+    const channels = document.createElement("span");
+    channels.className = "workspace-card-meta";
+    channels.textContent =
+      `Channels: ${family.canonical_force_channels.join(" | ")}`;
+
+    const usage = document.createElement("span");
+    usage.className = "workspace-card-path";
+    usage.textContent =
+      `Modes: ${family.used_by_modes.join(" | ")} | Safety: ${family.safety_constraints.join(", ")}`;
+
+    card.append(title, description, channels, usage);
+    container.appendChild(card);
+  });
+}
+
+function renderSceneReadinessList() {
+  const contract = state.snapshot.scene_contract;
+  const container = byId("scene-readiness-list");
+  container.innerHTML = "";
+
+  contract.backend_readiness.forEach((backend) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${backend.title} | ${backend.current_maturity}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = backend.next_milestone;
+
+    const readiness = document.createElement("span");
+    readiness.className = "workspace-card-meta";
+    readiness.textContent =
+      backend.ready_primitive_families.length
+        ? `Ready families: ${backend.ready_primitive_families.join(" | ")}`
+        : `Blocked families: ${backend.blocked_primitive_families.join(" | ")}`;
+
+    const notes = document.createElement("span");
+    notes.className = "workspace-card-path";
+    notes.textContent = backend.notes.join(" | ");
+
+    card.append(title, description, readiness, notes);
+    container.appendChild(card);
+  });
+}
+
+function renderContactRolloutList() {
+  const rollout = state.snapshot.contact_rollout;
+  const container = byId("contact-rollout-list");
+  container.innerHTML = "";
+
+  rollout.pilot_scenarios.forEach((scenario) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${scenario.backend_title} | ${scenario.readiness_state}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = scenario.pilot_goal;
+
+    const target = document.createElement("span");
+    target.className = "workspace-card-meta";
+    target.textContent =
+      `${scenario.pilot_mode} | ${scenario.pilot_route} | ${scenario.pilot_primitive_slug}`;
+
+    const requirements = document.createElement("span");
+    requirements.className = "workspace-card-body";
+    requirements.textContent =
+      `Channels: ${scenario.required_force_channels.join(" | ")} | Scope: ${scenario.required_capability_scope} | Alignment: ${scenario.capability_alignment}`;
+
+    const profile = document.createElement("span");
+    profile.className = "workspace-card-meta";
+    profile.textContent =
+      `${scenario.pilot_profile.geometry_kind} | material ${scenario.material_preset_slug} | available features: ${scenario.available_runtime_features.join(" | ") || "none"}`;
+
+    const readiness = document.createElement("span");
+    readiness.className = "workspace-card-path";
+    readiness.textContent =
+      `${scenario.readiness_reason} Missing: ${scenario.missing_runtime_features.join(" | ") || "none"}. Next: ${scenario.next_engineering_step}`;
+
+    card.append(title, description, target, requirements, profile, readiness);
+    container.appendChild(card);
+  });
+}
+
 function applyFormValues(snapshot) {
   byId("requested-backend").innerHTML = "";
   snapshot.backends.forEach((backend) => {
@@ -217,6 +366,15 @@ function applyFormValues(snapshot) {
     snapshot.backends.find((item) => item.slug === "chai3d-bridge")?.configured_bridge_path ||
     snapshot.backends.find((item) => item.slug === "chai3d-bridge")?.detected_bridge_path ||
     "";
+  byId("selector-openhaptics").value =
+    snapshot.backends.find((item) => item.slug === "openhaptics-touch")?.configured_device_selector ||
+    "";
+  byId("selector-forcedimension").value =
+    snapshot.backends.find((item) => item.slug === "forcedimension-dhd")?.configured_device_selector ||
+    "";
+  byId("selector-chai3d").value =
+    snapshot.backends.find((item) => item.slug === "chai3d-bridge")?.configured_device_selector ||
+    "";
 }
 
 function renderSnapshot(snapshot) {
@@ -236,12 +394,20 @@ function renderSnapshot(snapshot) {
   byId("collision-summary").textContent = snapshot.contact_design.collision_strategy.summary;
   byId("material-rendering-summary").textContent =
     `${snapshot.material_rendering.length} material profiles mapped to explicit haptic rendering strategies.`;
+  byId("scene-contract-summary").textContent =
+    `${snapshot.scene_contract.mode_contracts.length} routed mode contracts | ${snapshot.scene_contract.primitive_families.length} primitive families | ${snapshot.scene_contract.event_contract.length} event transitions | ${snapshot.scene_contract.backend_readiness.length} backend readiness rows.`;
+  byId("contact-rollout-summary").textContent =
+    `${snapshot.contact_rollout.pilot_scenarios.length} backend-specific pilot scenarios now connect runtime readiness to one bounded contact milestone each.`;
   byId("config-runtime-pill").textContent = "Runtime mapped";
   applyFormValues(snapshot);
   renderBackendList();
   renderSelectedBackend();
   renderToolchainList();
   renderBridgeWorkspace();
+  renderSceneContractList();
+  renderScenePrimitiveList();
+  renderSceneReadinessList();
+  renderContactRolloutList();
   setStatus(snapshot.selection_summary, "Ready");
 }
 
@@ -262,6 +428,11 @@ async function saveConfiguration() {
       openhaptics: byId("bridge-openhaptics").value,
       forcedimension: byId("bridge-forcedimension").value,
       chai3d: byId("bridge-chai3d").value,
+    },
+    device_selectors: {
+      openhaptics: byId("selector-openhaptics").value,
+      forcedimension: byId("selector-forcedimension").value,
+      chai3d: byId("selector-chai3d").value,
     },
   };
   const snapshot = await fetchJson(configUrl, {

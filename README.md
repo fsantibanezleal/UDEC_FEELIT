@@ -80,11 +80,11 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Local multi-file bundle intake | bundle-aware `gltf` sidecar resolution with explicit main-file selection |
 | Public port | `8101` |
-| Release-synced version | `2.14.000` |
+| Release-synced version | `2.15.000` |
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `79` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `85` automated tests passing plus browser smoke validation across the `5` routed pages |
 
 ## Current Frontend Views
 
@@ -124,7 +124,7 @@ The manager route is the authoring and registry surface for structured `haptic_w
 
 ![FeelIT Haptic Configuration](docs/png/frontend_haptic_configuration.png)
 
-The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, reported bridge capabilities, and the current boundary between scaffold-only, runtime-loaded, and device-aware capability.
+The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, preferred device selectors, reported bridge capabilities, and the current boundary between scaffold-only, runtime-loaded, and device-aware capability.
 
 ## Scope And Current Status
 
@@ -134,7 +134,9 @@ The configuration route makes the haptic backend problem explicit. It shows requ
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
-- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, build-tool readiness, the compiled bridge probe state, the OpenHaptics default-device probe path, the Force Dimension runtime-enumeration path, reported bridge capability channels, and the current contact or material-rendering baseline that the future physical backend must respect.
+- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, preferred device selectors, build-tool readiness, the compiled bridge probe state, the OpenHaptics default-device probe path, the Force Dimension runtime-enumeration path, reported bridge capability channels, and the current contact or material-rendering baseline that the future physical backend must respect.
+- FeelIT now also ships an explicit scene-to-backend contract baseline so each routed spatial mode declares which tactile primitives, event transitions, telemetry fields, return-flow expectations, and material channels a future native backend must honor. That contract is backed by a reusable primitive-family catalog and a backend-readiness matrix that clarifies which stacks are still diagnostic-only and which ones are closer to consuming real scene semantics.
+- The same configuration route now computes a backend-aware contact rollout plan, so OpenHaptics, Force Dimension, CHAI3D, and the visual emulator each expose one bounded pilot primitive, required force channels, required runtime features, coverage alignment against currently reported backend capabilities, and the next engineering step toward scene-coupled haptics.
 
 ### Legacy Boundary
 

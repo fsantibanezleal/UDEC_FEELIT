@@ -138,6 +138,8 @@ Current responsibilities:
 - freshness-aware text extraction caching for external workspace documents
 - haptic workspace descriptor parsing, registry, and server-paginated filesystem browsing
 - haptic contact-model and material-rendering baseline for future native hardware
+- scene-to-backend haptic contract baseline for routed tactile worlds
+- backend-aware pilot rollout planning and bridge-facing pilot profiles for first scene-coupled contact milestones
 
 Current files:
 
@@ -150,6 +152,8 @@ Current files:
 - `app/core/library_assets.py`
 - `app/core/haptic_workspace.py`
 - `app/core/haptic_feedback_design.py`
+- `app/core/haptic_scene_contracts.py`
+- `app/core/haptic_contact_rollout.py`
 
 ## Haptic Runtime Layer
 
@@ -278,6 +282,7 @@ Current baseline:
 - toolchain diagnostics for CMake, Ninja, clang++, MSBuild, Visual Studio, MSVC, and the Windows resource compiler
 - native bridge scaffold plus JSON probe contract for early validation of the bridge path, with a vendor-aware OpenHaptics runtime loader and a vendor-aware Force Dimension runtime loader plus device enumerator
 - frontend-facing summary of the current proxy-first collision baseline and material-rendering assumptions
+- frontend-facing summary of the current scene-to-backend contract baseline, including primitive families, return-flow expectations, backend-readiness rows, bridge-facing telemetry expectations, and backend-specific pilot rollout steps
 
 Next additions:
 

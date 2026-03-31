@@ -61,6 +61,7 @@ class HapticConfigurationRequest(BaseModel):
     requested_backend: str = Field(..., min_length=1, max_length=120)
     sdk_roots: dict[str, str] = Field(default_factory=dict)
     bridge_paths: dict[str, str] = Field(default_factory=dict)
+    device_selectors: dict[str, str] = Field(default_factory=dict)
 
 
 @router.get("/health")
@@ -290,6 +291,7 @@ async def update_haptic_configuration(
             requested_backend=payload.requested_backend,
             sdk_roots=payload.sdk_roots,
             bridge_paths=payload.bridge_paths,
+            device_selectors=payload.device_selectors,
         )
         request.app.state.haptic_backend = request.app.state.haptic_runtime.backend
         return snapshot.model_dump()
