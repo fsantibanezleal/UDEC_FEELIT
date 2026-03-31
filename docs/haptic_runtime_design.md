@@ -110,6 +110,8 @@ Instead of saying only that a backend is "not ready yet", the runtime now names:
 - which mode should host the first pilot
 - which primitive should be implemented first
 - which force channels that primitive needs
+- which runtime features the current backend must expose
+- whether those features are currently aligned, partial, or still insufficient
 - which readiness state currently blocks or enables that pilot
 - which next engineering step follows from the current runtime state
 

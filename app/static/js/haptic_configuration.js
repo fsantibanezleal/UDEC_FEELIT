@@ -316,14 +316,19 @@ function renderContactRolloutList() {
     const requirements = document.createElement("span");
     requirements.className = "workspace-card-body";
     requirements.textContent =
-      `Channels: ${scenario.required_force_channels.join(" | ")} | Scope: ${scenario.required_capability_scope}`;
+      `Channels: ${scenario.required_force_channels.join(" | ")} | Scope: ${scenario.required_capability_scope} | Alignment: ${scenario.capability_alignment}`;
+
+    const profile = document.createElement("span");
+    profile.className = "workspace-card-meta";
+    profile.textContent =
+      `${scenario.pilot_profile.geometry_kind} | material ${scenario.material_preset_slug} | available features: ${scenario.available_runtime_features.join(" | ") || "none"}`;
 
     const readiness = document.createElement("span");
     readiness.className = "workspace-card-path";
     readiness.textContent =
-      `${scenario.readiness_reason} Next: ${scenario.next_engineering_step}`;
+      `${scenario.readiness_reason} Missing: ${scenario.missing_runtime_features.join(" | ") || "none"}. Next: ${scenario.next_engineering_step}`;
 
-    card.append(title, description, target, requirements, readiness);
+    card.append(title, description, target, requirements, profile, readiness);
     container.appendChild(card);
   });
 }

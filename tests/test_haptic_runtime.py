@@ -40,6 +40,7 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
         item["backend_slug"] == "forcedimension-dhd"
         for item in snapshot.contact_rollout["pilot_scenarios"]
     )
+    assert all(item["pilot_profile"] for item in snapshot.contact_rollout["pilot_scenarios"])
 
 
 def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch) -> None:
@@ -82,6 +83,10 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
     assert len(payload["scene_contract"]["primitive_families"]) >= 3
     assert len(payload["scene_contract"]["backend_readiness"]) >= 4
     assert len(payload["contact_rollout"]["pilot_scenarios"]) >= 4
+    assert any(
+        item["capability_alignment"] in {"aligned", "partial", "insufficient", "not-needed"}
+        for item in payload["contact_rollout"]["pilot_scenarios"]
+    )
 
 
 def test_haptic_configuration_api_updates_requested_backend(tmp_path, monkeypatch) -> None:

@@ -139,7 +139,7 @@ Current responsibilities:
 - haptic workspace descriptor parsing, registry, and server-paginated filesystem browsing
 - haptic contact-model and material-rendering baseline for future native hardware
 - scene-to-backend haptic contract baseline for routed tactile worlds
-- backend-aware pilot rollout planning for first scene-coupled contact milestones
+- backend-aware pilot rollout planning and bridge-facing pilot profiles for first scene-coupled contact milestones
 
 Current files:
 
