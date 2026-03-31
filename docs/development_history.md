@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.14.000 (2026-03-31)
+
+Deepen the OpenHaptics native bridge with conservative default-device probing and richer capability diagnostics.
+
+Delivered:
+
+- Extended the OpenHaptics native probe so it can attempt a conservative default-device open instead of stopping at runtime-load plus minimal symbol validation.
+- Added probe payload fields for enumeration mode, capability scope, resolved symbols, attempted selectors, reported capability channels, and probe notes.
+- Surfaced the richer bridge diagnostics through the runtime manager and the Haptic Configuration route so capability reporting is visible inside the product.
+- Expanded native integration coverage and refreshed the haptic runtime documentation to match the stronger OpenHaptics bridge boundary.
+
+Rationale:
+
+- This batch materially expands the native haptic backend truth surface rather than only refining existing text or visuals.
+- OpenHaptics now crosses a more meaningful readiness boundary that the runtime and the docs can expose honestly before live scene-coupled force output exists.
+
 ### v2.13.000 (2026-03-30)
 
 Expand the Object Explorer import pipeline with server-side validation, staging guidance, and bundle-aware local glTF intake.

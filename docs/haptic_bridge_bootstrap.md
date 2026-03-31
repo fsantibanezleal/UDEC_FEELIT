@@ -24,7 +24,7 @@ FeelIT now ships:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The probe now also contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set and validates minimal HDAPI symbols, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
+Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The probe now also contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
 
 ## Bootstrap Workflow
 
@@ -111,7 +111,7 @@ The bridge system does **not** yet claim:
 - servo-loop execution
 - real collision or material rendering
 
-The OpenHaptics path can now load the runtime library set and validate minimal symbols, and the Force Dimension path can now load and enumerate, but force output, calibration, homing, and live scene-coupled control still belong to the next backend stage tracked in the native haptic issues.
+The OpenHaptics path can now load the runtime library set, attempt a conservative default-device open, and report stack-level capability channels, and the Force Dimension path can now load and enumerate, but force output, calibration, homing, and live scene-coupled control still belong to the next backend stage tracked in the native haptic issues.
 
 ## Vendor Paths
 
@@ -122,7 +122,7 @@ Current bootstrap scope:
 - detect likely SDK markers such as `HD/hd.h` and `HDU/hduVector.h`
 - build and run the FeelIT bridge scaffold for the `openhaptics-touch` target
 - dynamically load `hd.dll` plus optional utility runtime libraries when they are present
-- validate minimal HDAPI entry points and report a vendor-aware runtime-loaded capability state
+- validate minimal HDAPI entry points, attempt a conservative default-device open, and report a vendor-aware capability state
 - preserve the path for future Touch-family device enumeration through a real native backend
 
 ### Force Dimension DHD Stack
@@ -146,7 +146,7 @@ Current bootstrap scope:
 
 The next bridge milestone is to move from the current vendor-aware probe coverage into controlled backend activation. In practice that means:
 
-- OpenHaptics needs safe device enumeration and richer capability reporting beyond runtime-loaded symbol validation
+- OpenHaptics still needs deeper device characterization, calibration-state reporting, and live control beyond the current conservative default-device probe and stack-level capability reporting
 - CHAI3D still needs the same kind of runtime-load and device-ready probe states
 - the probe contract should carry richer capability data once those stacks are live
 - the backend still needs calibration, homing, button-state, and force-output stages after enumeration

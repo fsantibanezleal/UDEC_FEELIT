@@ -122,9 +122,36 @@ def _build_mock_openhaptics_sdk(sdk_root: Path, clang_path: str) -> None:
             #endif
 
             extern "C" {
-            EXPORT void* hdInitDevice(const char*) { return reinterpret_cast<void*>(0x1); }
+            EXPORT void* hdInitDevice(const char* selector) {
+              if (!selector) {
+                return nullptr;
+              }
+              return reinterpret_cast<void*>(0x1);
+            }
             EXPORT void hdDisableDevice(void*) {}
             EXPORT const char* hdGetErrorString(int) { return "No error"; }
+            EXPORT const char* hdGetString(int) { return "Mock OpenHaptics Touch X"; }
+            EXPORT void* hdGetCurrentDevice() { return reinterpret_cast<void*>(0x1); }
+            EXPORT void hdGetIntegerv(int, int* value) {
+              if (value) {
+                *value = 1;
+              }
+            }
+            EXPORT void hdGetDoublev(int, double* value) {
+              if (value) {
+                *value = 0.5;
+              }
+            }
+            EXPORT void hdEnable(int) {}
+            EXPORT void hdSetDoublev(int, const double*) {}
+            EXPORT int hdStartScheduler() { return 0; }
+            EXPORT int hdStopScheduler() { return 0; }
+            EXPORT void* hdScheduleAsynchronous(void*, void*, int) {
+              return reinterpret_cast<void*>(0x2);
+            }
+            EXPORT int hdUnschedule(void*) { return 0; }
+            EXPORT int hdCheckCalibration() { return 1; }
+            EXPORT int hdUpdateCalibration(int) { return 0; }
             }
             """,
         ).strip(),
@@ -261,8 +288,8 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     assert probe_path != ROOT / "native" / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe"
 
 
-def test_openhaptics_vendor_probe_reports_runtime_loaded_capability(tmp_path, monkeypatch) -> None:
-    """The native probe should report runtime-loaded capability states for OpenHaptics."""
+def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monkeypatch) -> None:
+    """The native probe should report a safe default-device open path for OpenHaptics."""
     statuses = _require_native_build_support()
     clang_path = statuses["clang++"].detected_path
     assert clang_path
@@ -277,11 +304,18 @@ def test_openhaptics_vendor_probe_reports_runtime_loaded_capability(tmp_path, mo
         backend_slug="openhaptics-touch",
         sdk_root=str(sdk_root),
     )
-    assert probe.state == "runtime-loaded-capability-ready"
-    assert probe.detected_device_count == 0
+    assert probe.state == "ready"
+    assert probe.detected_device_count == 1
     assert probe.payload["runtime_load_state"] == "loaded"
     assert probe.payload["runtime_library"].endswith("hd.dll")
-    assert probe.detected_devices == []
+    assert probe.payload["enumeration_mode"] == "default-device-open"
+    assert probe.payload["capability_scope"] == "runtime-and-default-device-open"
+    assert "force-output-path" in probe.payload["reported_capabilities"]
+    assert "hdGetString" in probe.payload["resolved_symbols"]
+    assert "scheduler-control" in probe.payload["reported_capabilities"]
+    assert "calibration-interface" in probe.payload["reported_capabilities"]
+    assert "device-characteristics-query" in probe.payload["reported_capabilities"]
+    assert probe.detected_devices == ["OpenHaptics default device (DEFAULT)"]
 
     config_path = tmp_path / "openhaptics_runtime_config.json"
     monkeypatch.setenv("FEELIT_HAPTIC_CONFIG_PATH", str(config_path))
@@ -295,9 +329,16 @@ def test_openhaptics_vendor_probe_reports_runtime_loaded_capability(tmp_path, mo
     openhaptics = next(
         backend for backend in snapshot.backends if backend.slug == "openhaptics-touch"
     )
-    assert openhaptics.bridge_probe_state == "runtime-loaded-capability-ready"
-    assert openhaptics.availability == "runtime-loaded-no-devices"
-    assert openhaptics.device_detection_state == "runtime-loaded-no-enumeration"
+    assert openhaptics.bridge_probe_state == "ready"
+    assert openhaptics.availability == "devices-detected"
+    assert openhaptics.device_detection_state == "devices-detected"
+    assert openhaptics.probe_enumeration_mode == "default-device-open"
+    assert openhaptics.probe_capability_scope == "runtime-and-default-device-open"
+    assert "force-output-path" in openhaptics.reported_capabilities
+    assert "scheduler-control" in openhaptics.reported_capabilities
+    assert "calibration-interface" in openhaptics.reported_capabilities
+    assert openhaptics.detected_devices == ["OpenHaptics default device (DEFAULT)"]
+    assert any("Bridge enumeration mode: default-device-open" in item for item in openhaptics.evidence)
     assert any("Bridge runtime load state: loaded" in item for item in openhaptics.evidence)
     assert probe_path == native_root / "build" / "openhaptics-touch" / "out" / "feelit_bridge_probe.exe"
     assert probe_path != ROOT / "native" / "build" / "openhaptics-touch" / "out" / "feelit_bridge_probe.exe"

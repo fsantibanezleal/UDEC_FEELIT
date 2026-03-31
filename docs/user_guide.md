@@ -152,7 +152,7 @@ Current use:
 - inspect build-tool readiness for the native bridge workflow
 - review the native bridge source root, build-root pattern, and recommended bootstrap commands
 - inspect per-backend bridge-probe state before claiming that a physical runtime exists
-- review vendor-aware probe summaries, including OpenHaptics runtime-loaded capability states and Force Dimension detected-device identities when a supported runtime is present
+- review vendor-aware probe summaries, including OpenHaptics conservative default-device probe states plus reported capability channels and Force Dimension detected-device identities when a supported runtime is present
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - inspect the current design baseline for collision, contact, and material rendering
 - keep the built-in visual emulator as the safe default runtime until a native bridge is ready
@@ -317,7 +317,7 @@ POST /api/haptic-workspaces/register
 ## Current Limitations
 
 - no physical device loop is connected to the scene runtime yet, even though the haptic-configuration route now tracks backend selection intent, vendor dependency readiness, bridge-probe state, and toolchain availability
-- the Force Dimension DHD path can now load the runtime library and enumerate devices through the native probe, OpenHaptics can now load the HD runtime library set and validate minimal symbols, and CHAI3D remains a scaffold-level probe path
+- the Force Dimension DHD path can now load the runtime library and enumerate devices through the native probe, OpenHaptics can now load the HD runtime library set, attempt a conservative default-device open, and report capability channels, and CHAI3D remains a scaffold-level probe path
 - no current probe drives force output, calibration, homing, or scene-coupled haptic interaction
 - 3D object staging is currently client-side and focused on `obj`, `stl`, `glb`, self-contained `gltf`, and local `gltf` bundles selected together with their sidecar resources
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets

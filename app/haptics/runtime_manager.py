@@ -75,6 +75,10 @@ class HapticBackendCandidate(BaseModel):
     bridge_probe_summary: str = ""
     detected_device_count: int | None = None
     detected_devices: list[str] = Field(default_factory=list)
+    reported_capabilities: list[str] = Field(default_factory=list)
+    probe_notes: list[str] = Field(default_factory=list)
+    probe_enumeration_mode: str | None = None
+    probe_capability_scope: str | None = None
     evidence: list[str] = Field(default_factory=list)
     install_hint: str = ""
 
@@ -501,7 +505,7 @@ def _build_bridge_workspace_status(
 
     notes = [
         "The bridge scaffold is compiled without vendor SDK linkage so the probe contract can be validated early.",
-        "The Force Dimension DHD path can now reach runtime load and device enumeration, OpenHaptics can now reach a vendor-aware runtime-loaded capability state, and CHAI3D still remains a scaffold-level bridge target.",
+        "The Force Dimension DHD path can now reach runtime load and device enumeration, OpenHaptics can now reach a conservative default-device probe with reported capability channels, and CHAI3D still remains a scaffold-level bridge target.",
         "CMake plus a Windows resource compiler and either Ninja with clang++ or MSBuild is required to build the scaffold locally.",
     ]
     return HapticBridgeWorkspaceStatus(
@@ -631,6 +635,28 @@ class HapticRuntimeManager:
                 backend_slug=slug,
                 sdk_root=sdk_root,
             )
+            reported_capabilities = [
+                str(item).strip()
+                for item in bridge_probe.payload.get("reported_capabilities", [])
+                if str(item).strip()
+            ]
+            probe_notes = [
+                str(item).strip()
+                for item in bridge_probe.payload.get("probe_notes", [])
+                if str(item).strip()
+            ]
+            resolved_symbols = [
+                str(item).strip()
+                for item in bridge_probe.payload.get("resolved_symbols", [])
+                if str(item).strip()
+            ]
+            open_attempt_labels = [
+                str(item).strip()
+                for item in bridge_probe.payload.get("open_attempt_labels", [])
+                if str(item).strip()
+            ]
+            enumeration_mode = str(bridge_probe.payload.get("enumeration_mode", "")).strip() or None
+            capability_scope = str(bridge_probe.payload.get("capability_scope", "")).strip() or None
             evidence = sdk_evidence + driver_evidence + bridge_evidence
             if bridge_probe.summary:
                 evidence.append(f"Bridge probe: {bridge_probe.summary}")
@@ -643,6 +669,19 @@ class HapticRuntimeManager:
                 evidence.append(f"Bridge runtime load state: {runtime_load_state}")
             if sdk_version:
                 evidence.append(f"Bridge SDK version: {sdk_version}")
+            if enumeration_mode:
+                evidence.append(f"Bridge enumeration mode: {enumeration_mode}")
+            if capability_scope:
+                evidence.append(f"Bridge capability scope: {capability_scope}")
+            if resolved_symbols:
+                evidence.append(f"Bridge symbols: {', '.join(resolved_symbols)}")
+            if open_attempt_labels:
+                evidence.append(f"Bridge open attempts: {', '.join(open_attempt_labels)}")
+            if reported_capabilities:
+                evidence.append(
+                    f"Bridge reported capabilities: {', '.join(reported_capabilities)}",
+                )
+            evidence.extend(f"Probe note: {note}" for note in probe_notes)
 
             if bridge_probe.state == "ready" and (bridge_probe.detected_device_count or 0) > 0:
                 availability = "devices-detected"
@@ -728,6 +767,10 @@ class HapticRuntimeManager:
                     bridge_probe_summary=bridge_probe.summary,
                     detected_device_count=bridge_probe.detected_device_count,
                     detected_devices=bridge_probe.detected_devices,
+                    reported_capabilities=reported_capabilities,
+                    probe_notes=probe_notes,
+                    probe_enumeration_mode=enumeration_mode,
+                    probe_capability_scope=capability_scope,
                     evidence=evidence,
                     install_hint=definition["install_hint"],
                 )
