@@ -25,6 +25,16 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
     assert snapshot.bridge_workspace.probe_binary_name == "feelit_bridge_probe.exe"
     assert snapshot.contact_design["servo_loop_target_hz"] == 1000
     assert any(item["slug"] == "polished_metal" for item in snapshot.material_rendering)
+    assert len(snapshot.scene_contract["mode_contracts"]) >= 3
+    assert any(item["mode"] == "Braille Reader" for item in snapshot.scene_contract["mode_contracts"])
+    assert any(
+        item["slug"] == "button_actuation"
+        for item in snapshot.scene_contract["primitive_families"]
+    )
+    assert any(
+        item["backend_slug"] == "openhaptics-touch"
+        for item in snapshot.scene_contract["backend_readiness"]
+    )
 
 
 def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch) -> None:
@@ -63,6 +73,9 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
     assert any(tool["slug"] == "ninja" for tool in payload["toolchains"])
     assert payload["bridge_workspace"]["probe_binary_name"] == "feelit_bridge_probe.exe"
     assert any(backend["slug"] == "chai3d-bridge" for backend in payload["backends"])
+    assert len(payload["scene_contract"]["event_contract"]) >= 5
+    assert len(payload["scene_contract"]["primitive_families"]) >= 3
+    assert len(payload["scene_contract"]["backend_readiness"]) >= 4
 
 
 def test_haptic_configuration_api_updates_requested_backend(tmp_path, monkeypatch) -> None:

@@ -19,6 +19,7 @@ from app.core.haptic_feedback_design import (
     build_haptic_contact_design,
     build_haptic_material_rendering_matrix,
 )
+from app.core.haptic_scene_contracts import build_haptic_scene_contract
 from app.haptics.base import HapticBackend
 from app.haptics.factory import create_haptic_backend
 from app.haptics.toolchain import ToolchainComponentStatus, build_native_toolchain_statuses
@@ -115,6 +116,7 @@ class HapticRuntimeSnapshot(BaseModel):
     bridge_workspace: HapticBridgeWorkspaceStatus
     contact_design: dict[str, Any]
     material_rendering: list[dict[str, Any]]
+    scene_contract: dict[str, Any]
 
 
 BACKEND_DEFINITIONS: tuple[dict[str, Any], ...] = (
@@ -798,6 +800,7 @@ class HapticRuntimeManager:
             bridge_workspace=bridge_workspace,
             contact_design=build_haptic_contact_design(),
             material_rendering=build_haptic_material_rendering_matrix(),
+            scene_contract=build_haptic_scene_contract(),
         )
 
     def update_configuration(

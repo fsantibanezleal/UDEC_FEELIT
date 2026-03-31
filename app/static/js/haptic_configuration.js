@@ -187,6 +187,110 @@ function renderBridgeWorkspace() {
   byId("bridge-probe-command").textContent = workspace.run_probe_command;
 }
 
+function renderSceneContractList() {
+  const contract = state.snapshot.scene_contract;
+  const container = byId("scene-contract-list");
+  container.innerHTML = "";
+
+  contract.mode_contracts.forEach((modeContract) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${modeContract.mode} | ${modeContract.route}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = modeContract.bridge_goal;
+
+    const primitives = document.createElement("span");
+    primitives.className = "workspace-card-meta";
+    primitives.textContent =
+      `${modeContract.scene_primitives.length} bridge primitives | ${modeContract.scene_primitives.map((item) => item.slug).join(" | ")}`;
+
+    const events = document.createElement("span");
+    events.className = "workspace-card-body";
+    events.textContent =
+      `Return flow: launcher -> ${modeContract.return_contract.launcher_target} | home -> ${modeContract.return_contract.home_target}`;
+
+    const telemetry = document.createElement("span");
+    telemetry.className = "workspace-card-path";
+    telemetry.textContent =
+      modeContract.scene_primitives
+        .map((item) => `${item.slug}: ${item.telemetry_fields.join(", ")}`)
+        .join(" | ");
+
+    card.append(title, description, primitives, events, telemetry);
+    container.appendChild(card);
+  });
+}
+
+function renderScenePrimitiveList() {
+  const contract = state.snapshot.scene_contract;
+  const container = byId("scene-primitive-list");
+  container.innerHTML = "";
+
+  contract.primitive_families.forEach((family) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = family.title;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = family.summary;
+
+    const channels = document.createElement("span");
+    channels.className = "workspace-card-meta";
+    channels.textContent =
+      `Channels: ${family.canonical_force_channels.join(" | ")}`;
+
+    const usage = document.createElement("span");
+    usage.className = "workspace-card-path";
+    usage.textContent =
+      `Modes: ${family.used_by_modes.join(" | ")} | Safety: ${family.safety_constraints.join(", ")}`;
+
+    card.append(title, description, channels, usage);
+    container.appendChild(card);
+  });
+}
+
+function renderSceneReadinessList() {
+  const contract = state.snapshot.scene_contract;
+  const container = byId("scene-readiness-list");
+  container.innerHTML = "";
+
+  contract.backend_readiness.forEach((backend) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${backend.title} | ${backend.current_maturity}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = backend.next_milestone;
+
+    const readiness = document.createElement("span");
+    readiness.className = "workspace-card-meta";
+    readiness.textContent =
+      backend.ready_primitive_families.length
+        ? `Ready families: ${backend.ready_primitive_families.join(" | ")}`
+        : `Blocked families: ${backend.blocked_primitive_families.join(" | ")}`;
+
+    const notes = document.createElement("span");
+    notes.className = "workspace-card-path";
+    notes.textContent = backend.notes.join(" | ");
+
+    card.append(title, description, readiness, notes);
+    container.appendChild(card);
+  });
+}
+
 function applyFormValues(snapshot) {
   byId("requested-backend").innerHTML = "";
   snapshot.backends.forEach((backend) => {
@@ -248,12 +352,17 @@ function renderSnapshot(snapshot) {
   byId("collision-summary").textContent = snapshot.contact_design.collision_strategy.summary;
   byId("material-rendering-summary").textContent =
     `${snapshot.material_rendering.length} material profiles mapped to explicit haptic rendering strategies.`;
+  byId("scene-contract-summary").textContent =
+    `${snapshot.scene_contract.mode_contracts.length} routed mode contracts | ${snapshot.scene_contract.primitive_families.length} primitive families | ${snapshot.scene_contract.event_contract.length} event transitions | ${snapshot.scene_contract.backend_readiness.length} backend readiness rows.`;
   byId("config-runtime-pill").textContent = "Runtime mapped";
   applyFormValues(snapshot);
   renderBackendList();
   renderSelectedBackend();
   renderToolchainList();
   renderBridgeWorkspace();
+  renderSceneContractList();
+  renderScenePrimitiveList();
+  renderSceneReadinessList();
   setStatus(snapshot.selection_summary, "Ready");
 }
 

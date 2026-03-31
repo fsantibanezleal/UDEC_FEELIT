@@ -148,7 +148,32 @@
                 <strong class="workspace-card-title">Material Rendering</strong>
                 <span id="material-rendering-summary" class="workspace-card-body">Loading material-response baseline.</span>
               </article>
+              <article class="workspace-card workspace-card-static">
+                <strong class="workspace-card-title">Scene To Bridge Contract</strong>
+                <span id="scene-contract-summary" class="workspace-card-body">Loading scene-contract baseline.</span>
+              </article>
             </div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Scene Contract Catalog</h2>
+            </div>
+            <div id="scene-contract-list" class="workspace-list"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Scene Primitive Families</h2>
+            </div>
+            <div id="scene-primitive-list" class="workspace-list"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Backend Contract Readiness</h2>
+            </div>
+            <div id="scene-readiness-list" class="workspace-list"></div>
           </section>
 
           <section class="panel-section">
@@ -248,7 +273,8 @@
           <li>Review the native bridge workspace and the commands used to configure or build the bridge scaffold.</li>
           <li>See whether a bridge executable is missing, failing, scaffold-only, runtime-loaded-without-devices, or reporting real device-ready probe data.</li>
           <li>Inspect how a backend was probed, which capability scope it currently claims, and which haptic channels the bridge reports as available at the current maturity level.</li>
-          <li>Inspect the current collision, contact, and material-rendering baseline that the native backend must honor.</li>
+          <li>Inspect the current collision, contact, material-rendering, and scene-contract baseline that the native backend must honor.</li>
+          <li>Review the reusable tactile primitive families and see how far each backend stack is from consuming them safely.</li>
           <li>Keep the built-in visual emulator as the safe default while physical-device integration is still under construction.</li>
         </ul>
       </div>

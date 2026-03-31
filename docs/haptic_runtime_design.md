@@ -59,6 +59,7 @@ The route currently exposes:
 - per-backend diagnostics
 - proxy-first collision baseline
 - material-rendering baseline
+- scene-to-backend contract baseline for the routed haptic worlds
 
 ## Native Bridge Bootstrap
 
@@ -84,6 +85,21 @@ That means:
 - object exploration should favor reduced collision meshes or explicit proxy geometry
 - Braille dots, page rails, return buttons, and launcher controls should be explicit primitives
 - desktop folders, files, and launcher objects should be deliberate tactile tiles rather than arbitrary scene meshes
+
+## Scene-To-Backend Contract
+
+FeelIT now also defines a first scene-to-backend contract layer. This is still not live force output, but it narrows the architectural gap by making each mode declare:
+
+- which tactile primitives exist in the 3D world
+- which event transitions a backend should see
+- which telemetry fields the runtime should preserve
+- which material or constraint channels those primitives should map into
+
+The current contract models Object Explorer, Braille Reader, and Haptic Desktop as different compositions of the same primitive families rather than as unrelated pages with unrelated physics. It now also exposes:
+
+- a reusable primitive-family catalog
+- per-mode return-flow expectations
+- a backend-readiness matrix that explains which stacks are still diagnostic and which are closer to scene-coupled work
 
 ## Loop Assumptions
 

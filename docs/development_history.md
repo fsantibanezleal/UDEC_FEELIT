@@ -31,6 +31,22 @@ Rationale:
 - Once the bridge can open a conservative default device, the next useful control surface is letting an operator point the probe at a specific runtime label when one is known.
 - This strengthens real device bring-up without pretending the scene-coupled haptic loop is already complete.
 
+### develop (unreleased local iteration)
+
+Add an explicit scene-to-backend haptic contract baseline so the native bridge path has concrete tactile primitives and event transitions to target.
+
+Delivered locally:
+
+- Added a dedicated scene-contract module that defines backend-facing event transitions and mode-specific tactile primitives for Object Explorer, Braille Reader, and Haptic Desktop.
+- Extended the runtime snapshot and Haptic Configuration route so the scene-contract baseline is visible inside the app instead of remaining only in engineering notes.
+- Expanded that contract into reusable primitive families plus a backend-readiness matrix so the repo can say which stacks are still diagnostic-only and which ones are structurally closer to consuming scene semantics.
+- Added automated coverage for the scene-contract surface and refreshed the runtime, architecture, theory, and implementation-gap docs accordingly.
+
+Rationale:
+
+- The native backend path should not jump directly from SDK diagnostics to force rendering without a concrete semantic contract for scene primitives and events.
+- This gives FeelIT a clearer architectural bridge between the routed 3D worlds and the future scene-coupled haptic backend.
+
 ### v2.14.000 (2026-03-31)
 
 Deepen the OpenHaptics native bridge with conservative default-device probing and richer capability diagnostics.
