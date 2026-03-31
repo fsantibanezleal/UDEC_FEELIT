@@ -24,7 +24,7 @@ FeelIT now ships:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The probe now also contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
+Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The probe now also contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
 
 ## Bootstrap Workflow
 

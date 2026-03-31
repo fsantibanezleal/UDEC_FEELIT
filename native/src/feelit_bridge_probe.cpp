@@ -147,6 +147,18 @@ static std::string platform_loader_error() {
 #endif
 }
 
+static void append_unique(std::vector<std::string>* values, const std::string& value) {
+  if (!values) {
+    return;
+  }
+  for (const auto& existing : *values) {
+    if (existing == value) {
+      return;
+    }
+  }
+  values->push_back(value);
+}
+
 class SharedLibrary {
  public:
   SharedLibrary() = default;
@@ -407,6 +419,17 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
   using hdDisableDeviceFn = void (*)(void*);
   using hdGetErrorStringFn = const char* (*)(int);
   using hdGetStringFn = const char* (*)(int);
+  using hdGetCurrentDeviceFn = void* (*)();
+  using hdGetIntegervFn = void (*)(int, int*);
+  using hdGetDoublevFn = void (*)(int, double*);
+  using hdEnableFn = void (*)(int);
+  using hdSetDoublevFn = void (*)(int, const double*);
+  using hdStartSchedulerFn = int (*)();
+  using hdStopSchedulerFn = int (*)();
+  using hdScheduleAsynchronousFn = void* (*)(void*, void*, int);
+  using hdUnscheduleFn = int (*)(void*);
+  using hdCheckCalibrationFn = int (*)();
+  using hdUpdateCalibrationFn = int (*)(int);
 
   ProbeResult result = build_default_probe_result(backend_slug, configured_sdk_root);
   result.runtime_load_state = "not-attempted";
@@ -461,6 +484,17 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
   auto hd_disable_device = hd_library.symbol<hdDisableDeviceFn>("hdDisableDevice");
   auto hd_get_error_string = hd_library.symbol<hdGetErrorStringFn>("hdGetErrorString");
   auto hd_get_string = hd_library.symbol<hdGetStringFn>("hdGetString");
+  auto hd_get_current_device = hd_library.symbol<hdGetCurrentDeviceFn>("hdGetCurrentDevice");
+  auto hd_get_integerv = hd_library.symbol<hdGetIntegervFn>("hdGetIntegerv");
+  auto hd_get_doublev = hd_library.symbol<hdGetDoublevFn>("hdGetDoublev");
+  auto hd_enable = hd_library.symbol<hdEnableFn>("hdEnable");
+  auto hd_set_doublev = hd_library.symbol<hdSetDoublevFn>("hdSetDoublev");
+  auto hd_start_scheduler = hd_library.symbol<hdStartSchedulerFn>("hdStartScheduler");
+  auto hd_stop_scheduler = hd_library.symbol<hdStopSchedulerFn>("hdStopScheduler");
+  auto hd_schedule_async = hd_library.symbol<hdScheduleAsynchronousFn>("hdScheduleAsynchronous");
+  auto hd_unschedule = hd_library.symbol<hdUnscheduleFn>("hdUnschedule");
+  auto hd_check_calibration = hd_library.symbol<hdCheckCalibrationFn>("hdCheckCalibration");
+  auto hd_update_calibration = hd_library.symbol<hdUpdateCalibrationFn>("hdUpdateCalibration");
 
   if (hd_init_device) {
     result.resolved_symbols.push_back("hdInitDevice");
@@ -474,6 +508,39 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
   if (hd_get_string) {
     result.resolved_symbols.push_back("hdGetString");
   }
+  if (hd_get_current_device) {
+    result.resolved_symbols.push_back("hdGetCurrentDevice");
+  }
+  if (hd_get_integerv) {
+    result.resolved_symbols.push_back("hdGetIntegerv");
+  }
+  if (hd_get_doublev) {
+    result.resolved_symbols.push_back("hdGetDoublev");
+  }
+  if (hd_enable) {
+    result.resolved_symbols.push_back("hdEnable");
+  }
+  if (hd_set_doublev) {
+    result.resolved_symbols.push_back("hdSetDoublev");
+  }
+  if (hd_start_scheduler) {
+    result.resolved_symbols.push_back("hdStartScheduler");
+  }
+  if (hd_stop_scheduler) {
+    result.resolved_symbols.push_back("hdStopScheduler");
+  }
+  if (hd_schedule_async) {
+    result.resolved_symbols.push_back("hdScheduleAsynchronous");
+  }
+  if (hd_unschedule) {
+    result.resolved_symbols.push_back("hdUnschedule");
+  }
+  if (hd_check_calibration) {
+    result.resolved_symbols.push_back("hdCheckCalibration");
+  }
+  if (hd_update_calibration) {
+    result.resolved_symbols.push_back("hdUpdateCalibration");
+  }
 
   if (!hd_init_device || !hd_disable_device || !hd_get_error_string) {
     result.status = "runtime-symbol-missing";
@@ -484,19 +551,30 @@ static ProbeResult run_openhaptics_probe(const std::string& backend_slug, const 
 
   result.enumeration_mode = "default-device-open";
   result.capability_scope = "runtime-and-default-device-open";
-  result.reported_capabilities = {
-      "device-open-close",
-      "position-orientation-state-path",
-      "button-proxy-input-path",
-      "force-feedback-path",
-      "scheduler-ready-surface",
-      "calibration-interface-surface",
-  };
-  if (hd_get_string) {
-    result.reported_capabilities.push_back("identity-query-path");
+  append_unique(&result.reported_capabilities, "device-open-close");
+  append_unique(&result.reported_capabilities, "error-reporting");
+  append_unique(&result.reported_capabilities, "force-enable-disable");
+  if (hd_get_current_device) {
+    append_unique(&result.reported_capabilities, "device-context-query");
+  }
+  if (hd_get_string || hd_get_integerv || hd_get_doublev) {
+    append_unique(&result.reported_capabilities, "device-characteristics-query");
+    append_unique(&result.reported_capabilities, "device-state-query");
+  }
+  if (hd_get_integerv) {
+    append_unique(&result.reported_capabilities, "button-proxy-input-path");
+  }
+  if (hd_set_doublev) {
+    append_unique(&result.reported_capabilities, "force-output-path");
+  }
+  if (hd_start_scheduler || hd_stop_scheduler || hd_schedule_async || hd_unschedule) {
+    append_unique(&result.reported_capabilities, "scheduler-control");
+  }
+  if (hd_check_calibration || hd_update_calibration) {
+    append_unique(&result.reported_capabilities, "calibration-interface");
   }
   result.probe_notes.push_back(
-      "OpenHaptics capability reporting is currently stack-level plus a conservative default-device open attempt. It does not yet claim live scene-coupled force output.");
+      "OpenHaptics capability reporting is currently based on exported HDAPI symbol availability plus a conservative default-device open attempt. It does not yet claim live scene-coupled force output.");
 
   const std::vector<const char*> device_selectors = {"DEFAULT", "Default PHANToM"};
   void* device_handle = nullptr;

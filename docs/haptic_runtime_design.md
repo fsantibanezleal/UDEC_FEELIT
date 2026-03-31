@@ -68,7 +68,7 @@ FeelIT now includes a first reproducible local bridge-bootstrap path:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now includes a vendor-aware OpenHaptics path that can dynamically load the HD runtime library set, attempt a conservative default-device open, and report stack-level capability channels, plus a vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
+The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now includes a vendor-aware OpenHaptics path that can dynamically load the HD runtime library set, attempt a conservative default-device open, and report capability channels inferred from exported HDAPI surfaces, plus a vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
 
 ## Contact Model Baseline
 
