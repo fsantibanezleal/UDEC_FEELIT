@@ -15,39 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
-### develop (unreleased local iteration)
+### v2.15.000 (2026-03-31)
 
-Add persisted preferred device selectors to the haptic runtime surface so OpenHaptics probing can start from an operator-defined target before falling back to default selectors.
+Deepen the haptic runtime surface with explicit scene contracts, backend-aware pilot rollout planning, and preferred vendor device selection for the next native-contact milestone.
 
-Delivered locally:
+Delivered:
 
-- Extended the runtime configuration model, API, and Haptic Configuration route to persist preferred device selectors per backend.
-- Passed the preferred selector into the native bridge probe contract so OpenHaptics can try an operator-defined selector before `DEFAULT` and `Default PHANToM`.
-- Added runtime and integration coverage for selector persistence and selector-aware fallback behavior.
-- Updated the current haptic runtime docs so this local iteration does not hide the new selector surface.
-
-Rationale:
-
-- Once the bridge can open a conservative default device, the next useful control surface is letting an operator point the probe at a specific runtime label when one is known.
-- This strengthens real device bring-up without pretending the scene-coupled haptic loop is already complete.
-
-### develop (unreleased local iteration)
-
-Add an explicit scene-to-backend haptic contract baseline so the native bridge path has concrete tactile primitives and event transitions to target.
-
-Delivered locally:
-
-- Added a dedicated scene-contract module that defines backend-facing event transitions and mode-specific tactile primitives for Object Explorer, Braille Reader, and Haptic Desktop.
-- Extended the runtime snapshot and Haptic Configuration route so the scene-contract baseline is visible inside the app instead of remaining only in engineering notes.
-- Expanded that contract into reusable primitive families plus a backend-readiness matrix so the repo can say which stacks are still diagnostic-only and which ones are structurally closer to consuming scene semantics.
-- Added a backend-aware contact rollout layer so each stack now declares one bounded pilot primitive, required force channels, and the next concrete engineering step toward scene-coupled contact.
-- Extended that rollout layer with bridge-facing pilot profiles and dynamic runtime-feature coverage, so each pilot can now say not only what should be built first, but also how close the current backend is to supporting it.
-- Added automated coverage for the scene-contract surface and refreshed the runtime, architecture, theory, and implementation-gap docs accordingly.
+- Added persisted preferred device selectors so OpenHaptics probing can start from an operator-defined target before falling back to its default selectors.
+- Added explicit scene-to-backend haptic contracts with reusable primitive families, backend-readiness rows, and mode-specific return-flow expectations.
+- Expanded the haptic configuration route with backend-aware contact rollout planning, pilot profiles, and runtime-feature coverage alignment against reported bridge capabilities.
+- Release-synced the preferred device selector path plus the richer OpenHaptics and Force Dimension diagnostics already accumulated on develop.
 
 Rationale:
 
-- The native backend path should not jump directly from SDK diagnostics to force rendering without a concrete semantic contract for scene primitives and events.
-- This gives FeelIT a clearer architectural bridge between the routed 3D worlds and the future scene-coupled haptic backend.
+- This is a material expansion of FeelIT's haptic runtime capability surface, not just a small patch, because the app now exposes a coherent next-step boundary between diagnostics and scene-coupled haptics.
+- The release stays honest about what is still missing: native force execution is still pending, but the configuration route can now express the first bounded pilots in a backend-specific way.
 
 ### v2.14.000 (2026-03-31)
 
