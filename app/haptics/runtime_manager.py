@@ -46,6 +46,7 @@ class HapticRuntimeConfig(BaseModel):
     requested_backend: str = "visual-emulator"
     sdk_roots: dict[str, str] = Field(default_factory=dict)
     bridge_paths: dict[str, str] = Field(default_factory=dict)
+    device_selectors: dict[str, str] = Field(default_factory=dict)
 
 
 class HapticBackendCandidate(BaseModel):
@@ -71,6 +72,7 @@ class HapticBackendCandidate(BaseModel):
     configured_bridge_path: str | None = None
     detected_bridge_path: str | None = None
     detected_driver_root: str | None = None
+    configured_device_selector: str | None = None
     bridge_probe_state: str = "not-run"
     bridge_probe_summary: str = ""
     detected_device_count: int | None = None
@@ -630,10 +632,15 @@ class HapticRuntimeManager:
                 self._config,
                 definition,
             )
+            configured_device_selector = (
+                self._config.device_selectors.get(str(definition.get("sdk_key") or ""), "").strip()
+                or None
+            )
             bridge_probe = probe_native_bridge(
                 bridge_path,
                 backend_slug=slug,
                 sdk_root=sdk_root,
+                device_selector=configured_device_selector,
             )
             reported_capabilities = [
                 str(item).strip()
@@ -660,6 +667,8 @@ class HapticRuntimeManager:
             evidence = sdk_evidence + driver_evidence + bridge_evidence
             if bridge_probe.summary:
                 evidence.append(f"Bridge probe: {bridge_probe.summary}")
+            if configured_device_selector:
+                evidence.append(f"Configured device selector: {configured_device_selector}")
             runtime_library = str(bridge_probe.payload.get("runtime_library", "")).strip()
             runtime_load_state = str(bridge_probe.payload.get("runtime_load_state", "")).strip()
             sdk_version = str(bridge_probe.payload.get("sdk_version", "")).strip()
@@ -763,6 +772,7 @@ class HapticRuntimeManager:
                     configured_bridge_path=configured_bridge_path,
                     detected_bridge_path=bridge_path,
                     detected_driver_root=driver_root,
+                    configured_device_selector=configured_device_selector,
                     bridge_probe_state=bridge_probe.state,
                     bridge_probe_summary=bridge_probe.summary,
                     detected_device_count=bridge_probe.detected_device_count,
@@ -796,6 +806,7 @@ class HapticRuntimeManager:
         requested_backend: str,
         sdk_roots: dict[str, str],
         bridge_paths: dict[str, str],
+        device_selectors: dict[str, str] | None = None,
     ) -> HapticRuntimeSnapshot:
         """Persist new runtime-selection preferences and return the refreshed snapshot."""
         valid_slugs = {definition["slug"] for definition in BACKEND_DEFINITIONS}
@@ -806,6 +817,9 @@ class HapticRuntimeManager:
         self._config.sdk_roots = {key: value.strip() for key, value in sdk_roots.items() if value.strip()}
         self._config.bridge_paths = {
             key: value.strip() for key, value in bridge_paths.items() if value.strip()
+        }
+        self._config.device_selectors = {
+            key: value.strip() for key, value in (device_selectors or {}).items() if value.strip()
         }
         self._save_config()
         self.refresh_runtime()

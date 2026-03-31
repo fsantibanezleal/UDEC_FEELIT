@@ -51,6 +51,7 @@ The route currently exposes:
 - requested backend selection
 - vendor SDK-root inputs
 - vendor bridge-path inputs
+- preferred device-selector inputs
 - build-tool diagnostics
 - bridge workspace commands
 - bridge-probe state per backend

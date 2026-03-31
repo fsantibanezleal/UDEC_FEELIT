@@ -36,6 +36,7 @@ def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch)
         requested_backend="openhaptics-touch",
         sdk_roots={"openhaptics": r"C:\SDKs\OpenHaptics"},
         bridge_paths={"openhaptics": r"D:\Bridges\openhaptics_bridge.exe"},
+        device_selectors={"openhaptics": "Touch X Left"},
     )
 
     openhaptics = next(backend for backend in snapshot.backends if backend.slug == "openhaptics-touch")
@@ -43,6 +44,7 @@ def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch)
     assert snapshot.active_backend == "visual-emulator"
     assert openhaptics.configured_sdk_root == r"C:\SDKs\OpenHaptics"
     assert openhaptics.configured_bridge_path == r"D:\Bridges\openhaptics_bridge.exe"
+    assert openhaptics.configured_device_selector == "Touch X Left"
     assert config_path.exists()
 
 
@@ -74,6 +76,7 @@ def test_haptic_configuration_api_updates_requested_backend(tmp_path, monkeypatc
                 "requested_backend": "forcedimension-dhd",
                 "sdk_roots": {"forcedimension": r"C:\SDKs\ForceDimension"},
                 "bridge_paths": {"forcedimension": r"D:\Bridges\fd_bridge.exe"},
+                "device_selectors": {"forcedimension": "omega-left"},
             },
         )
 
@@ -84,6 +87,7 @@ def test_haptic_configuration_api_updates_requested_backend(tmp_path, monkeypatc
     assert payload["active_backend"] == "visual-emulator"
     assert forcedimension["configured_sdk_root"] == r"C:\SDKs\ForceDimension"
     assert forcedimension["configured_bridge_path"] == r"D:\Bridges\fd_bridge.exe"
+    assert forcedimension["configured_device_selector"] == "omega-left"
 
 
 def test_haptic_configuration_api_rejects_unknown_backend(tmp_path, monkeypatch) -> None:
@@ -130,12 +134,14 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
         requested_backend="openhaptics-touch",
         sdk_roots={},
         bridge_paths={"openhaptics": str(bridge_script)},
+        device_selectors={"openhaptics": "Mock Touch X"},
     )
 
     openhaptics = next(backend for backend in snapshot.backends if backend.slug == "openhaptics-touch")
     assert openhaptics.detected_bridge_path == str(bridge_script.resolve())
     assert openhaptics.bridge_probe_state == "scaffold-only"
     assert openhaptics.bridge_probe_summary == "Mock bridge responded successfully."
+    assert openhaptics.configured_device_selector == "Mock Touch X"
     assert openhaptics.probe_enumeration_mode == "analysis-only"
     assert openhaptics.probe_capability_scope == "probe-contract"
     assert openhaptics.reported_capabilities == ["diagnostics-only"]

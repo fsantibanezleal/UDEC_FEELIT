@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### develop (unreleased local iteration)
+
+Add persisted preferred device selectors to the haptic runtime surface so OpenHaptics probing can start from an operator-defined target before falling back to default selectors.
+
+Delivered locally:
+
+- Extended the runtime configuration model, API, and Haptic Configuration route to persist preferred device selectors per backend.
+- Passed the preferred selector into the native bridge probe contract so OpenHaptics can try an operator-defined selector before `DEFAULT` and `Default PHANToM`.
+- Added runtime and integration coverage for selector persistence and selector-aware fallback behavior.
+- Updated the current haptic runtime docs so this local iteration does not hide the new selector surface.
+
+Rationale:
+
+- Once the bridge can open a conservative default device, the next useful control surface is letting an operator point the probe at a specific runtime label when one is known.
+- This strengthens real device bring-up without pretending the scene-coupled haptic loop is already complete.
+
 ### v2.14.000 (2026-03-31)
 
 Deepen the OpenHaptics native bridge with conservative default-device probing and richer capability diagnostics.

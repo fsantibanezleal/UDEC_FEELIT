@@ -149,6 +149,7 @@ Current use:
 
 - inspect the requested runtime backend separately from the currently active fallback backend
 - configure SDK roots and bridge paths for the first tracked vendor stacks
+- persist preferred device selectors so a backend can probe a specific runtime label before falling back to its default selector path
 - inspect build-tool readiness for the native bridge workflow
 - review the native bridge source root, build-root pattern, and recommended bootstrap commands
 - inspect per-backend bridge-probe state before claiming that a physical runtime exists

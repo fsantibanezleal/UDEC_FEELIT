@@ -59,6 +59,7 @@ def probe_native_bridge(
     *,
     backend_slug: str,
     sdk_root: str | None,
+    device_selector: str | None = None,
 ) -> HapticBridgeProbeSnapshot:
     """Run one bridge probe executable and return the parsed probe state."""
     if not executable_path:
@@ -81,6 +82,8 @@ def probe_native_bridge(
     command.extend(["--backend", backend_slug, "--emit-json"])
     if sdk_root:
         command.extend(["--sdk-root", sdk_root])
+    if device_selector:
+        command.extend(["--device-selector", device_selector])
 
     try:
         completed = subprocess.run(

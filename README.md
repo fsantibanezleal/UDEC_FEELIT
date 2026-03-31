@@ -124,7 +124,7 @@ The manager route is the authoring and registry surface for structured `haptic_w
 
 ![FeelIT Haptic Configuration](docs/png/frontend_haptic_configuration.png)
 
-The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, reported bridge capabilities, and the current boundary between scaffold-only, runtime-loaded, and device-aware capability.
+The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, preferred device selectors, reported bridge capabilities, and the current boundary between scaffold-only, runtime-loaded, and device-aware capability.
 
 ## Scope And Current Status
 
@@ -134,7 +134,7 @@ The configuration route makes the haptic backend problem explicit. It shows requ
 - `Braille Reader`: starts from a scene-native 3D library launcher, loads bounded document segments, and renders a tactile Braille world with in-scene navigation controls.
 - `Haptic Desktop`: moves between a launcher, paginated galleries, a typed file browser rooted in the bundled assets tree or a user workspace, detail plaques, and opened scenes for models, text, and audio, with server-side browser pagination for larger external roots.
 - `Haptic Workspace Manager`: creates and registers structured `haptic_workspace` descriptors rooted in external folders, surfaces registry diagnostics when registered descriptors are missing or invalid, and now defaults to descriptor-label views instead of exposing absolute local paths.
-- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, build-tool readiness, the compiled bridge probe state, the OpenHaptics default-device probe path, the Force Dimension runtime-enumeration path, reported bridge capability channels, and the current contact or material-rendering baseline that the future physical backend must respect.
+- `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, preferred device selectors, build-tool readiness, the compiled bridge probe state, the OpenHaptics default-device probe path, the Force Dimension runtime-enumeration path, reported bridge capability channels, and the current contact or material-rendering baseline that the future physical backend must respect.
 
 ### Legacy Boundary
 

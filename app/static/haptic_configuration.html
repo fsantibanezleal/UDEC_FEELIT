@@ -68,6 +68,18 @@
           <label for="bridge-chai3d">CHAI3D bridge executable</label>
           <input id="bridge-chai3d" type="text" placeholder="D:\Bridges\feelit_chai3d_bridge.exe">
         </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <h2>Preferred Device Selectors</h2>
+          </div>
+          <label for="selector-openhaptics">OpenHaptics device selector</label>
+          <input id="selector-openhaptics" type="text" placeholder="Touch X Left or DEFAULT">
+          <label for="selector-forcedimension">Force Dimension device selector</label>
+          <input id="selector-forcedimension" type="text" placeholder="Optional device hint or ID label">
+          <label for="selector-chai3d">CHAI3D device selector</label>
+          <input id="selector-chai3d" type="text" placeholder="Optional compatibility target">
+        </section>
       </aside>
 
       <section class="workspace-panel workspace-panel-scroll">
@@ -196,6 +208,7 @@
             <div><dt>Bridge probe</dt><dd id="selected-backend-bridge-probe">--</dd></div>
             <div><dt>Probe summary</dt><dd id="selected-backend-probe-summary">--</dd></div>
             <div><dt>Device count</dt><dd id="selected-backend-device-count">--</dd></div>
+            <div><dt>Preferred selector</dt><dd id="selected-backend-device-selector">--</dd></div>
             <div><dt>Probe mode</dt><dd id="selected-backend-probe-mode">--</dd></div>
             <div><dt>Capability scope</dt><dd id="selected-backend-capability-scope">--</dd></div>
             <div><dt>Probe capabilities</dt><dd id="selected-backend-probe-capabilities">--</dd></div>
@@ -230,6 +243,7 @@
         <ul>
           <li>Select which backend stack FeelIT should track as the requested runtime.</li>
           <li>Record SDK roots and bridge executables for OpenHaptics, Force Dimension, or CHAI3D-based paths.</li>
+          <li>Persist preferred device selectors when a backend should probe a specific runtime label before falling back to its default selector path.</li>
           <li>Inspect which native build tools are available on the current Windows host for the bridge workflow.</li>
           <li>Review the native bridge workspace and the commands used to configure or build the bridge scaffold.</li>
           <li>See whether a bridge executable is missing, failing, scaffold-only, runtime-loaded-without-devices, or reporting real device-ready probe data.</li>

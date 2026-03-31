@@ -44,6 +44,7 @@ function renderSelectedBackend() {
     byId("selected-backend-bridge-probe").textContent = "--";
     byId("selected-backend-probe-summary").textContent = "--";
     byId("selected-backend-device-count").textContent = "--";
+    byId("selected-backend-device-selector").textContent = "--";
     byId("selected-backend-probe-mode").textContent = "--";
     byId("selected-backend-capability-scope").textContent = "--";
     byId("selected-backend-probe-capabilities").textContent = "--";
@@ -66,6 +67,8 @@ function renderSelectedBackend() {
     backend.bridge_probe_summary || "No bridge-probe summary recorded.";
   byId("selected-backend-device-count").textContent =
     backend.detected_device_count == null ? "0" : String(backend.detected_device_count);
+  byId("selected-backend-device-selector").textContent =
+    backend.configured_device_selector || "No preferred selector configured.";
   byId("selected-backend-probe-mode").textContent =
     backend.probe_enumeration_mode || "No probe mode reported.";
   byId("selected-backend-capability-scope").textContent =
@@ -217,6 +220,15 @@ function applyFormValues(snapshot) {
     snapshot.backends.find((item) => item.slug === "chai3d-bridge")?.configured_bridge_path ||
     snapshot.backends.find((item) => item.slug === "chai3d-bridge")?.detected_bridge_path ||
     "";
+  byId("selector-openhaptics").value =
+    snapshot.backends.find((item) => item.slug === "openhaptics-touch")?.configured_device_selector ||
+    "";
+  byId("selector-forcedimension").value =
+    snapshot.backends.find((item) => item.slug === "forcedimension-dhd")?.configured_device_selector ||
+    "";
+  byId("selector-chai3d").value =
+    snapshot.backends.find((item) => item.slug === "chai3d-bridge")?.configured_device_selector ||
+    "";
 }
 
 function renderSnapshot(snapshot) {
@@ -262,6 +274,11 @@ async function saveConfiguration() {
       openhaptics: byId("bridge-openhaptics").value,
       forcedimension: byId("bridge-forcedimension").value,
       chai3d: byId("bridge-chai3d").value,
+    },
+    device_selectors: {
+      openhaptics: byId("selector-openhaptics").value,
+      forcedimension: byId("selector-forcedimension").value,
+      chai3d: byId("selector-chai3d").value,
     },
   };
   const snapshot = await fetchJson(configUrl, {
