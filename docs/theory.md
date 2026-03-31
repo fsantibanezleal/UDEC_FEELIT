@@ -179,6 +179,8 @@ This layer becomes more useful when it is not only page-specific. For that reaso
 
 That matters because a mature haptic system is not just a collection of pages. It is a disciplined transformation from scene semantics into stable force semantics.
 
+One useful consequence is rollout discipline. If a backend has not yet proven a safe surface-following primitive or a thresholded button primitive, it should not pretend to support a whole scene. FeelIT now reflects that by computing backend-specific pilot primitives and readiness states instead of describing scene-coupled haptics as one undifferentiated future milestone.
+
 ## 11. Braille Translation Layer Versus Scene Layer
 
 The current runtime intentionally separates two concerns:

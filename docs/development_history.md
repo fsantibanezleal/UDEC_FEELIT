@@ -40,6 +40,7 @@ Delivered locally:
 - Added a dedicated scene-contract module that defines backend-facing event transitions and mode-specific tactile primitives for Object Explorer, Braille Reader, and Haptic Desktop.
 - Extended the runtime snapshot and Haptic Configuration route so the scene-contract baseline is visible inside the app instead of remaining only in engineering notes.
 - Expanded that contract into reusable primitive families plus a backend-readiness matrix so the repo can say which stacks are still diagnostic-only and which ones are structurally closer to consuming scene semantics.
+- Added a backend-aware contact rollout layer so each stack now declares one bounded pilot primitive, required force channels, and the next concrete engineering step toward scene-coupled contact.
 - Added automated coverage for the scene-contract surface and refreshed the runtime, architecture, theory, and implementation-gap docs accordingly.
 
 Rationale:

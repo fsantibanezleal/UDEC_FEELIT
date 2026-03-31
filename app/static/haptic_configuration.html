@@ -152,6 +152,10 @@
                 <strong class="workspace-card-title">Scene To Bridge Contract</strong>
                 <span id="scene-contract-summary" class="workspace-card-body">Loading scene-contract baseline.</span>
               </article>
+              <article class="workspace-card workspace-card-static">
+                <strong class="workspace-card-title">Contact Pilot Rollout</strong>
+                <span id="contact-rollout-summary" class="workspace-card-body">Loading contact rollout baseline.</span>
+              </article>
             </div>
           </section>
 
@@ -174,6 +178,13 @@
               <h2>Backend Contract Readiness</h2>
             </div>
             <div id="scene-readiness-list" class="workspace-list"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="section-header">
+              <h2>Contact Pilot Rollout</h2>
+            </div>
+            <div id="contact-rollout-list" class="workspace-list"></div>
           </section>
 
           <section class="panel-section">
@@ -275,6 +286,7 @@
           <li>Inspect how a backend was probed, which capability scope it currently claims, and which haptic channels the bridge reports as available at the current maturity level.</li>
           <li>Inspect the current collision, contact, material-rendering, and scene-contract baseline that the native backend must honor.</li>
           <li>Review the reusable tactile primitive families and see how far each backend stack is from consuming them safely.</li>
+          <li>See which bounded pilot primitive each backend should implement first before attempting a full scene-wide force loop.</li>
           <li>Keep the built-in visual emulator as the safe default while physical-device integration is still under construction.</li>
         </ul>
       </div>

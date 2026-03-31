@@ -155,7 +155,8 @@ Current use:
 - inspect per-backend bridge-probe state before claiming that a physical runtime exists
 - review vendor-aware probe summaries, including OpenHaptics conservative default-device probe states plus reported capability channels and Force Dimension detected-device identities when a supported runtime is present
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
-- inspect the current design baseline for collision, contact, and material rendering
+- inspect the current design baseline for collision, contact, material rendering, reusable scene primitives, and backend readiness
+- inspect the backend-aware contact rollout plan that names one bounded pilot primitive and one next engineering step for each stack
 - keep the built-in visual emulator as the safe default runtime until a native bridge is ready
 
 This route is not a substitute for the future native backend. Its role is to make the hardware path explicit, testable, and documentable before real devices are attached.

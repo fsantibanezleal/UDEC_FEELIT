@@ -19,6 +19,7 @@ from app.core.haptic_feedback_design import (
     build_haptic_contact_design,
     build_haptic_material_rendering_matrix,
 )
+from app.core.haptic_contact_rollout import build_haptic_contact_rollout
 from app.core.haptic_scene_contracts import build_haptic_scene_contract
 from app.haptics.base import HapticBackend
 from app.haptics.factory import create_haptic_backend
@@ -117,6 +118,7 @@ class HapticRuntimeSnapshot(BaseModel):
     contact_design: dict[str, Any]
     material_rendering: list[dict[str, Any]]
     scene_contract: dict[str, Any]
+    contact_rollout: dict[str, Any]
 
 
 BACKEND_DEFINITIONS: tuple[dict[str, Any], ...] = (
@@ -789,6 +791,7 @@ class HapticRuntimeManager:
             )
 
         active_status = self._backend.status()
+        backend_payloads = [candidate.model_dump() for candidate in candidates]
         return HapticRuntimeSnapshot(
             requested_backend=self._config.requested_backend,
             active_backend=active_status.backend,
@@ -801,6 +804,7 @@ class HapticRuntimeManager:
             contact_design=build_haptic_contact_design(),
             material_rendering=build_haptic_material_rendering_matrix(),
             scene_contract=build_haptic_scene_contract(),
+            contact_rollout=build_haptic_contact_rollout(backend_payloads),
         )
 
     def update_configuration(

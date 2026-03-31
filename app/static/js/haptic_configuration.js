@@ -291,6 +291,43 @@ function renderSceneReadinessList() {
   });
 }
 
+function renderContactRolloutList() {
+  const rollout = state.snapshot.contact_rollout;
+  const container = byId("contact-rollout-list");
+  container.innerHTML = "";
+
+  rollout.pilot_scenarios.forEach((scenario) => {
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${scenario.backend_title} | ${scenario.readiness_state}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent = scenario.pilot_goal;
+
+    const target = document.createElement("span");
+    target.className = "workspace-card-meta";
+    target.textContent =
+      `${scenario.pilot_mode} | ${scenario.pilot_route} | ${scenario.pilot_primitive_slug}`;
+
+    const requirements = document.createElement("span");
+    requirements.className = "workspace-card-body";
+    requirements.textContent =
+      `Channels: ${scenario.required_force_channels.join(" | ")} | Scope: ${scenario.required_capability_scope}`;
+
+    const readiness = document.createElement("span");
+    readiness.className = "workspace-card-path";
+    readiness.textContent =
+      `${scenario.readiness_reason} Next: ${scenario.next_engineering_step}`;
+
+    card.append(title, description, target, requirements, readiness);
+    container.appendChild(card);
+  });
+}
+
 function applyFormValues(snapshot) {
   byId("requested-backend").innerHTML = "";
   snapshot.backends.forEach((backend) => {
@@ -354,6 +391,8 @@ function renderSnapshot(snapshot) {
     `${snapshot.material_rendering.length} material profiles mapped to explicit haptic rendering strategies.`;
   byId("scene-contract-summary").textContent =
     `${snapshot.scene_contract.mode_contracts.length} routed mode contracts | ${snapshot.scene_contract.primitive_families.length} primitive families | ${snapshot.scene_contract.event_contract.length} event transitions | ${snapshot.scene_contract.backend_readiness.length} backend readiness rows.`;
+  byId("contact-rollout-summary").textContent =
+    `${snapshot.contact_rollout.pilot_scenarios.length} backend-specific pilot scenarios now connect runtime readiness to one bounded contact milestone each.`;
   byId("config-runtime-pill").textContent = "Runtime mapped";
   applyFormValues(snapshot);
   renderBackendList();
@@ -363,6 +402,7 @@ function renderSnapshot(snapshot) {
   renderSceneContractList();
   renderScenePrimitiveList();
   renderSceneReadinessList();
+  renderContactRolloutList();
   setStatus(snapshot.selection_summary, "Ready");
 }
 

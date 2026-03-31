@@ -101,6 +101,20 @@ The current contract models Object Explorer, Braille Reader, and Haptic Desktop 
 - per-mode return-flow expectations
 - a backend-readiness matrix that explains which stacks are still diagnostic and which are closer to scene-coupled work
 
+## Contact Pilot Rollout
+
+FeelIT now computes a first backend-aware rollout layer on top of the static scene contract. The purpose is to prevent the next implementation step from becoming vague.
+
+Instead of saying only that a backend is "not ready yet", the runtime now names:
+
+- which mode should host the first pilot
+- which primitive should be implemented first
+- which force channels that primitive needs
+- which readiness state currently blocks or enables that pilot
+- which next engineering step follows from the current runtime state
+
+This keeps the first scene-coupled milestone bounded. A backend should first prove one safe tactile primitive before claiming support for a whole routed world.
+
 ## Loop Assumptions
 
 Current design targets:
