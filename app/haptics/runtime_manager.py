@@ -10,7 +10,9 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.haptics.bridge_probe import (
+    HapticBridgeCommandAckSnapshot,
     HapticBridgeProbeSnapshot,
+    acknowledge_native_bridge_command,
     default_bridge_output_candidates,
     native_bridge_root,
     probe_native_bridge,
@@ -532,6 +534,35 @@ def _build_bridge_workspace_status(
     )
 
 
+def _browser_mirror_command_ack(command: dict[str, Any]) -> HapticBridgeCommandAckSnapshot:
+    """Return the in-process acknowledgement used by the visual emulator path."""
+    return HapticBridgeCommandAckSnapshot(
+        state="browser-mirror-acknowledged",
+        summary=(
+            "The visual emulator can mirror this bounded pilot command in-process for debug "
+            "and scene-validation purposes. No native bridge or force loop is involved."
+        ),
+        backend_slug=str(command["backend_slug"]),
+        command_slug=str(command["command_slug"]),
+        accepted=True,
+        payload={
+            "mode": "pilot-command-ack",
+            "backend": command["backend_slug"],
+            "status": "browser-mirror-acknowledged",
+            "summary": (
+                "The visual emulator accepted the bounded pilot contract as a browser-side "
+                "debug mirror only."
+            ),
+            "accepted": True,
+            "command_slug": command["command_slug"],
+            "notes": [
+                "This acknowledgement is local to the browser-mirror path.",
+                "No native bridge boundary is crossed for the visual-emulator backend.",
+            ],
+        },
+    )
+
+
 class HapticRuntimeManager:
     """Coordinate user-scoped haptic runtime selection and dependency diagnostics."""
 
@@ -794,7 +825,26 @@ class HapticRuntimeManager:
 
         active_status = self._backend.status()
         backend_payloads = [candidate.model_dump() for candidate in candidates]
+        backend_map = {candidate.slug: candidate for candidate in candidates}
         contact_rollout = build_haptic_contact_rollout(backend_payloads)
+        pilot_command_contract = build_haptic_pilot_commands(contact_rollout)
+        for command in pilot_command_contract["commands"]:
+            backend_slug = str(command["backend_slug"])
+            transport_mode = str(command["transport"]["mode"])
+            if transport_mode == "browser-mirror":
+                ack = _browser_mirror_command_ack(command)
+            else:
+                backend_candidate = backend_map.get(backend_slug)
+                ack = acknowledge_native_bridge_command(
+                    backend_candidate.detected_bridge_path if backend_candidate else None,
+                    backend_slug=backend_slug,
+                    command_payload=command,
+                    sdk_root=backend_candidate.detected_sdk_root if backend_candidate else None,
+                    device_selector=(
+                        backend_candidate.configured_device_selector if backend_candidate else None
+                    ),
+                )
+            command["acknowledgement"] = ack.model_dump()
         return HapticRuntimeSnapshot(
             requested_backend=self._config.requested_backend,
             active_backend=active_status.backend,
@@ -808,7 +858,7 @@ class HapticRuntimeManager:
             material_rendering=build_haptic_material_rendering_matrix(),
             scene_contract=build_haptic_scene_contract(),
             contact_rollout=contact_rollout,
-            pilot_command_contract=build_haptic_pilot_commands(contact_rollout),
+            pilot_command_contract=pilot_command_contract,
         )
 
     def update_configuration(

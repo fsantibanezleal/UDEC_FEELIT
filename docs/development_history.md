@@ -21,6 +21,7 @@ Current local work after `v2.15.000`:
 
 - Added a bridge-facing pilot command contract layer so the runtime can emit dry-run payloads for each bounded backend-specific haptic pilot.
 - Surfaced that contract in the Haptic Configuration route alongside the existing readiness, rollout, and capability diagnostics.
+- Added a bounded bridge-side acknowledgement path so the native executable can validate one pilot command payload and return a dry-run acknowledgement without claiming execution.
 - Extended API and runtime tests so the new payload layer is validated before the next release-sync cycle.
 
 Why it stays local for now:

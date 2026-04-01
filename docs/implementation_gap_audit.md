@@ -149,7 +149,9 @@ The current `develop` state now also emits a dry-run pilot command contract for 
 - telemetry expectations
 - the missing runtime features that still block real execution
 
-This still stops before bridge acknowledgement, real servo-loop ownership, or force output, but it reduces ambiguity at the next native-integration boundary.
+This still stops before real servo-loop ownership or force output, but it reduces ambiguity at the next native-integration boundary.
+
+The current `develop` state now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. That means the bridge executable can now prove one additional thing end to end: it can receive the declared pilot contract and return a structured acknowledgement without yet claiming execution.
 
 The current bridge path is meaningful because it proves four things end to end:
 
@@ -177,7 +179,7 @@ The repository does not yet deliver:
 
 - a native haptic backend beside the null backend
 - broad runtime device capability detection and activation beyond the current OpenHaptics conservative default-device probe and Force Dimension enumeration baseline
-- a native bridge consumer that acknowledges or executes the new dry-run pilot command payloads
+- a native bridge consumer that executes the acknowledged dry-run pilot command payloads
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side preprocessing and import pipeline for 3D assets beyond the current validation gate
 - real desktop action execution semantics beyond content launching and playback control

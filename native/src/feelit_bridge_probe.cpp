@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <fstream>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -45,6 +47,20 @@ struct ProbeResult {
   std::string capability_scope = "none";
   std::string configured_device_selector;
   std::string effective_device_selector;
+};
+
+struct CommandAckResult {
+  std::string backend;
+  std::string status = "command-invalid";
+  std::string summary = "The pilot command payload could not be validated.";
+  std::string command_slug;
+  std::string primitive_slug;
+  std::string pilot_mode;
+  std::string pilot_route;
+  bool accepted = false;
+  std::vector<std::string> validated_fields;
+  std::vector<std::string> missing_fields;
+  std::vector<std::string> notes;
 };
 
 static std::map<std::string, BackendProfile> build_profiles() {
@@ -100,6 +116,13 @@ static std::string arg_value(int argc, char* argv[], const std::string& option, 
     }
   }
   return fallback;
+}
+
+static std::string read_text_file(const fs::path& file_path) {
+  std::ifstream input(file_path, std::ios::binary);
+  std::ostringstream buffer;
+  buffer << input.rdbuf();
+  return buffer.str();
 }
 
 static bool has_flag(int argc, char* argv[], const std::string& option) {
@@ -159,6 +182,119 @@ static void append_unique(std::vector<std::string>* values, const std::string& v
     }
   }
   values->push_back(value);
+}
+
+static std::optional<std::string> extract_json_string_field(const std::string& payload, const std::string& key) {
+  const std::regex pattern("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
+  std::smatch match;
+  if (std::regex_search(payload, match, pattern) && match.size() > 1) {
+    return match[1].str();
+  }
+  return std::nullopt;
+}
+
+static bool contains_json_key(const std::string& payload, const std::string& key) {
+  return payload.find("\"" + key + "\"") != std::string::npos;
+}
+
+static CommandAckResult run_pilot_command_ack(
+    const std::string& backend_slug,
+    const fs::path& command_file_path) {
+  CommandAckResult result;
+  result.backend = backend_slug;
+
+  if (!fs::exists(command_file_path)) {
+    result.summary = "The pilot command file is missing.";
+    result.missing_fields.push_back("command_file");
+    return result;
+  }
+
+  const std::string payload = read_text_file(command_file_path);
+  const auto command_slug = extract_json_string_field(payload, "command_slug");
+  const auto payload_backend_slug = extract_json_string_field(payload, "backend_slug");
+  const auto primitive_slug = extract_json_string_field(payload, "primitive_slug");
+  const auto pilot_mode = extract_json_string_field(payload, "pilot_mode");
+  const auto pilot_route = extract_json_string_field(payload, "pilot_route");
+  const auto schema_version = extract_json_string_field(payload, "schema_version");
+
+  if (command_slug) {
+    result.command_slug = *command_slug;
+    result.validated_fields.push_back("command_slug");
+  } else {
+    result.missing_fields.push_back("command_slug");
+  }
+  if (payload_backend_slug) {
+    result.validated_fields.push_back("backend_slug");
+  } else {
+    result.missing_fields.push_back("backend_slug");
+  }
+  if (primitive_slug) {
+    result.primitive_slug = *primitive_slug;
+    result.validated_fields.push_back("primitive_slug");
+  } else {
+    result.missing_fields.push_back("primitive_slug");
+  }
+  if (pilot_mode) {
+    result.pilot_mode = *pilot_mode;
+    result.validated_fields.push_back("pilot_mode");
+  } else {
+    result.missing_fields.push_back("pilot_mode");
+  }
+  if (pilot_route) {
+    result.pilot_route = *pilot_route;
+    result.validated_fields.push_back("pilot_route");
+  } else {
+    result.missing_fields.push_back("pilot_route");
+  }
+  if (schema_version) {
+    result.validated_fields.push_back("schema_version");
+  } else {
+    result.missing_fields.push_back("schema_version");
+  }
+
+  if (contains_json_key(payload, "transport")) {
+    result.validated_fields.push_back("transport");
+  } else {
+    result.missing_fields.push_back("transport");
+  }
+  if (contains_json_key(payload, "force_model")) {
+    result.validated_fields.push_back("force_model");
+  } else {
+    result.missing_fields.push_back("force_model");
+  }
+  if (contains_json_key(payload, "safety_envelope")) {
+    result.validated_fields.push_back("safety_envelope");
+  } else {
+    result.missing_fields.push_back("safety_envelope");
+  }
+  if (contains_json_key(payload, "telemetry_contract")) {
+    result.validated_fields.push_back("telemetry_contract");
+  } else {
+    result.missing_fields.push_back("telemetry_contract");
+  }
+
+  if (!result.missing_fields.empty()) {
+    result.summary = "The pilot command payload is missing one or more required contract fields.";
+    return result;
+  }
+
+  if (!payload_backend_slug || *payload_backend_slug != backend_slug) {
+    result.status = "command-backend-mismatch";
+    result.summary = "The pilot command backend does not match the native bridge backend target.";
+    result.notes.push_back("A bridge-side consumer must reject commands addressed to another backend family.");
+    return result;
+  }
+
+  result.status = "command-acknowledged-dry-run";
+  result.accepted = true;
+  result.summary =
+      "The native bridge accepted the dry-run pilot command contract for validation only. "
+      "No servo loop, force output, or scene ownership was started.";
+  result.notes.push_back(
+      "This acknowledgement only proves that the native boundary can receive and validate one bounded pilot payload.");
+  result.notes.push_back(
+      "Real actuation, bridge-side execution, and force-loop ownership remain future work.");
+  return result;
 }
 
 class SharedLibrary {
@@ -674,12 +810,32 @@ static void append_json_array(std::ostringstream* output, const std::string& key
   *output << "]";
 }
 
+static void append_json_ack_result(std::ostringstream* output, const CommandAckResult& result) {
+  bool first_field = true;
+  *output << "{";
+  append_json_string(output, "schema_version", "1", &first_field);
+  append_json_string(output, "mode", "pilot-command-ack", &first_field);
+  append_json_string(output, "backend", result.backend, &first_field);
+  append_json_string(output, "status", result.status, &first_field);
+  append_json_string(output, "summary", result.summary, &first_field);
+  append_json_string(output, "command_slug", result.command_slug, &first_field);
+  append_json_string(output, "primitive_slug", result.primitive_slug, &first_field);
+  append_json_string(output, "pilot_mode", result.pilot_mode, &first_field);
+  append_json_string(output, "pilot_route", result.pilot_route, &first_field);
+  append_json_bool(output, "accepted", result.accepted, &first_field);
+  append_json_array(output, "validated_fields", result.validated_fields, &first_field);
+  append_json_array(output, "missing_fields", result.missing_fields, &first_field);
+  append_json_array(output, "notes", result.notes, &first_field);
+  *output << "}";
+}
+
 int main(int argc, char* argv[]) {
   const auto profiles = build_profiles();
   const std::string default_backend = FEELIT_BRIDGE_DEFAULT_BACKEND;
   const std::string backend_slug = arg_value(argc, argv, "--backend", default_backend.empty() ? "openhaptics-touch" : default_backend);
   const std::string configured_sdk_root = arg_value(argc, argv, "--sdk-root", FEELIT_VENDOR_SDK_ROOT);
   const std::string configured_device_selector = arg_value(argc, argv, "--device-selector");
+  const std::string command_file = arg_value(argc, argv, "--consume-pilot-command-file");
   const bool emit_json = has_flag(argc, argv, "--emit-json");
 
   const auto profile_it = profiles.find(backend_slug);
@@ -689,6 +845,18 @@ int main(int argc, char* argv[]) {
   }
 
   const BackendProfile& profile = profile_it->second;
+  if (!command_file.empty()) {
+    const CommandAckResult command_ack = run_pilot_command_ack(backend_slug, fs::path(command_file));
+    if (!emit_json) {
+      std::cout << command_ack.summary << std::endl;
+      return command_ack.accepted ? 0 : 3;
+    }
+    std::ostringstream output;
+    append_json_ack_result(&output, command_ack);
+    std::cout << output.str() << std::endl;
+    return command_ack.accepted ? 0 : 3;
+  }
+
   ProbeResult result =
       backend_slug == "forcedimension-dhd"
           ? run_forcedimension_probe(backend_slug, configured_sdk_root, profile)

@@ -339,6 +339,11 @@ function renderPilotCommandList() {
   container.innerHTML = "";
 
   contract.commands.forEach((command) => {
+    const acknowledgement = command.acknowledgement || {
+      state: "not-run",
+      summary: "No acknowledgement data recorded yet.",
+      accepted: false,
+    };
     const card = document.createElement("article");
     card.className = "workspace-card workspace-card-static";
 
@@ -361,12 +366,21 @@ function renderPilotCommandList() {
     envelope.textContent =
       `Force channels: ${command.force_model.channels.join(" | ")} | Max force ${command.safety_envelope.max_force_n} N`;
 
+    const acknowledgementLine = document.createElement("span");
+    acknowledgementLine.className = "workspace-card-meta";
+    acknowledgementLine.textContent =
+      `Ack: ${acknowledgement.state} | accepted ${acknowledgement.accepted ? "yes" : "no"}`;
+
     const notes = document.createElement("span");
     notes.className = "workspace-card-path";
     notes.textContent =
-      `Missing features: ${command.missing_runtime_features.join(" | ") || "none"} | Next: ${command.next_engineering_step}`;
+      `Missing features: ${command.missing_runtime_features.join(" | ") || "none"} | ${acknowledgement.summary}`;
 
-    card.append(title, description, geometry, envelope, notes);
+    const nextStep = document.createElement("span");
+    nextStep.className = "workspace-card-path";
+    nextStep.textContent = `Next: ${command.next_engineering_step}`;
+
+    card.append(title, description, geometry, envelope, acknowledgementLine, notes, nextStep);
     container.appendChild(card);
   });
 }
@@ -437,7 +451,7 @@ function renderSnapshot(snapshot) {
   byId("contact-rollout-summary").textContent =
     `${snapshot.contact_rollout.pilot_scenarios.length} backend-specific pilot scenarios now connect runtime readiness to one bounded contact milestone each.`;
   byId("pilot-command-summary").textContent =
-    `${snapshot.pilot_command_contract.commands.length} dry-run pilot command payloads are now available for future bridge-side consumers.`;
+    `${snapshot.pilot_command_contract.commands.length} dry-run pilot command payloads are now available, and each one now records whether the current bridge boundary can already acknowledge it.`;
   byId("config-runtime-pill").textContent = "Runtime mapped";
   applyFormValues(snapshot);
   renderBackendList();
