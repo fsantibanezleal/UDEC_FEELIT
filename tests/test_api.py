@@ -92,6 +92,7 @@ def test_frontend_mode_routes_are_served() -> None:
     assert "Scene Primitive Families" in configuration_response.text
     assert "Backend Contract Readiness" in configuration_response.text
     assert "Contact Pilot Rollout" in configuration_response.text
+    assert "Pilot Command Contract" in configuration_response.text
     assert 'type="module" src="/static/js/haptic_configuration.js"' in configuration_response.text
 
 

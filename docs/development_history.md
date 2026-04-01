@@ -15,6 +15,19 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### develop (local iteration, not release-synced yet)
+
+Current local work after `v2.15.000`:
+
+- Added a bridge-facing pilot command contract layer so the runtime can emit dry-run payloads for each bounded backend-specific haptic pilot.
+- Surfaced that contract in the Haptic Configuration route alongside the existing readiness, rollout, and capability diagnostics.
+- Extended API and runtime tests so the new payload layer is validated before the next release-sync cycle.
+
+Why it stays local for now:
+
+- This is real progress on the next native-contact boundary, but it has not been grouped into the next release milestone yet.
+- The public version remains `2.15.000` until the next heavy cycle decides the correct release scope for these accumulated haptic changes.
+
 ### v2.15.000 (2026-03-31)
 
 Deepen the haptic runtime surface with explicit scene contracts, backend-aware pilot rollout planning, and preferred vendor device selection for the next native-contact milestone.

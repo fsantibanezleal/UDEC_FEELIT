@@ -117,6 +117,32 @@ Instead of saying only that a backend is "not ready yet", the runtime now names:
 
 This keeps the first scene-coupled milestone bounded. A backend should first prove one safe tactile primitive before claiming support for a whole routed world.
 
+## Pilot Command Contract
+
+The runtime now goes one step beyond rollout planning and emits a dry-run pilot command contract for each backend-specific milestone.
+
+That contract currently names:
+
+- the backend slug and transport assumption
+- the pilot mode and primitive
+- the geometry or material profile associated with the pilot
+- the force-model parameters and safety envelope
+- the minimum telemetry fields that a bridge-side consumer should preserve
+- the missing runtime features that still block real execution
+
+This is still not live force execution. It is the bridge-facing payload layer that should exist before the first sidecar actually starts accepting and acknowledging commands.
+
+The current contract is already rich enough to drive early native integration work because each payload now fixes:
+
+- a stable command slug
+- a schema version
+- the transport assumption for the current backend family
+- the bounded force-model summary for the target primitive
+- the safety envelope and telemetry minimums that a future bridge consumer must preserve
+- the missing runtime features that still block real execution
+
+This means FeelIT no longer stops at "which pilot should exist". It now also states "what exact dry-run command shape should the bridge receive first".
+
 ## Loop Assumptions
 
 Current design targets:
@@ -169,6 +195,8 @@ The bridge executable is now expected to answer a small JSON probe contract befo
 - which haptic-capability channels the bridge reports at the current maturity level
 
 That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension can reach device-ready enumeration through the DHD runtime, while OpenHaptics can now move beyond symbol-only validation into a conservative default-device open path with explicit capability reporting.
+
+The next implementation boundary after this document is therefore not another planning artifact. It is a bridge consumer that can accept one of these dry-run pilot payloads, validate it, and return a bounded acknowledgement without yet owning the full servo loop.
 
 ## Validation Expectations
 

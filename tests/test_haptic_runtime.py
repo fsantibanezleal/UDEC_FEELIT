@@ -41,6 +41,11 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
         for item in snapshot.contact_rollout["pilot_scenarios"]
     )
     assert all(item["pilot_profile"] for item in snapshot.contact_rollout["pilot_scenarios"])
+    assert len(snapshot.pilot_command_contract["commands"]) >= 4
+    assert any(
+        item["backend_slug"] == "openhaptics-touch"
+        for item in snapshot.pilot_command_contract["commands"]
+    )
 
 
 def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch) -> None:
@@ -87,6 +92,7 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
         item["capability_alignment"] in {"aligned", "partial", "insufficient", "not-needed"}
         for item in payload["contact_rollout"]["pilot_scenarios"]
     )
+    assert len(payload["pilot_command_contract"]["commands"]) >= 4
 
 
 def test_haptic_configuration_api_updates_requested_backend(tmp_path, monkeypatch) -> None:
