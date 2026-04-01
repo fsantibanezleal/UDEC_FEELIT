@@ -143,7 +143,7 @@ The current contract is already rich enough to drive early native integration wo
 
 This means FeelIT no longer stops at "which pilot should exist". It now also states "what exact dry-run command shape should the bridge receive first".
 
-The current `develop` state now goes one step beyond payload generation and asks the bridge boundary to acknowledge those contracts in dry-run mode. That acknowledgement is still bounded:
+The current shipped baseline now goes one step beyond payload generation and asks the bridge boundary to acknowledge those contracts in dry-run mode. That acknowledgement is still bounded:
 
 - it only validates the declared contract shape
 - it does not start a servo loop
@@ -203,7 +203,7 @@ The bridge executable is now expected to answer a small JSON probe contract befo
 
 That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension can reach device-ready enumeration through the DHD runtime, while OpenHaptics can now move beyond symbol-only validation into a conservative default-device open path with explicit capability reporting.
 
-The next implementation boundary after this document is therefore not another planning artifact. It is a bridge consumer that can accept one of these dry-run pilot payloads, validate it, and return a bounded acknowledgement without yet owning the full servo loop. The current `develop` branch now includes that bounded acknowledgement path; the next step after it is bridge-side execution, not another round of abstract planning.
+The next implementation boundary after this document is therefore not another planning artifact. It is a bridge consumer that can accept one of these dry-run pilot payloads, validate it, and return a bounded acknowledgement without yet owning the full servo loop. The current shipped baseline now includes that bounded acknowledgement path; the next step after it is bridge-side execution, not another round of abstract planning.
 
 ## Validation Expectations
 

@@ -15,19 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
-### develop (local iteration, not release-synced yet)
+### v2.16.000 (2026-04-01)
 
-Current local work after `v2.15.000`:
+Add a dry-run native acknowledgement boundary for bounded haptic pilot commands.
 
-- Added a bridge-facing pilot command contract layer so the runtime can emit dry-run payloads for each bounded backend-specific haptic pilot.
-- Surfaced that contract in the Haptic Configuration route alongside the existing readiness, rollout, and capability diagnostics.
-- Added a bounded bridge-side acknowledgement path so the native executable can validate one pilot command payload and return a dry-run acknowledgement without claiming execution.
-- Extended API and runtime tests so the new payload layer is validated before the next release-sync cycle.
+Delivered:
 
-Why it stays local for now:
+- Added bridge-facing pilot command contracts for backend-specific haptic pilots.
+- Extended the native bridge executable so it can validate and acknowledge one bounded pilot command payload in dry-run mode.
+- Surfaced bridge-side pilot acknowledgement through the Haptic Configuration route and runtime snapshot.
+- Expanded runtime, API, and native-bridge tests for the new acknowledgement boundary.
 
-- This is real progress on the next native-contact boundary, but it has not been grouped into the next release milestone yet.
-- The public version remains `2.15.000` until the next heavy cycle decides the correct release scope for these accumulated haptic changes.
+Rationale:
+
+- This is a material expansion of the haptic backend surface because FeelIT now proves a bridge-side contract boundary beyond probe-only diagnostics.
+- The release still stays honest about scope: acknowledgement exists, but execution, force output, and servo-loop ownership remain future work.
 
 ### v2.15.000 (2026-03-31)
 

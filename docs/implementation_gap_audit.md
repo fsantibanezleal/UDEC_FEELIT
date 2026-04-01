@@ -151,7 +151,7 @@ The current `develop` state now also emits a dry-run pilot command contract for 
 
 This still stops before real servo-loop ownership or force output, but it reduces ambiguity at the next native-integration boundary.
 
-The current `develop` state now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. That means the bridge executable can now prove one additional thing end to end: it can receive the declared pilot contract and return a structured acknowledgement without yet claiming execution.
+The current shipped baseline now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. That means the bridge executable can now prove one additional thing end to end: it can receive the declared pilot contract and return a structured acknowledgement without yet claiming execution.
 
 The current bridge path is meaningful because it proves four things end to end:
 
