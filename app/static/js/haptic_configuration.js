@@ -333,6 +333,58 @@ function renderContactRolloutList() {
   });
 }
 
+function renderPilotCommandList() {
+  const contract = state.snapshot.pilot_command_contract;
+  const container = byId("pilot-command-list");
+  container.innerHTML = "";
+
+  contract.commands.forEach((command) => {
+    const acknowledgement = command.acknowledgement || {
+      state: "not-run",
+      summary: "No acknowledgement data recorded yet.",
+      accepted: false,
+    };
+    const card = document.createElement("article");
+    card.className = "workspace-card workspace-card-static";
+
+    const title = document.createElement("strong");
+    title.className = "workspace-card-title";
+    title.textContent = `${command.backend_slug} | ${command.command_slug}`;
+
+    const description = document.createElement("span");
+    description.className = "workspace-card-body";
+    description.textContent =
+      `${command.transport.mode} | ${command.force_model.model_slug} | readiness ${command.readiness_state}`;
+
+    const geometry = document.createElement("span");
+    geometry.className = "workspace-card-meta";
+    geometry.textContent =
+      `${command.pilot_mode} | ${command.primitive_slug} | ${command.geometry_profile.geometry_kind} | material ${command.material_preset_slug}`;
+
+    const envelope = document.createElement("span");
+    envelope.className = "workspace-card-body";
+    envelope.textContent =
+      `Force channels: ${command.force_model.channels.join(" | ")} | Max force ${command.safety_envelope.max_force_n} N`;
+
+    const acknowledgementLine = document.createElement("span");
+    acknowledgementLine.className = "workspace-card-meta";
+    acknowledgementLine.textContent =
+      `Ack: ${acknowledgement.state} | accepted ${acknowledgement.accepted ? "yes" : "no"}`;
+
+    const notes = document.createElement("span");
+    notes.className = "workspace-card-path";
+    notes.textContent =
+      `Missing features: ${command.missing_runtime_features.join(" | ") || "none"} | ${acknowledgement.summary}`;
+
+    const nextStep = document.createElement("span");
+    nextStep.className = "workspace-card-path";
+    nextStep.textContent = `Next: ${command.next_engineering_step}`;
+
+    card.append(title, description, geometry, envelope, acknowledgementLine, notes, nextStep);
+    container.appendChild(card);
+  });
+}
+
 function applyFormValues(snapshot) {
   byId("requested-backend").innerHTML = "";
   snapshot.backends.forEach((backend) => {
@@ -398,6 +450,8 @@ function renderSnapshot(snapshot) {
     `${snapshot.scene_contract.mode_contracts.length} routed mode contracts | ${snapshot.scene_contract.primitive_families.length} primitive families | ${snapshot.scene_contract.event_contract.length} event transitions | ${snapshot.scene_contract.backend_readiness.length} backend readiness rows.`;
   byId("contact-rollout-summary").textContent =
     `${snapshot.contact_rollout.pilot_scenarios.length} backend-specific pilot scenarios now connect runtime readiness to one bounded contact milestone each.`;
+  byId("pilot-command-summary").textContent =
+    `${snapshot.pilot_command_contract.commands.length} dry-run pilot command payloads are now available, and each one now records whether the current bridge boundary can already acknowledge it.`;
   byId("config-runtime-pill").textContent = "Runtime mapped";
   applyFormValues(snapshot);
   renderBackendList();
@@ -408,6 +462,7 @@ function renderSnapshot(snapshot) {
   renderScenePrimitiveList();
   renderSceneReadinessList();
   renderContactRolloutList();
+  renderPilotCommandList();
   setStatus(snapshot.selection_summary, "Ready");
 }
 

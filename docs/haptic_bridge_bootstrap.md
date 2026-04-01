@@ -12,6 +12,7 @@ The haptic path cannot stay at the level of a browser fallback plus a text field
 
 - explicit toolchain diagnostics
 - an executable bridge-probe contract
+- a bounded dry-run command acknowledgement path
 - a build script that developers can rerun locally
 - an honest distinction between scaffold readiness and real device readiness
 
@@ -24,7 +25,7 @@ FeelIT now ships:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The probe now also contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
+Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The executable now covers two bounded bridge responsibilities: a probe path and a dry-run pilot-command acknowledgement path. The probe already contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
 
 ## Bootstrap Workflow
 
@@ -100,6 +101,23 @@ Depending on the backend and installed runtime, that response may remain `scaffo
 - parse probe JSON
 - present the result in the configuration UI and API
 
+## Dry-Run Pilot Command Acknowledgement
+
+The same executable can now also validate one bounded pilot command contract:
+
+```text
+feelit_bridge_probe.exe --backend <backend-slug> --consume-pilot-command-file <command.json> --emit-json
+```
+
+This path currently proves only that the bridge boundary can:
+
+- receive a bounded pilot payload
+- validate the declared contract shape
+- reject backend mismatches or missing required fields
+- return a dry-run acknowledgement without claiming execution
+
+That is still intentionally smaller than real control. It exists so the first bridge-side milestone after probe coverage is measurable and testable.
+
 ## What The Bridge Still Does Not Claim
 
 The bridge system does **not** yet claim:
@@ -110,6 +128,7 @@ The bridge system does **not** yet claim:
 - homing
 - servo-loop execution
 - real collision or material rendering
+- bridge-side execution of the acknowledged pilot command payloads
 
 The OpenHaptics path can now load the runtime library set, attempt a conservative default-device open, and report stack-level capability channels, and the Force Dimension path can now load and enumerate, but force output, calibration, homing, and live scene-coupled control still belong to the next backend stage tracked in the native haptic issues.
 

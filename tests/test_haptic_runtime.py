@@ -41,6 +41,16 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
         for item in snapshot.contact_rollout["pilot_scenarios"]
     )
     assert all(item["pilot_profile"] for item in snapshot.contact_rollout["pilot_scenarios"])
+    assert len(snapshot.pilot_command_contract["commands"]) >= 4
+    assert any(
+        item["backend_slug"] == "openhaptics-touch"
+        for item in snapshot.pilot_command_contract["commands"]
+    )
+    assert any(
+        item["acknowledgement"]["state"] == "browser-mirror-acknowledged"
+        for item in snapshot.pilot_command_contract["commands"]
+        if item["backend_slug"] == "visual-emulator"
+    )
 
 
 def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch) -> None:
@@ -87,6 +97,7 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
         item["capability_alignment"] in {"aligned", "partial", "insufficient", "not-needed"}
         for item in payload["contact_rollout"]["pilot_scenarios"]
     )
+    assert len(payload["pilot_command_contract"]["commands"]) >= 4
 
 
 def test_haptic_configuration_api_updates_requested_backend(tmp_path, monkeypatch) -> None:
@@ -170,3 +181,76 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
     assert openhaptics.probe_capability_scope == "probe-contract"
     assert openhaptics.reported_capabilities == ["diagnostics-only"]
     assert openhaptics.probe_notes == ["Mock note"]
+
+
+def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    config_path = tmp_path / "haptic_runtime_config.json"
+    bridge_script = tmp_path / "mock_bridge_probe.py"
+    bridge_script.write_text(
+        textwrap.dedent(
+            """
+            import json
+            import pathlib
+            import sys
+
+            args = sys.argv[1:]
+
+            def value(option, fallback=""):
+                if option in args:
+                    index = args.index(option)
+                    if index + 1 < len(args):
+                        return args[index + 1]
+                return fallback
+
+            backend = value("--backend", "openhaptics-touch")
+            command_path = value("--consume-pilot-command-file")
+
+            if command_path:
+                payload = json.loads(pathlib.Path(command_path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "mode": "pilot-command-ack",
+                    "backend": backend,
+                    "status": "command-acknowledged-dry-run",
+                    "summary": "Mock bridge accepted the pilot command payload.",
+                    "accepted": True,
+                    "command_slug": payload["command_slug"],
+                    "validated_fields": ["command_slug", "backend_slug", "primitive_slug"],
+                    "missing_fields": [],
+                    "notes": ["Mock acknowledgement only."]
+                }))
+            else:
+                print(json.dumps({
+                    "backend": backend,
+                    "status": "runtime-loaded-capability-ready",
+                    "summary": "Mock bridge runtime load state.",
+                    "device_count": 0,
+                    "devices": [],
+                    "enumeration_mode": "analysis-only",
+                    "capability_scope": "probe-contract",
+                    "reported_capabilities": ["force-output-path", "button-proxy-input-path", "scheduler-control"],
+                    "probe_notes": ["Mock note"]
+                }))
+            """,
+        ).strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FEELIT_HAPTIC_CONFIG_PATH", str(config_path))
+
+    manager = HapticRuntimeManager()
+    snapshot = manager.update_configuration(
+        requested_backend="openhaptics-touch",
+        sdk_roots={},
+        bridge_paths={"openhaptics": str(bridge_script)},
+        device_selectors={"openhaptics": "Mock Touch X"},
+    )
+
+    openhaptics_command = next(
+        item
+        for item in snapshot.pilot_command_contract["commands"]
+        if item["backend_slug"] == "openhaptics-touch"
+    )
+    assert openhaptics_command["acknowledgement"]["state"] == "command-acknowledged-dry-run"
+    assert openhaptics_command["acknowledgement"]["accepted"] is True

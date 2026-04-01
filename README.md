@@ -14,7 +14,7 @@ The current repository is not a single long web page. It is a multi-workspace ap
 - `/haptic-workspace-manager`
 - `/haptic-configuration`
 
-The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness. On the 3D import side, FeelIT now ships server-side local-upload validation, backend-derived staging guidance, and bundle-aware local `glTF` intake that can resolve sidecar buffers or textures when the user selects the main model together with its required resources. It also ships a native-bridge bootstrap surface: toolchain diagnostics, a PowerShell bridge bootstrap script, a JSON-based bridge probe contract, and a compiled scaffold that proves the bridge workflow can be configured and built locally before the vendor-specific device loop is fully implemented. The vendor-aware bridge layer now has two concrete levels: the Force Dimension DHD path can load the runtime library and enumerate devices when a compatible SDK runtime is present, while the OpenHaptics path can now load the HD runtime library set, attempt a conservative default-device open, and report capability channels inferred from exported HDAPI surfaces without yet claiming live scene-coupled force rendering.
+The shipped baseline already provides real 3D workspace rendering across the spatial modes, a null-safe no-device execution path with pointer emulation, a scene-native object session launcher, scene-native Braille controls, bundled public-domain reading and audio assets, curated 3D demo assets, a structured `haptic_workspace` system that prepares the Haptic Desktop for larger external libraries, and a dedicated haptic-configuration route that separates the active fallback runtime from vendor SDK and bridge readiness. On the 3D import side, FeelIT now ships server-side local-upload validation, backend-derived staging guidance, and bundle-aware local `glTF` intake that can resolve sidecar buffers or textures when the user selects the main model together with its required resources. It also ships a native-bridge bootstrap surface: toolchain diagnostics, a PowerShell bridge bootstrap script, a JSON-based bridge probe contract, and a compiled scaffold that proves the bridge workflow can be configured and built locally before the vendor-specific device loop is fully implemented. The vendor-aware bridge layer now has two concrete levels: the Force Dimension DHD path can load the runtime library and enumerate devices when a compatible SDK runtime is present, while the OpenHaptics path can now load the HD runtime library set, attempt a conservative default-device open, and report capability channels inferred from exported HDAPI surfaces without yet claiming live scene-coupled force rendering. FeelIT now also emits dry-run pilot command payloads for the first bounded haptic primitives and records whether the current native bridge boundary can already acknowledge them safely, so the runtime can describe both the contract and the first acknowledgement step before it owns a real control or force loop.
 
 ## Problem Framing
 
@@ -80,11 +80,11 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Local multi-file bundle intake | bundle-aware `gltf` sidecar resolution with explicit main-file selection |
 | Public port | `8101` |
-| Release-synced version | `2.15.000` |
+| Release-synced version | `2.16.000` |
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `85` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `90` automated tests passing plus browser smoke validation across the `5` routed pages |
 
 ## Current Frontend Views
 
@@ -124,7 +124,7 @@ The manager route is the authoring and registry surface for structured `haptic_w
 
 ![FeelIT Haptic Configuration](docs/png/frontend_haptic_configuration.png)
 
-The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, preferred device selectors, reported bridge capabilities, and the current boundary between scaffold-only, runtime-loaded, and device-aware capability.
+The configuration route makes the haptic backend problem explicit. It shows requested backend intent, active fallback state, vendor SDK readiness, bridge diagnostics, preferred device selectors, reported bridge capabilities, the backend-aware contact rollout, the dry-run pilot command payloads that a future native bridge should eventually accept, and whether the current bridge boundary can already acknowledge those payloads safely.
 
 ## Scope And Current Status
 
@@ -137,6 +137,8 @@ The configuration route makes the haptic backend problem explicit. It shows requ
 - `Haptic Configuration`: tracks the requested runtime backend, the currently active fallback backend, vendor SDK roots, native bridge paths, preferred device selectors, build-tool readiness, the compiled bridge probe state, the OpenHaptics default-device probe path, the Force Dimension runtime-enumeration path, reported bridge capability channels, and the current contact or material-rendering baseline that the future physical backend must respect.
 - FeelIT now also ships an explicit scene-to-backend contract baseline so each routed spatial mode declares which tactile primitives, event transitions, telemetry fields, return-flow expectations, and material channels a future native backend must honor. That contract is backed by a reusable primitive-family catalog and a backend-readiness matrix that clarifies which stacks are still diagnostic-only and which ones are closer to consuming real scene semantics.
 - The same configuration route now computes a backend-aware contact rollout plan, so OpenHaptics, Force Dimension, CHAI3D, and the visual emulator each expose one bounded pilot primitive, required force channels, required runtime features, coverage alignment against currently reported backend capabilities, and the next engineering step toward scene-coupled haptics.
+- FeelIT now also emits dry-run pilot command payloads for those bounded primitives, so the runtime can describe what a future native bridge should consume before a full scene-wide force loop exists. Those payloads already include transport assumptions, force-model summaries, safety envelopes, telemetry expectations, and missing runtime features per backend-specific pilot.
+- The native bridge now acknowledges those bounded pilot payloads in dry-run mode, which makes the bridge-side integration gap more explicit without pretending that force execution already exists.
 
 ### Legacy Boundary
 
@@ -148,7 +150,7 @@ The preserved legacy archive in `legacy/Registro Software` most strongly verifie
 
 - no native physical haptic backend is attached yet, although a dedicated configuration route now tracks requested backends, SDK roots, bridge paths, toolchain readiness, and contact-model assumptions
 - the shipped bridge system now includes a vendor-aware Force Dimension DHD probe that can load the runtime library and enumerate devices plus a vendor-aware OpenHaptics probe that can load the HD runtime library set, perform a conservative default-device open attempt, and report stack-level capability channels, but CHAI3D still remains a scaffold-level probe path
-- no probe currently drives force output, calibration, homing, or a live scene-coupled servo loop
+- no probe or pilot payload currently drives force output, calibration, homing, or a live scene-coupled servo loop; the current acknowledgement path is dry-run validation only
 - 3D asset import now has server-side validation, staging guidance, explicit local-bundle main-file selection, and bundle-aware local `gltf` sidecar resolution, but it still lacks a full server-side preprocessing or repair pipeline
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub`
 - the workspace manager is still a first structured-descriptor baseline rather than a rich authoring suite

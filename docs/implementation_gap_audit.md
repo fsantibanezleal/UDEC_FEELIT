@@ -141,6 +141,18 @@ The runtime now also carries an explicit scene-to-backend contract baseline. Tha
 
 On top of that, the runtime now computes a first backend-aware contact rollout plan. This is still not live force output, but it materially improves engineering clarity because each stack now names one bounded pilot primitive, one bridge-facing pilot profile, one required runtime-feature set, and one next step instead of stopping at a generic "future work" label.
 
+The current `develop` state now also emits a dry-run pilot command contract for each of those bounded primitives. The runtime can therefore already produce:
+
+- a stable command slug
+- transport assumptions
+- force-model and safety-envelope summaries
+- telemetry expectations
+- the missing runtime features that still block real execution
+
+This still stops before real servo-loop ownership or force output, but it reduces ambiguity at the next native-integration boundary.
+
+The current shipped baseline now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. That means the bridge executable can now prove one additional thing end to end: it can receive the declared pilot contract and return a structured acknowledgement without yet claiming execution.
+
 The current bridge path is meaningful because it proves four things end to end:
 
 - FeelIT can discover or configure a bridge executable
@@ -167,6 +179,7 @@ The repository does not yet deliver:
 
 - a native haptic backend beside the null backend
 - broad runtime device capability detection and activation beyond the current OpenHaptics conservative default-device probe and Force Dimension enumeration baseline
+- a native bridge consumer that executes the acknowledged dry-run pilot command payloads
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side preprocessing and import pipeline for 3D assets beyond the current validation gate
 - real desktop action execution semantics beyond content launching and playback control
