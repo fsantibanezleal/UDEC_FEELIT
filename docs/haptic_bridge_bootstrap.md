@@ -13,6 +13,7 @@ The haptic path cannot stay at the level of a browser fallback plus a text field
 - explicit toolchain diagnostics
 - an executable bridge-probe contract
 - a bounded dry-run command acknowledgement path
+- a first bounded no-force execution step for the OpenHaptics button-actuation pilot
 - a build script that developers can rerun locally
 - an honest distinction between scaffold readiness and real device readiness
 
@@ -25,7 +26,7 @@ FeelIT now ships:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The executable now covers two bounded bridge responsibilities: a probe path and a dry-run pilot-command acknowledgement path. The probe already contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
+Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The executable now covers three bounded bridge responsibilities: a probe path, a dry-run pilot-command acknowledgement path, and one first bounded no-force execution path for the OpenHaptics button-actuation pilot. The probe already contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
 
 The probe payload now also has room for a normalized feature schema. That stable layer is what the Python runtime should eventually rely on for rollout alignment and pilot execution gating, while the raw vendor capability labels remain supporting evidence.
 
@@ -116,9 +117,19 @@ This path currently proves only that the bridge boundary can:
 - receive a bounded pilot payload
 - validate the declared contract shape
 - reject backend mismatches or missing required fields
-- return a dry-run acknowledgement without claiming execution
+- return a dry-run acknowledgement without claiming scene-wide execution
 
 That is still intentionally smaller than real control. It exists so the first bridge-side milestone after probe coverage is measurable and testable.
+
+## First Bounded Native Execution Slice
+
+The same executable now also supports one bounded native execution step for the OpenHaptics button-actuation pilot:
+
+- receive the same pilot command contract after acknowledgement
+- validate that the payload really targets the OpenHaptics button-actuation path
+- require a conservative OpenHaptics runtime-ready state first
+- execute one bounded bridge-side step in a clamped no-force mode
+- return structured execution status and telemetry fields without claiming servo ownership
 
 ## What The Bridge Still Does Not Claim
 
@@ -130,7 +141,7 @@ The bridge system does **not** yet claim:
 - homing
 - servo-loop execution
 - real collision or material rendering
-- bridge-side execution of the acknowledged pilot command payloads
+- additional bridge-side execution coverage beyond the first OpenHaptics no-force pilot
 
 The OpenHaptics path can now load the runtime library set, attempt a conservative default-device open, and report stack-level capability channels, and the Force Dimension path can now load and enumerate, but force output, calibration, homing, and live scene-coupled control still belong to the next backend stage tracked in the native haptic issues.
 
