@@ -11,9 +11,11 @@ from pydantic import BaseModel, Field
 
 from app.haptics.bridge_probe import (
     HapticBridgeCommandAckSnapshot,
+    HapticBridgeCommandExecutionSnapshot,
     HapticBridgeProbeSnapshot,
     acknowledge_native_bridge_command,
     default_bridge_output_candidates,
+    execute_native_bridge_command,
     native_bridge_root,
     probe_native_bridge,
 )
@@ -567,6 +569,42 @@ def _browser_mirror_command_ack(command: dict[str, Any]) -> HapticBridgeCommandA
     )
 
 
+def _browser_mirror_command_execution(
+    command: dict[str, Any],
+) -> HapticBridgeCommandExecutionSnapshot:
+    """Return the in-process bounded execution mirror used by the visual emulator path."""
+    return HapticBridgeCommandExecutionSnapshot(
+        state="browser-mirror-executed",
+        summary=(
+            "The visual emulator mirrored the bounded pilot execution contract locally. "
+            "No native bridge, hardware runtime, or force loop was started."
+        ),
+        backend_slug=str(command["backend_slug"]),
+        command_slug=str(command["command_slug"]),
+        executed=True,
+        payload={
+            "mode": "pilot-command-execution",
+            "backend": command["backend_slug"],
+            "status": "browser-mirror-executed",
+            "summary": (
+                "The bounded pilot was mirrored in the browser-side debug runtime only."
+            ),
+            "executed": True,
+            "execution_mode": "browser-mirror-bounded-no-force",
+            "command_slug": command["command_slug"],
+            "telemetry_preview": {
+                "scene_route": command["pilot_route"],
+                "primitive_slug": command["primitive_slug"],
+                "safety_state": "debug-bounded",
+            },
+            "notes": [
+                "This execution result is local to the browser mirror path.",
+                "No native bridge or physical device was involved.",
+            ],
+        },
+    )
+
+
 class HapticRuntimeManager:
     """Coordinate user-scoped haptic runtime selection and dependency diagnostics."""
 
@@ -870,6 +908,7 @@ class HapticRuntimeManager:
             transport_mode = str(command["transport"]["mode"])
             if transport_mode == "browser-mirror":
                 ack = _browser_mirror_command_ack(command)
+                execution = _browser_mirror_command_execution(command)
             else:
                 backend_candidate = backend_map.get(backend_slug)
                 ack = acknowledge_native_bridge_command(
@@ -881,7 +920,17 @@ class HapticRuntimeManager:
                         backend_candidate.configured_device_selector if backend_candidate else None
                     ),
                 )
+                execution = execute_native_bridge_command(
+                    backend_candidate.detected_bridge_path if backend_candidate else None,
+                    backend_slug=backend_slug,
+                    command_payload=command,
+                    sdk_root=backend_candidate.detected_sdk_root if backend_candidate else None,
+                    device_selector=(
+                        backend_candidate.configured_device_selector if backend_candidate else None
+                    ),
+                )
             command["acknowledgement"] = ack.model_dump()
+            command["execution"] = execution.model_dump()
         return HapticRuntimeSnapshot(
             requested_backend=self._config.requested_backend,
             active_backend=active_status.backend,

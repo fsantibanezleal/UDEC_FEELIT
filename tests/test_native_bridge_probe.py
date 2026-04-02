@@ -11,7 +11,11 @@ import pytest
 
 from app.core.haptic_contact_rollout import build_haptic_contact_rollout
 from app.core.haptic_pilot_commands import build_haptic_pilot_commands
-from app.haptics.bridge_probe import acknowledge_native_bridge_command, probe_native_bridge
+from app.haptics.bridge_probe import (
+    acknowledge_native_bridge_command,
+    execute_native_bridge_command,
+    probe_native_bridge,
+)
 from app.haptics.runtime_manager import HapticRuntimeManager
 from app.haptics.toolchain import ToolchainComponentStatus, build_native_toolchain_statuses
 
@@ -407,3 +411,52 @@ def test_native_probe_accepts_dry_run_pilot_command_contract(tmp_path) -> None:
     assert ack.accepted is True
     assert ack.command_slug == command["command_slug"]
     assert ack.payload["mode"] == "pilot-command-ack"
+
+
+def test_native_probe_executes_bounded_openhaptics_pilot_command(tmp_path) -> None:
+    """The compiled native bridge should execute the first bounded OpenHaptics pilot."""
+    statuses = _require_native_build_support()
+    clang_path = statuses["clang++"].detected_path
+    assert clang_path
+
+    sdk_root = tmp_path / "mock_openhaptics_sdk"
+    native_root = _build_temp_native_root(tmp_path / "exec_native_bridge_root")
+    _build_mock_openhaptics_sdk(sdk_root, clang_path)
+    probe_path = _build_backend_probe("openhaptics-touch", sdk_root, native_root)
+
+    rollout = build_haptic_contact_rollout(
+        [
+            {
+                "slug": "openhaptics-touch",
+                "bridge_probe_state": "ready",
+                "reported_capabilities": [
+                    "force-output-path",
+                    "button-proxy-input-path",
+                    "scheduler-control",
+                ],
+                "normalized_features": [
+                    "force_path",
+                    "input_path",
+                    "scheduler_or_servo_loop",
+                ],
+            }
+        ]
+    )
+    command_contract = build_haptic_pilot_commands(rollout)
+    command = next(
+        item for item in command_contract["commands"] if item["backend_slug"] == "openhaptics-touch"
+    )
+
+    execution = execute_native_bridge_command(
+        str(probe_path),
+        backend_slug="openhaptics-touch",
+        command_payload=command,
+        sdk_root=str(sdk_root),
+        device_selector="DEFAULT",
+    )
+
+    assert execution.state == "command-executed-bounded-no-force"
+    assert execution.executed is True
+    assert execution.command_slug == command["command_slug"]
+    assert execution.payload["mode"] == "pilot-command-execution"
+    assert execution.payload["execution_mode"] == "openhaptics-button-actuation-bounded-no-force"

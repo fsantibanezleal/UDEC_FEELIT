@@ -132,12 +132,13 @@ def build_haptic_pilot_commands(contact_rollout: dict[str, Any]) -> dict[str, An
 
     return {
         "summary": (
-            "Each pilot command is a bounded dry-run payload that a future native bridge can "
-            "consume before FeelIT attempts any full scene-wide force execution."
+            "Each pilot command is a bounded payload that the runtime can hand to a bridge for "
+            "acknowledgement and, where available, first-step bounded execution."
         ),
         "transport_boundary": (
-            "The current contract stops at serialized command generation. Native execution, "
-            "acknowledgement, and force-loop ownership remain future work."
+            "The current contract now reaches acknowledgement for all native-sidecar paths and "
+            "a first bounded execution slice for the OpenHaptics button-actuation pilot. Full "
+            "force-loop ownership and scene-wide execution remain future work."
         ),
         "commands": commands,
     }

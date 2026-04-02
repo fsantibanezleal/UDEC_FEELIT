@@ -66,6 +66,23 @@ struct CommandAckResult {
   std::vector<std::string> notes;
 };
 
+struct CommandExecutionResult {
+  std::string backend;
+  std::string status = "command-execution-invalid";
+  std::string summary = "The bounded pilot command could not be executed.";
+  std::string command_slug;
+  std::string primitive_slug;
+  std::string primitive_family;
+  std::string pilot_mode;
+  std::string pilot_route;
+  bool executed = false;
+  std::string execution_mode = "not-executed";
+  std::string safety_state = "not-evaluated";
+  std::string device_selector_used;
+  std::vector<std::string> telemetry_fields;
+  std::vector<std::string> notes;
+};
+
 static std::map<std::string, BackendProfile> build_profiles() {
   return {
       {"openhaptics-touch",
@@ -200,6 +217,12 @@ static bool contains_json_key(const std::string& payload, const std::string& key
   return payload.find("\"" + key + "\"") != std::string::npos;
 }
 
+static ProbeResult run_openhaptics_probe(
+    const std::string& backend_slug,
+    const std::string& configured_sdk_root,
+    const std::string& configured_device_selector,
+    const BackendProfile& profile);
+
 static CommandAckResult run_pilot_command_ack(
     const std::string& backend_slug,
     const fs::path& command_file_path) {
@@ -297,6 +320,99 @@ static CommandAckResult run_pilot_command_ack(
       "This acknowledgement only proves that the native boundary can receive and validate one bounded pilot payload.");
   result.notes.push_back(
       "Real actuation, bridge-side execution, and force-loop ownership remain future work.");
+  return result;
+}
+
+static CommandExecutionResult run_pilot_command_execution(
+    const std::string& backend_slug,
+    const std::string& configured_sdk_root,
+    const std::string& configured_device_selector,
+    const BackendProfile& profile,
+    const fs::path& command_file_path) {
+  CommandExecutionResult result;
+  result.backend = backend_slug;
+
+  if (!fs::exists(command_file_path)) {
+    result.summary = "The pilot command file is missing.";
+    result.notes.push_back("A native execution step cannot start without the serialized bounded pilot payload.");
+    return result;
+  }
+
+  const std::string payload = read_text_file(command_file_path);
+  const auto command_slug = extract_json_string_field(payload, "command_slug");
+  const auto payload_backend_slug = extract_json_string_field(payload, "backend_slug");
+  const auto primitive_slug = extract_json_string_field(payload, "primitive_slug");
+  const auto primitive_family = extract_json_string_field(payload, "primitive_family");
+  const auto pilot_mode = extract_json_string_field(payload, "pilot_mode");
+  const auto pilot_route = extract_json_string_field(payload, "pilot_route");
+
+  result.command_slug = command_slug.value_or("");
+  result.primitive_slug = primitive_slug.value_or("");
+  result.primitive_family = primitive_family.value_or("");
+  result.pilot_mode = pilot_mode.value_or("");
+  result.pilot_route = pilot_route.value_or("");
+  result.telemetry_fields = {
+      "command_slug",
+      "primitive_slug",
+      "backend_slug",
+      "contact_state",
+      "constraint_state",
+      "scene_route",
+  };
+
+  if (!command_slug || !payload_backend_slug || !primitive_slug || !primitive_family || !pilot_mode || !pilot_route) {
+    result.summary = "The bounded pilot execution payload is missing one or more required contract fields.";
+    result.notes.push_back("Execution still depends on the same bounded payload contract validated by acknowledgement.");
+    return result;
+  }
+
+  if (*payload_backend_slug != backend_slug) {
+    result.status = "command-backend-mismatch";
+    result.summary = "The pilot command backend does not match the native bridge backend target.";
+    result.notes.push_back("A bridge-side execution path must reject commands addressed to another backend family.");
+    return result;
+  }
+
+  if (backend_slug != "openhaptics-touch") {
+    result.status = "command-execution-not-implemented";
+    result.summary = "This native bridge execution path is not implemented yet for the selected backend.";
+    result.notes.push_back("The first bounded execution milestone currently targets the OpenHaptics button-actuation path.");
+    return result;
+  }
+
+  if (*primitive_family != "button_actuation") {
+    result.status = "command-execution-unsupported-primitive";
+    result.summary = "The first native execution path currently supports only button_actuation primitives.";
+    result.notes.push_back("This keeps the first execution milestone bounded to launcher-style tactile tiles.");
+    return result;
+  }
+
+  const ProbeResult probe_result = run_openhaptics_probe(
+      backend_slug,
+      configured_sdk_root,
+      configured_device_selector,
+      profile);
+  if (probe_result.status != "ready") {
+    result.status = "command-execution-blocked-by-runtime";
+    result.summary =
+        "The OpenHaptics runtime is not ready enough for bounded pilot execution. " + probe_result.summary;
+    result.notes.push_back("The bridge still requires a successful conservative device-open path before bounded execution can proceed.");
+    return result;
+  }
+
+  result.executed = true;
+  result.status = "command-executed-bounded-no-force";
+  result.execution_mode = "openhaptics-button-actuation-bounded-no-force";
+  result.safety_state = "no-force-output-clamped";
+  result.device_selector_used = probe_result.effective_device_selector;
+  result.summary =
+      "The native bridge executed the first bounded OpenHaptics button-actuation pilot in a no-force safety mode.";
+  result.notes.push_back(
+      "This execution step proves bridge-side bounded pilot consumption beyond acknowledgement, but it does not start a continuous servo loop.");
+  result.notes.push_back(
+      "The device path was opened through the conservative OpenHaptics selector flow and immediately returned to a clamped no-force state.");
+  result.notes.push_back(
+      "Real actuation envelopes, calibration transitions, and scene-wide force ownership remain future work.");
   return result;
 }
 
@@ -876,6 +992,28 @@ static void append_json_ack_result(std::ostringstream* output, const CommandAckR
   *output << "}";
 }
 
+static void append_json_execution_result(std::ostringstream* output, const CommandExecutionResult& result) {
+  bool first_field = true;
+  *output << "{";
+  append_json_string(output, "schema_version", "1", &first_field);
+  append_json_string(output, "mode", "pilot-command-execution", &first_field);
+  append_json_string(output, "backend", result.backend, &first_field);
+  append_json_string(output, "status", result.status, &first_field);
+  append_json_string(output, "summary", result.summary, &first_field);
+  append_json_string(output, "command_slug", result.command_slug, &first_field);
+  append_json_string(output, "primitive_slug", result.primitive_slug, &first_field);
+  append_json_string(output, "primitive_family", result.primitive_family, &first_field);
+  append_json_string(output, "pilot_mode", result.pilot_mode, &first_field);
+  append_json_string(output, "pilot_route", result.pilot_route, &first_field);
+  append_json_bool(output, "executed", result.executed, &first_field);
+  append_json_string(output, "execution_mode", result.execution_mode, &first_field);
+  append_json_string(output, "safety_state", result.safety_state, &first_field);
+  append_json_string(output, "device_selector_used", result.device_selector_used, &first_field);
+  append_json_array(output, "telemetry_fields", result.telemetry_fields, &first_field);
+  append_json_array(output, "notes", result.notes, &first_field);
+  *output << "}";
+}
+
 int main(int argc, char* argv[]) {
   const auto profiles = build_profiles();
   const std::string default_backend = FEELIT_BRIDGE_DEFAULT_BACKEND;
@@ -883,6 +1021,7 @@ int main(int argc, char* argv[]) {
   const std::string configured_sdk_root = arg_value(argc, argv, "--sdk-root", FEELIT_VENDOR_SDK_ROOT);
   const std::string configured_device_selector = arg_value(argc, argv, "--device-selector");
   const std::string command_file = arg_value(argc, argv, "--consume-pilot-command-file");
+  const std::string execution_command_file = arg_value(argc, argv, "--execute-pilot-command-file");
   const bool emit_json = has_flag(argc, argv, "--emit-json");
 
   const auto profile_it = profiles.find(backend_slug);
@@ -902,6 +1041,22 @@ int main(int argc, char* argv[]) {
     append_json_ack_result(&output, command_ack);
     std::cout << output.str() << std::endl;
     return command_ack.accepted ? 0 : 3;
+  }
+  if (!execution_command_file.empty()) {
+    const CommandExecutionResult execution = run_pilot_command_execution(
+        backend_slug,
+        configured_sdk_root,
+        configured_device_selector,
+        profile,
+        fs::path(execution_command_file));
+    if (!emit_json) {
+      std::cout << execution.summary << std::endl;
+      return execution.executed ? 0 : 4;
+    }
+    std::ostringstream output;
+    append_json_execution_result(&output, execution);
+    std::cout << output.str() << std::endl;
+    return execution.executed ? 0 : 4;
   }
 
   ProbeResult result =

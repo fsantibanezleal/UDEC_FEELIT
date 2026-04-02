@@ -55,6 +55,11 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
         for item in snapshot.pilot_command_contract["commands"]
         if item["backend_slug"] == "visual-emulator"
     )
+    assert any(
+        item["execution"]["state"] == "browser-mirror-executed"
+        for item in snapshot.pilot_command_contract["commands"]
+        if item["backend_slug"] == "visual-emulator"
+    )
 
 
 def test_haptic_runtime_update_persists_requested_backend(tmp_path, monkeypatch) -> None:
@@ -213,6 +218,7 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
 
             backend = value("--backend", "openhaptics-touch")
             command_path = value("--consume-pilot-command-file")
+            execution_path = value("--execute-pilot-command-file")
 
             if command_path:
                 payload = json.loads(pathlib.Path(command_path).read_text(encoding="utf-8"))
@@ -226,6 +232,25 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
                     "validated_fields": ["command_slug", "backend_slug", "primitive_slug"],
                     "missing_fields": [],
                     "notes": ["Mock acknowledgement only."]
+                }))
+            elif execution_path:
+                payload = json.loads(pathlib.Path(execution_path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "mode": "pilot-command-execution",
+                    "backend": backend,
+                    "status": "command-executed-bounded-no-force",
+                    "summary": "Mock bridge executed the bounded pilot command.",
+                    "executed": True,
+                    "command_slug": payload["command_slug"],
+                    "primitive_slug": payload["primitive_slug"],
+                    "primitive_family": payload["primitive_family"],
+                    "pilot_mode": payload["pilot_mode"],
+                    "pilot_route": payload["pilot_route"],
+                    "execution_mode": "mock-bounded-no-force",
+                    "safety_state": "mock-safe",
+                    "device_selector_used": value("--device-selector", ""),
+                    "telemetry_fields": ["command_slug", "primitive_slug", "scene_route"],
+                    "notes": ["Mock execution only."]
                 }))
             else:
                 print(json.dumps({
@@ -267,3 +292,5 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
     assert "force_path" in openhaptics_backend.inferred_features
     assert openhaptics_command["acknowledgement"]["state"] == "command-acknowledged-dry-run"
     assert openhaptics_command["acknowledgement"]["accepted"] is True
+    assert openhaptics_command["execution"]["state"] == "command-executed-bounded-no-force"
+    assert openhaptics_command["execution"]["executed"] is True

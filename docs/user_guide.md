@@ -160,8 +160,8 @@ Current use:
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - inspect the current design baseline for collision, contact, material rendering, reusable scene primitives, and backend readiness
 - inspect the backend-aware contact rollout plan that names one bounded pilot primitive, one pilot profile, and one next engineering step for each stack
-- inspect the dry-run pilot command payloads that summarize what a future native bridge should receive first for each backend-specific pilot
-- inspect whether the current bridge boundary can already acknowledge those bounded pilot payloads safely
+- inspect the dry-run pilot command payloads that summarize what the native bridge should receive first for each backend-specific pilot
+- inspect whether the current bridge boundary can already acknowledge those bounded pilot payloads safely and whether one first bounded execution step is already available
 - keep the built-in visual emulator as the safe default runtime until a native bridge is ready
 
 This route is not a substitute for the future native backend. Its role is to make the hardware path explicit, testable, and documentable before real devices are attached.
@@ -325,7 +325,7 @@ POST /api/haptic-workspaces/register
 
 - no physical device loop is connected to the scene runtime yet, even though the haptic-configuration route now tracks backend selection intent, vendor dependency readiness, bridge-probe state, and toolchain availability
 - the Force Dimension DHD path can now load the runtime library and enumerate devices through the native probe, OpenHaptics can now load the HD runtime library set, attempt a conservative default-device open, and report capability channels, and CHAI3D remains a scaffold-level probe path
-- no current probe or pilot payload drives force output, calibration, homing, or scene-coupled haptic interaction; the current acknowledgement path is dry-run validation only
+- no current pilot path drives force output, calibration, homing, or scene-coupled haptic interaction; the shipped OpenHaptics pilot execution milestone is still a bounded no-force step rather than real actuation
 - 3D object staging is currently client-side and focused on `obj`, `stl`, `glb`, self-contained `gltf`, and local `gltf` bundles selected together with their sidecar resources
 - document compatibility is currently limited to bundled `txt`, `html`, and `epub` assets
 - workspace authoring is currently JSON-descriptor based and still needs richer validation and editing affordances

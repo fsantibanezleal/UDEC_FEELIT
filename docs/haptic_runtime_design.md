@@ -132,7 +132,7 @@ That contract currently names:
 - the minimum telemetry fields that a bridge-side consumer should preserve
 - the missing runtime features that still block real execution
 
-This is still not live force execution. It is the bridge-facing payload layer that should exist before the first sidecar actually starts accepting and acknowledging commands.
+This is still not live force execution. It is the bridge-facing payload layer that should exist before the first sidecar actually starts accepting, acknowledging, and then executing one bounded pilot step.
 
 The current contract is already rich enough to drive early native integration work because each payload now fixes:
 
@@ -145,12 +145,13 @@ The current contract is already rich enough to drive early native integration wo
 
 This means FeelIT no longer stops at "which pilot should exist". It now also states "what exact dry-run command shape should the bridge receive first".
 
-The current shipped baseline now goes one step beyond payload generation and asks the bridge boundary to acknowledge those contracts in dry-run mode. That acknowledgement is still bounded:
+The current shipped baseline now goes one step beyond payload generation and asks the bridge boundary to acknowledge those contracts in dry-run mode. It now also goes one step further for the OpenHaptics button-actuation pilot by executing a bounded native step in an explicit no-force safety mode. That execution is still bounded:
 
-- it only validates the declared contract shape
-- it does not start a servo loop
-- it does not claim force execution
-- it does not transfer scene ownership to the bridge
+- it only validates or consumes the declared bounded contract shape
+- it does not start a continuous servo loop
+- it does not claim physical force output
+- it does not transfer full scene ownership to the bridge
+- it is currently limited to the OpenHaptics button-actuation pilot
 
 ## Loop Assumptions
 
@@ -207,7 +208,7 @@ The bridge executable is now expected to answer a small JSON probe contract befo
 
 That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension can reach device-ready enumeration through the DHD runtime, while OpenHaptics can now move beyond symbol-only validation into a conservative default-device open path with explicit capability reporting.
 
-The next implementation boundary after this document is therefore not another planning artifact. It is a bridge consumer that can accept one of these dry-run pilot payloads, validate it, and return a bounded acknowledgement without yet owning the full servo loop. The current shipped baseline now includes that bounded acknowledgement path; the next step after it is bridge-side execution, not another round of abstract planning.
+The next implementation boundary after this document is therefore not another planning artifact. It is a bridge consumer that can accept one of these dry-run pilot payloads, validate it, and return a bounded acknowledgement without yet owning the full servo loop. The current shipped baseline now includes both that bounded acknowledgement path and one first bounded native execution slice for OpenHaptics button actuation; the next step after it is deeper execution semantics, richer telemetry, and additional backend coverage rather than another round of abstract planning.
 
 ## Validation Expectations
 
