@@ -29,7 +29,6 @@ Rationale:
 
 - This is a real capability expansion beyond the earlier acknowledgement-only milestone because the native bridge now crosses the first execution boundary for one bounded pilot primitive.
 - The release still stays honest about scope: this is not full force output, calibration, homing, or a scene-coupled servo loop.
-
 ### v2.16.002 (2026-04-01)
 
 Refine Haptic Desktop navigation clarity and normalize native haptic capability reporting.

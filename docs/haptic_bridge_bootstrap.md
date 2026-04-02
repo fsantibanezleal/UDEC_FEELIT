@@ -30,6 +30,8 @@ Together, these provide a first native bridge scaffold that can be configured an
 
 The probe payload now also has room for a normalized feature schema. That stable layer is what the Python runtime should eventually rely on for rollout alignment and pilot execution gating, while the raw vendor capability labels remain supporting evidence.
 
+The probe payload now also has room for a normalized feature schema. That stable layer is what the Python runtime should eventually rely on for rollout alignment and pilot execution gating, while the raw vendor capability labels remain supporting evidence.
+
 ## Bootstrap Workflow
 
 ### 1. Diagnose the current stack

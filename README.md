@@ -84,7 +84,7 @@ The contact pipeline captures the current design rule for future native hardware
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `90` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `94` automated tests passing plus browser smoke validation across the `5` routed pages |
 
 ## Current Frontend Views
 
