@@ -460,3 +460,57 @@ def test_native_probe_executes_bounded_openhaptics_pilot_command(tmp_path) -> No
     assert execution.command_slug == command["command_slug"]
     assert execution.payload["mode"] == "pilot-command-execution"
     assert execution.payload["execution_mode"] == "openhaptics-button-actuation-bounded-no-force"
+
+
+def test_native_probe_executes_bounded_forcedimension_pilot_command(tmp_path) -> None:
+    """The compiled native bridge should execute the first bounded Force Dimension pilot."""
+    statuses = _require_native_build_support()
+    clang_path = statuses["clang++"].detected_path
+    assert clang_path
+
+    sdk_root = tmp_path / "mock_forcedimension_sdk"
+    native_root = _build_temp_native_root(tmp_path / "fd_exec_native_bridge_root")
+    _build_mock_forcedimension_sdk(sdk_root, clang_path)
+    probe_path = _build_backend_probe("forcedimension-dhd", sdk_root, native_root)
+
+    rollout = build_haptic_contact_rollout(
+        [
+            {
+                "slug": "forcedimension-dhd",
+                "bridge_probe_state": "ready",
+                "reported_capabilities": [
+                    "device-detection",
+                    "workspace-alignment",
+                    "force-feedback-path",
+                    "servo-loop-telemetry",
+                ],
+                "normalized_features": [
+                    "device_open_close",
+                    "device_identity_query",
+                    "state_query",
+                    "force_path",
+                    "scheduler_or_servo_loop",
+                    "workspace_alignment",
+                ],
+            }
+        ]
+    )
+    command_contract = build_haptic_pilot_commands(rollout)
+    command = next(
+        item for item in command_contract["commands"] if item["backend_slug"] == "forcedimension-dhd"
+    )
+
+    execution = execute_native_bridge_command(
+        str(probe_path),
+        backend_slug="forcedimension-dhd",
+        command_payload=command,
+        sdk_root=str(sdk_root),
+        device_selector="Mock SIGMA.7",
+    )
+
+    assert execution.state == "command-executed-bounded-no-force"
+    assert execution.executed is True
+    assert execution.command_slug == command["command_slug"]
+    assert execution.payload["mode"] == "pilot-command-execution"
+    assert execution.payload["execution_mode"] == "forcedimension-rigid-surface-bounded-no-force"
+    assert execution.payload["device_selector_used"] == "Mock SIGMA.7"

@@ -49,7 +49,7 @@
   <rect x="42" y="42" width="1516" height="956" rx="28" fill="none" stroke="#30363d" stroke-width="2"/>
 
   <text x="78" y="102" class="title">FeelIT Architecture</text>
-  <text x="78" y="136" class="subtitle">Five dedicated routes now share one API, one domain core, one runtime manager, and one bridge layer that can already distinguish OpenHaptics runtime loading from Force Dimension device enumeration.</text>
+  <text x="78" y="136" class="subtitle">Five dedicated routes now share one API, one domain core, one runtime manager, and one bridge layer that can already distinguish vendor probing from bounded native pilot execution across OpenHaptics and Force Dimension.</text>
 
   <rect x="78" y="174" width="224" height="30" rx="15" fill="#79c0ff"/>
   <text x="102" y="194" class="lane">FRONTEND ROUTES</text>

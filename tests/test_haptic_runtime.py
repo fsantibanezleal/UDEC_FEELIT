@@ -294,3 +294,113 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
     assert openhaptics_command["acknowledgement"]["accepted"] is True
     assert openhaptics_command["execution"]["state"] == "command-executed-bounded-no-force"
     assert openhaptics_command["execution"]["executed"] is True
+
+
+def test_haptic_runtime_snapshot_surfaces_forcedimension_execution(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    config_path = tmp_path / "haptic_runtime_config.json"
+    bridge_script = tmp_path / "mock_forcedimension_bridge_probe.py"
+    bridge_script.write_text(
+        textwrap.dedent(
+            """
+            import json
+            import pathlib
+            import sys
+
+            args = sys.argv[1:]
+
+            def value(option, fallback=""):
+                if option in args:
+                    index = args.index(option)
+                    if index + 1 < len(args):
+                        return args[index + 1]
+                return fallback
+
+            backend = value("--backend", "forcedimension-dhd")
+            command_path = value("--consume-pilot-command-file")
+            execution_path = value("--execute-pilot-command-file")
+
+            if command_path:
+                payload = json.loads(pathlib.Path(command_path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "mode": "pilot-command-ack",
+                    "backend": backend,
+                    "status": "command-acknowledged-dry-run",
+                    "summary": "Mock Force Dimension bridge accepted the pilot command payload.",
+                    "accepted": True,
+                    "command_slug": payload["command_slug"],
+                    "validated_fields": ["command_slug", "backend_slug", "primitive_slug"],
+                    "missing_fields": [],
+                    "notes": ["Mock acknowledgement only."]
+                }))
+            elif execution_path:
+                payload = json.loads(pathlib.Path(execution_path).read_text(encoding="utf-8"))
+                print(json.dumps({
+                    "mode": "pilot-command-execution",
+                    "backend": backend,
+                    "status": "command-executed-bounded-no-force",
+                    "summary": "Mock Force Dimension bridge executed the bounded pilot command.",
+                    "executed": True,
+                    "command_slug": payload["command_slug"],
+                    "primitive_slug": payload["primitive_slug"],
+                    "primitive_family": payload["primitive_family"],
+                    "pilot_mode": payload["pilot_mode"],
+                    "pilot_route": payload["pilot_route"],
+                    "execution_mode": "forcedimension-rigid-surface-bounded-no-force",
+                    "safety_state": "mock-safe",
+                    "device_selector_used": value("--device-selector", ""),
+                    "telemetry_fields": ["command_slug", "primitive_slug", "scene_route", "surface_normal", "penetration_depth_mm"],
+                    "notes": ["Mock execution only."]
+                }))
+            else:
+                print(json.dumps({
+                    "backend": backend,
+                    "status": "ready",
+                    "summary": "Mock Force Dimension runtime load state.",
+                    "device_count": 2,
+                    "devices": ["Mock SIGMA.7", "Mock OMEGA.7 Left"],
+                    "enumeration_mode": "per-device-open-id",
+                    "capability_scope": "runtime-and-live-device-enumeration",
+                    "reported_capabilities": ["device-detection", "workspace-alignment", "force-feedback-path", "servo-loop-telemetry"],
+                    "normalized_features": ["device_open_close", "device_identity_query", "state_query", "force_path", "scheduler_or_servo_loop", "workspace_alignment"],
+                    "verified_features": ["device_open_close", "device_identity_query", "state_query"],
+                    "inferred_features": ["force_path", "scheduler_or_servo_loop", "workspace_alignment"],
+                    "probe_notes": ["Mock note"]
+                }))
+            """,
+        ).strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FEELIT_HAPTIC_CONFIG_PATH", str(config_path))
+
+    manager = HapticRuntimeManager()
+    snapshot = manager.update_configuration(
+        requested_backend="forcedimension-dhd",
+        sdk_roots={},
+        bridge_paths={"forcedimension": str(bridge_script)},
+        device_selectors={"forcedimension": "Mock SIGMA.7"},
+    )
+
+    forcedimension_command = next(
+        item
+        for item in snapshot.pilot_command_contract["commands"]
+        if item["backend_slug"] == "forcedimension-dhd"
+    )
+    forcedimension_backend = next(
+        backend for backend in snapshot.backends if backend.slug == "forcedimension-dhd"
+    )
+    assert forcedimension_backend.bridge_probe_state == "ready"
+    assert forcedimension_backend.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
+    assert "workspace_alignment" in forcedimension_backend.normalized_features
+    assert "state_query" in forcedimension_backend.verified_features
+    assert "force_path" in forcedimension_backend.inferred_features
+    assert forcedimension_command["acknowledgement"]["state"] == "command-acknowledged-dry-run"
+    assert forcedimension_command["acknowledgement"]["accepted"] is True
+    assert forcedimension_command["execution"]["state"] == "command-executed-bounded-no-force"
+    assert forcedimension_command["execution"]["executed"] is True
+    assert (
+        forcedimension_command["execution"]["payload"]["execution_mode"]
+        == "forcedimension-rigid-surface-bounded-no-force"
+    )
