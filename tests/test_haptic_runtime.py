@@ -46,6 +46,10 @@ def test_haptic_runtime_snapshot_defaults_to_visual_emulator(tmp_path, monkeypat
         item["backend_slug"] == "openhaptics-touch"
         for item in snapshot.pilot_command_contract["commands"]
     )
+    visual_backend = next(backend for backend in snapshot.backends if backend.slug == "visual-emulator")
+    assert "scene_debug" in visual_backend.normalized_features
+    assert "pointer_path" in visual_backend.normalized_features
+    assert visual_backend.verified_features == visual_backend.normalized_features
     assert any(
         item["acknowledgement"]["state"] == "browser-mirror-acknowledged"
         for item in snapshot.pilot_command_contract["commands"]
@@ -97,6 +101,7 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
         item["capability_alignment"] in {"aligned", "partial", "insufficient", "not-needed"}
         for item in payload["contact_rollout"]["pilot_scenarios"]
     )
+    assert any("normalized_features" in backend for backend in payload["backends"])
     assert len(payload["pilot_command_contract"]["commands"]) >= 4
 
 
@@ -180,6 +185,7 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
     assert openhaptics.probe_enumeration_mode == "analysis-only"
     assert openhaptics.probe_capability_scope == "probe-contract"
     assert openhaptics.reported_capabilities == ["diagnostics-only"]
+    assert openhaptics.normalized_features == []
     assert openhaptics.probe_notes == ["Mock note"]
 
 
@@ -252,5 +258,12 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
         for item in snapshot.pilot_command_contract["commands"]
         if item["backend_slug"] == "openhaptics-touch"
     )
+    openhaptics_backend = next(
+        backend for backend in snapshot.backends if backend.slug == "openhaptics-touch"
+    )
+    assert "force_path" in openhaptics_backend.normalized_features
+    assert "input_path" in openhaptics_backend.normalized_features
+    assert openhaptics_backend.verified_features == []
+    assert "force_path" in openhaptics_backend.inferred_features
     assert openhaptics_command["acknowledgement"]["state"] == "command-acknowledged-dry-run"
     assert openhaptics_command["acknowledgement"]["accepted"] is True

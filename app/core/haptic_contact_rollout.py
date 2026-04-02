@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.haptic_materials import build_material_catalog
+from app.core.haptic_runtime_features import normalize_runtime_features
 
 
 ROLLOUT_BLUEPRINTS: tuple[dict[str, object], ...] = (
@@ -138,22 +139,6 @@ ROLLOUT_BLUEPRINTS: tuple[dict[str, object], ...] = (
     },
 )
 
-RUNTIME_FEATURE_ALIASES: dict[str, set[str]] = {
-    "scene_debug": {"scene-debug"},
-    "pointer_path": {"pointer-emulation", "button-proxy-input-path", "button-and-proxy-input"},
-    "force_path": {"force-output-path", "force-feedback-path", "scene-level-haptics"},
-    "state_query": {
-        "device-state-query",
-        "device-characteristics-query",
-        "servo-loop-telemetry",
-    },
-    "input_path": {"button-proxy-input-path", "button-and-proxy-input"},
-    "scheduler_or_servo_loop": {"scheduler-control", "servo-loop-telemetry"},
-    "workspace_alignment": {"workspace-alignment", "device-context-query"},
-    "compatibility_bridge": {"compatibility-abstraction", "scene-level-haptics"},
-}
-
-
 def _material_map() -> dict[str, dict[str, Any]]:
     """Return the haptic material catalog keyed by slug."""
     return {str(item["slug"]): item for item in build_material_catalog()}
@@ -205,16 +190,12 @@ def _resolve_readiness_state(backend: dict[str, Any]) -> tuple[str, str]:
 
 def _available_runtime_features(backend: dict[str, Any]) -> set[str]:
     """Map reported backend capabilities into abstract runtime features."""
-    raw_capabilities = {
-        str(item).strip()
-        for item in backend.get("reported_capabilities", []) or backend.get("supported_capabilities", [])
-        if str(item).strip()
-    }
-    available: set[str] = set()
-    for feature_slug, aliases in RUNTIME_FEATURE_ALIASES.items():
-        if raw_capabilities & aliases:
-            available.add(feature_slug)
-    return available
+    return set(
+        normalize_runtime_features(
+            backend.get("reported_capabilities", []),
+            direct_features=backend.get("normalized_features", []),
+        )
+    )
 
 
 def _build_capability_alignment(

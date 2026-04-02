@@ -153,6 +153,8 @@ This still stops before real servo-loop ownership or force output, but it reduce
 
 The current shipped baseline now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. That means the bridge executable can now prove one additional thing end to end: it can receive the declared pilot contract and return a structured acknowledgement without yet claiming execution.
 
+The current `develop` state now also normalizes bridge-reported runtime features into a shared schema and separates bridge-verified features from still-inferred ones. That narrows one important ambiguity: rollout planning no longer depends only on vendor-specific strings when it decides whether a backend is aligned or blocked.
+
 The current bridge path is meaningful because it proves four things end to end:
 
 - FeelIT can discover or configure a bridge executable

@@ -27,6 +27,8 @@ FeelIT now ships:
 
 Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The executable now covers two bounded bridge responsibilities: a probe path and a dry-run pilot-command acknowledgement path. The probe already contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
 
+The probe payload now also has room for a normalized feature schema. That stable layer is what the Python runtime should eventually rely on for rollout alignment and pilot execution gating, while the raw vendor capability labels remain supporting evidence.
+
 ## Bootstrap Workflow
 
 ### 1. Diagnose the current stack

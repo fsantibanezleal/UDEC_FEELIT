@@ -259,6 +259,9 @@
             <div><dt>Probe mode</dt><dd id="selected-backend-probe-mode">--</dd></div>
             <div><dt>Capability scope</dt><dd id="selected-backend-capability-scope">--</dd></div>
             <div><dt>Probe capabilities</dt><dd id="selected-backend-probe-capabilities">--</dd></div>
+            <div><dt>Normalized features</dt><dd id="selected-backend-normalized-features">--</dd></div>
+            <div><dt>Verified features</dt><dd id="selected-backend-verified-features">--</dd></div>
+            <div><dt>Inferred features</dt><dd id="selected-backend-inferred-features">--</dd></div>
           </dl>
         </section>
 
@@ -295,6 +298,7 @@
           <li>Review the native bridge workspace and the commands used to configure or build the bridge scaffold.</li>
           <li>See whether a bridge executable is missing, failing, scaffold-only, runtime-loaded-without-devices, or reporting real device-ready probe data.</li>
           <li>Inspect how a backend was probed, which capability scope it currently claims, and which haptic channels the bridge reports as available at the current maturity level.</li>
+          <li>Read the normalized, verified, and inferred feature rows to distinguish stable cross-backend runtime features from vendor-specific evidence and from capabilities that are still inferred.</li>
           <li>Inspect the current collision, contact, material-rendering, and scene-contract baseline that the native backend must honor.</li>
           <li>Review the reusable tactile primitive families and see how far each backend stack is from consuming them safely.</li>
           <li>See which bounded pilot primitive each backend should implement first before attempting a full scene-wide force loop.</li>

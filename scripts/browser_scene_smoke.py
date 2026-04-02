@@ -720,6 +720,10 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 desktop_browser_text_loaded = False
                 desktop_browser_audio_loaded = False
                 desktop_browser_model_loaded = False
+                desktop_launcher_trail_ok = False
+                desktop_gallery_trail_ok = False
+                desktop_browser_trail_ok = False
+                desktop_text_trail_ok = False
                 page.wait_for_function(
                     """
                     () => {
@@ -731,6 +735,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     """,
                     timeout=15_000,
                 )
+                launcher_trail = (page.locator("#desktop-scene-trail-summary").text_content() or "").strip()
+                if "Launcher" in launcher_trail:
+                    desktop_launcher_trail_ok = True
                 if not page.evaluate(
                     """
                     (viewState) => {
@@ -771,6 +778,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append(
                         f"/haptic-desktop entered the models gallery with focus on {focused_label(page)!r} instead of 'Gallery'",
                     )
+                gallery_trail = (page.locator("#desktop-scene-trail-summary").text_content() or "").strip()
+                if "Models Gallery" in gallery_trail and "Page 1" in gallery_trail:
+                    desktop_gallery_trail_ok = True
                 if not cycle_focus_to(page, "Next"):
                     failures.append("/haptic-desktop could not focus the gallery Next control")
                 else:
@@ -939,6 +949,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                                 failures.append(
                                     f"/haptic-desktop did not land on the browser hub after entering library; focus={focused_label(page)!r}",
                                 )
+                            browser_trail = (page.locator("#desktop-scene-trail-summary").text_content() or "").strip()
+                            if "File Browser" in browser_trail and "library" in browser_trail:
+                                desktop_browser_trail_ok = True
                     if not cycle_focus_to(page, "documents"):
                         failures.append("/haptic-desktop could not focus the documents folder from the library root")
                     else:
@@ -974,6 +987,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                                 timeout=15_000,
                             )
                             desktop_browser_text_loaded = True
+                            text_trail = (page.locator("#desktop-scene-trail-summary").text_content() or "").strip()
+                            if "Reading Scene" in text_trail and "alice_in_wonderland.txt" in text_trail:
+                                desktop_text_trail_ok = True
                             if not cycle_focus_to(page, "Browser"):
                                 failures.append("/haptic-desktop could not focus the file-browser return control from the text scene")
                             else:
@@ -1235,6 +1251,14 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-desktop did not open an audio file from the file browser into the audio scene")
                 if not desktop_browser_model_loaded:
                     failures.append("/haptic-desktop did not open a model file from the file browser into the model scene")
+                if not desktop_launcher_trail_ok:
+                    failures.append("/haptic-desktop did not expose a launcher navigation trail")
+                if not desktop_gallery_trail_ok:
+                    failures.append("/haptic-desktop did not expose a gallery navigation trail")
+                if not desktop_browser_trail_ok:
+                    failures.append("/haptic-desktop did not expose a file-browser navigation trail")
+                if not desktop_text_trail_ok:
+                    failures.append("/haptic-desktop did not expose a reading-scene navigation trail")
                 if scene_code in {"", "--", "Loading"}:
                     failures.append("/haptic-desktop did not initialize the scene code")
             if scene.route == "/haptic-workspace-manager":

@@ -39,6 +39,9 @@ struct ProbeResult {
   std::string runtime_load_state = "not-applicable";
   std::string sdk_version;
   std::vector<std::string> reported_capabilities;
+  std::vector<std::string> normalized_features;
+  std::vector<std::string> verified_features;
+  std::vector<std::string> inferred_features;
   std::vector<std::string> probe_notes;
   std::vector<std::string> resolved_symbols;
   std::vector<std::string> open_attempt_labels;
@@ -480,6 +483,24 @@ static ProbeResult run_forcedimension_probe(const std::string& backend_slug, con
       "force-feedback-path",
       "servo-loop-telemetry",
   };
+  result.normalized_features = {
+      "device_open_close",
+      "device_identity_query",
+      "state_query",
+      "force_path",
+      "scheduler_or_servo_loop",
+      "workspace_alignment",
+  };
+  result.verified_features = {
+      "device_open_close",
+      "device_identity_query",
+      "state_query",
+  };
+  result.inferred_features = {
+      "force_path",
+      "scheduler_or_servo_loop",
+      "workspace_alignment",
+  };
   result.probe_notes.push_back(
       "The DHD probe reports a real runtime-backed enumeration path. It still does not claim that scene-coupled force rendering is wired into FeelIT yet.");
 
@@ -716,6 +737,30 @@ static ProbeResult run_openhaptics_probe(
   if (hd_check_calibration || hd_update_calibration) {
     append_unique(&result.reported_capabilities, "calibration-interface");
   }
+  result.normalized_features = {
+      "device_open_close",
+      "error_reporting",
+      "device_characteristics_query",
+      "state_query",
+      "input_path",
+      "force_path",
+      "scheduler_or_servo_loop",
+      "calibration_interface",
+      "workspace_alignment",
+  };
+  result.verified_features = {
+      "device_open_close",
+      "error_reporting",
+  };
+  result.inferred_features = {
+      "device_characteristics_query",
+      "state_query",
+      "input_path",
+      "force_path",
+      "scheduler_or_servo_loop",
+      "calibration_interface",
+      "workspace_alignment",
+  };
   result.probe_notes.push_back(
       "OpenHaptics capability reporting is currently based on exported HDAPI symbol availability plus a conservative default-device open attempt. It does not yet claim live scene-coupled force output.");
 
@@ -741,6 +786,8 @@ static ProbeResult run_openhaptics_probe(
     result.device_count = 1;
     result.device_identity_source = "fallback-default-open-label";
     result.effective_device_selector = selector_used;
+    append_unique(&result.normalized_features, "device_identity_query");
+    append_unique(&result.verified_features, "device_identity_query");
     result.devices.push_back(
         selector_used.empty() ? "OpenHaptics default device" : "OpenHaptics default device (" + selector_used + ")");
     result.summary =
@@ -893,6 +940,9 @@ int main(int argc, char* argv[]) {
   append_json_string(&output, "runtime_load_state", result.runtime_load_state, &first_field);
   append_json_string(&output, "sdk_version", result.sdk_version, &first_field);
   append_json_array(&output, "reported_capabilities", result.reported_capabilities, &first_field);
+  append_json_array(&output, "normalized_features", result.normalized_features, &first_field);
+  append_json_array(&output, "verified_features", result.verified_features, &first_field);
+  append_json_array(&output, "inferred_features", result.inferred_features, &first_field);
   append_json_array(&output, "probe_notes", result.probe_notes, &first_field);
   append_json_array(&output, "resolved_symbols", result.resolved_symbols, &first_field);
   append_json_array(&output, "open_attempt_labels", result.open_attempt_labels, &first_field);

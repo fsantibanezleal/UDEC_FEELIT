@@ -72,6 +72,8 @@ FeelIT now includes a first reproducible local bridge-bootstrap path:
 
 The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now includes a vendor-aware OpenHaptics path that can dynamically load the HD runtime library set, attempt a conservative default-device open, and report capability channels inferred from exported HDAPI surfaces, plus a vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
 
+The runtime no longer consumes those vendor strings in isolation. Bridge payloads can now expose a normalized feature schema as a stable cross-backend layer, while vendor-specific strings remain as evidence. The configuration route also distinguishes features that were bridge-verified from features that are still inferred from runtime symbols or stack semantics.
+
 ## Contact Model Baseline
 
 FeelIT should not treat the visual render mesh as the final haptic collision scene.
@@ -200,6 +202,8 @@ The bridge executable is now expected to answer a small JSON probe contract befo
 - which device labels were reported
 - which probe mode and capability scope were used
 - which haptic-capability channels the bridge reports at the current maturity level
+- which normalized runtime features are currently available across backends
+- which of those features are bridge-verified versus still inferred
 
 That contract is intentionally smaller than the future runtime loop. The goal is to make bridge readiness measurable early. At the moment, Force Dimension can reach device-ready enumeration through the DHD runtime, while OpenHaptics can now move beyond symbol-only validation into a conservative default-device open path with explicit capability reporting.
 
