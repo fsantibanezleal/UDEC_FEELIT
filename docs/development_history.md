@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.16.001 (2026-04-01)
+
+Declare and install python-multipart so multipart upload routes boot correctly in the project environment.
+
+Delivered:
+
+- Added python-multipart as a required runtime dependency in the project manifest and lightweight requirements surface.
+- Reinstalled the project environment in editable mode so the .venv now contains the multipart parser required by the upload and form routes.
+- Validated the repaired environment through the full automated test suite and pip dependency checks.
+
+Rationale:
+
+- The application currently exposes Form and UploadFile routes, so multipart parsing is part of the real runtime contract rather than an optional extra.
+- This is a patch-level runtime dependency fix that restores environment correctness without changing the product capability boundary.
+
 ### v2.16.000 (2026-04-01)
 
 Add a dry-run native acknowledgement boundary for bounded haptic pilot commands.
