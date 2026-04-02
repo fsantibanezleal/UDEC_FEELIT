@@ -201,6 +201,78 @@ a {
   min-height: 0;
 }
 
+.panel-section-compact {
+  padding: 10px 12px;
+}
+
+.panel-disclosure {
+  padding: 0;
+  overflow: hidden;
+}
+
+.disclosure-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel-disclosure[open] .disclosure-summary {
+  border-bottom: 1px solid rgba(48, 54, 61, 0.7);
+}
+
+.disclosure-note {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.disclosure-body {
+  padding: 12px;
+}
+
+.segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.segmented-button {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(48, 54, 61, 0.9);
+  background: rgba(13, 17, 23, 0.86);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmented-button:hover,
+.segmented-button.is-active {
+  border-color: rgba(57, 210, 192, 0.42);
+  background: rgba(57, 210, 192, 0.12);
+  color: var(--text-primary);
+}
+
+.config-section-hidden {
+  display: none;
+}
+
 .section-header {
   display: flex;
   align-items: center;

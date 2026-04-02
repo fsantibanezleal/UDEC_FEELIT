@@ -107,6 +107,7 @@ def test_haptic_configuration_api_returns_runtime_snapshot(tmp_path, monkeypatch
         for item in payload["contact_rollout"]["pilot_scenarios"]
     )
     assert any("normalized_features" in backend for backend in payload["backends"])
+    assert any("query_frontier_state" in backend for backend in payload["backends"])
     assert len(payload["pilot_command_contract"]["commands"]) >= 4
 
 
@@ -165,6 +166,9 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
                 "devices": [],
                 "enumeration_mode": "analysis-only",
                 "capability_scope": "probe-contract",
+                "query_frontier_state": "symbol-derived-only",
+                "queryable_characteristics": [],
+                "queried_characteristics": [],
                 "reported_capabilities": ["diagnostics-only"],
                 "probe_notes": ["Mock note"]
             }))
@@ -189,8 +193,10 @@ def test_haptic_runtime_runs_python_bridge_probe(tmp_path, monkeypatch) -> None:
     assert openhaptics.configured_device_selector == "Mock Touch X"
     assert openhaptics.probe_enumeration_mode == "analysis-only"
     assert openhaptics.probe_capability_scope == "probe-contract"
+    assert openhaptics.query_frontier_state == "symbol-derived-only"
     assert openhaptics.reported_capabilities == ["diagnostics-only"]
     assert openhaptics.normalized_features == []
+    assert openhaptics.queryable_characteristics == []
     assert openhaptics.probe_notes == ["Mock note"]
 
 
@@ -261,6 +267,9 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
                     "devices": [],
                     "enumeration_mode": "analysis-only",
                     "capability_scope": "probe-contract",
+                    "query_frontier_state": "symbol-derived-only",
+                    "queryable_characteristics": [],
+                    "queried_characteristics": [],
                     "reported_capabilities": ["force-output-path", "button-proxy-input-path", "scheduler-control"],
                     "probe_notes": ["Mock note"]
                 }))
@@ -288,6 +297,7 @@ def test_haptic_runtime_snapshot_surfaces_pilot_command_acknowledgement(
     )
     assert "force_path" in openhaptics_backend.normalized_features
     assert "input_path" in openhaptics_backend.normalized_features
+    assert openhaptics_backend.query_frontier_state == "symbol-derived-only"
     assert openhaptics_backend.verified_features == []
     assert "force_path" in openhaptics_backend.inferred_features
     assert openhaptics_command["acknowledgement"]["state"] == "command-acknowledged-dry-run"
@@ -363,6 +373,9 @@ def test_haptic_runtime_snapshot_surfaces_forcedimension_execution(
                     "devices": ["Mock SIGMA.7", "Mock OMEGA.7 Left"],
                     "enumeration_mode": "per-device-open-id",
                     "capability_scope": "runtime-and-live-device-enumeration",
+                    "query_frontier_state": "runtime-queried",
+                    "queryable_characteristics": ["sdk_version", "device_identity"],
+                    "queried_characteristics": ["sdk_version", "device_identity"],
                     "reported_capabilities": ["device-detection", "workspace-alignment", "force-feedback-path", "servo-loop-telemetry"],
                     "normalized_features": ["device_open_close", "device_identity_query", "state_query", "force_path", "scheduler_or_servo_loop", "workspace_alignment"],
                     "verified_features": ["device_open_close", "device_identity_query", "state_query"],
@@ -393,6 +406,9 @@ def test_haptic_runtime_snapshot_surfaces_forcedimension_execution(
     )
     assert forcedimension_backend.bridge_probe_state == "ready"
     assert forcedimension_backend.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
+    assert forcedimension_backend.query_frontier_state == "runtime-queried"
+    assert "sdk_version" in forcedimension_backend.queryable_characteristics
+    assert "device_identity" in forcedimension_backend.queried_characteristics
     assert "workspace_alignment" in forcedimension_backend.normalized_features
     assert "state_query" in forcedimension_backend.verified_features
     assert "force_path" in forcedimension_backend.inferred_features

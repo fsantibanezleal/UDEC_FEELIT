@@ -157,6 +157,9 @@ Current use:
 - review vendor-aware probe summaries, including OpenHaptics conservative default-device probe states plus reported capability channels and Force Dimension detected-device identities when a supported runtime is present
 - inspect the normalized runtime feature schema that translates vendor-specific evidence into stable cross-backend features
 - distinguish bridge-verified features from still-inferred features instead of treating all capability labels as equally strong evidence
+- move between `Focus`, `Contracts`, `Execution`, and `Bridge` review lanes so dense engineering detail can be inspected without keeping the whole route visible at once
+- use the focused summary cards to see the selected backend's next pilot, current readiness, and next engineering step above the fold
+- inspect the runtime-query frontier so the route makes it clear whether a backend is still symbol-derived only, already runtime-query-ready, or already returning specific runtime-queried characteristics
 - use the native spotlight summary and execution-coverage summary to see which non-visual backend currently carries the richest actionable runtime evidence
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - inspect the current design baseline for collision, contact, material rendering, reusable scene primitives, and backend readiness

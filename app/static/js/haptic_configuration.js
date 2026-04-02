@@ -9,6 +9,14 @@ function byId(id) {
 const state = {
   snapshot: null,
   selectedBackendSlug: null,
+  activeView: "focus",
+};
+
+const CONFIG_VIEW_SUMMARIES = {
+  focus: "Focus keeps the selected backend, native spotlight, and next engineering action above the fold.",
+  contracts: "Contracts isolates the scene-to-backend model, tactile primitive families, and readiness matrix.",
+  execution: "Execution stages rollout scenarios and bounded pilot command contracts without mixing them with setup details.",
+  bridge: "Bridge keeps bootstrap commands, native workspace details, and toolchain diagnostics in one engineering lane.",
 };
 
 function commandCoverageForBackend(backendSlug) {
@@ -137,9 +145,31 @@ function backendBySlug(slug) {
   return state.snapshot?.backends?.find((backend) => backend.slug === slug) ?? null;
 }
 
+function rolloutScenarioForBackend(backendSlug) {
+  return (
+    state.snapshot?.contact_rollout?.pilot_scenarios?.find(
+      (scenario) => scenario.backend_slug === backendSlug,
+    ) ?? null
+  );
+}
+
+function renderConfigurationView() {
+  const activeView = state.activeView || "focus";
+  document.querySelectorAll("[data-config-view-target]").forEach((button) => {
+    const isActive = button.dataset.configViewTarget === activeView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+  document.querySelectorAll("[data-config-view]").forEach((section) => {
+    section.classList.toggle("config-section-hidden", section.dataset.configView !== activeView);
+  });
+  byId("config-view-summary").textContent = CONFIG_VIEW_SUMMARIES[activeView] || CONFIG_VIEW_SUMMARIES.focus;
+}
+
 function renderSelectedBackend() {
   const backend =
     backendBySlug(state.selectedBackendSlug) ?? state.snapshot?.backends?.[0] ?? null;
+  const rolloutScenario = backend ? rolloutScenarioForBackend(backend.slug) : null;
 
   if (!backend) {
     byId("selected-backend-title").textContent = "--";
@@ -157,10 +187,16 @@ function renderSelectedBackend() {
     byId("selected-backend-command-coverage").textContent = "--";
     byId("selected-backend-probe-mode").textContent = "--";
     byId("selected-backend-capability-scope").textContent = "--";
+    byId("selected-backend-query-frontier").textContent = "--";
+    byId("selected-backend-queryable-characteristics").textContent = "--";
+    byId("selected-backend-queried-characteristics").textContent = "--";
     byId("selected-backend-probe-capabilities").textContent = "--";
     byId("selected-backend-normalized-features").textContent = "--";
     byId("selected-backend-verified-features").textContent = "--";
     byId("selected-backend-inferred-features").textContent = "--";
+    byId("config-focused-pilot").textContent = "--";
+    byId("config-focused-readiness").textContent = "--";
+    byId("config-focused-next-step").textContent = "--";
     byId("backend-evidence").innerHTML = "";
     return;
   }
@@ -188,6 +224,16 @@ function renderSelectedBackend() {
     backend.probe_enumeration_mode || "No probe mode reported.";
   byId("selected-backend-capability-scope").textContent =
     backend.probe_capability_scope || "No capability scope reported.";
+  byId("selected-backend-query-frontier").textContent =
+    backend.query_frontier_state || "No runtime-query frontier reported.";
+  byId("selected-backend-queryable-characteristics").textContent =
+    backend.queryable_characteristics.length
+      ? backend.queryable_characteristics.join(" | ")
+      : "No runtime-query-ready characteristics reported.";
+  byId("selected-backend-queried-characteristics").textContent =
+    backend.queried_characteristics.length
+      ? backend.queried_characteristics.join(" | ")
+      : "No runtime-queried characteristics recorded yet.";
   byId("selected-backend-probe-capabilities").textContent =
     backend.reported_capabilities.length
       ? backend.reported_capabilities.join(" | ")
@@ -204,6 +250,15 @@ function renderSelectedBackend() {
     backend.inferred_features.length
       ? backend.inferred_features.join(" | ")
       : "No inferred feature set recorded.";
+  byId("config-focused-pilot").textContent = rolloutScenario
+    ? `${rolloutScenario.pilot_mode} | ${rolloutScenario.pilot_primitive_slug}`
+    : "No pilot rollout mapped.";
+  byId("config-focused-readiness").textContent = rolloutScenario
+    ? `${rolloutScenario.readiness_state} | ${rolloutScenario.capability_alignment}`
+    : "No readiness row mapped.";
+  byId("config-focused-next-step").textContent = rolloutScenario
+    ? rolloutScenario.next_engineering_step
+    : "No next engineering step mapped.";
 
   const evidenceContainer = byId("backend-evidence");
   evidenceContainer.innerHTML = "";
@@ -299,7 +354,9 @@ function renderBackendList() {
     card.append(title, description, meta, stateRow, stateLine, focusLine);
     card.addEventListener("click", () => {
       state.selectedBackendSlug = backend.slug;
+      state.activeView = "focus";
       byId("requested-backend").value = backend.slug;
+      renderConfigurationView();
       renderBackendList();
       renderSelectedBackend();
       setStatus(`Selected backend diagnostics for ${backend.title}.`, "Selected");
@@ -651,6 +708,7 @@ function renderSnapshot(snapshot) {
   applyFormValues(snapshot);
   renderBackendList();
   renderSelectedBackend();
+  renderConfigurationView();
   renderToolchainList();
   renderBridgeWorkspace();
   renderSceneContractList();
@@ -718,8 +776,17 @@ document.addEventListener("DOMContentLoaded", () => {
       byId("apply-haptic-config").addEventListener("click", () => {
         saveConfiguration().catch((error) => setStatus(error.message, "Save failed"));
       });
+      document.querySelectorAll("[data-config-view-target]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.activeView = button.dataset.configViewTarget || "focus";
+          renderConfigurationView();
+          setStatus(`Showing the ${state.activeView} review lane.`, "View changed");
+        });
+      });
       byId("requested-backend").addEventListener("change", (event) => {
         state.selectedBackendSlug = event.target.value;
+        state.activeView = "focus";
+        renderConfigurationView();
         renderBackendList();
         renderSelectedBackend();
       });

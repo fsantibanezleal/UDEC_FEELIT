@@ -1283,6 +1283,9 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 active_backend = (page.locator("#config-active-backend").text_content() or "").strip()
                 native_spotlight = (page.locator("#config-native-spotlight").text_content() or "").strip()
                 execution_coverage = (page.locator("#config-execution-coverage").text_content() or "").strip()
+                focused_pilot = (page.locator("#config-focused-pilot").text_content() or "").strip()
+                focused_next_step = (page.locator("#config-focused-next-step").text_content() or "").strip()
+                view_summary = (page.locator("#config-view-summary").text_content() or "").strip()
                 selected_backend_title = (page.locator("#selected-backend-title").text_content() or "").strip()
                 selected_backend_probe_summary = (
                     page.locator("#selected-backend-probe-summary").text_content() or ""
@@ -1290,8 +1293,21 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 selected_backend_focus_reason = (
                     page.locator("#selected-backend-focus-reason").text_content() or ""
                 ).strip()
+                selected_backend_query_frontier = (
+                    page.locator("#selected-backend-query-frontier").text_content() or ""
+                ).strip()
                 bridge_source_root = (page.locator("#bridge-source-root").text_content() or "").strip()
                 bridge_command = (page.locator("#bridge-build-command").text_content() or "").strip()
+                active_review_lane = page.evaluate(
+                    """
+                    () => document.querySelector('[data-config-view-target].is-active')?.dataset.configViewTarget ?? ''
+                    """
+                )
+                hidden_contract_lane = page.evaluate(
+                    """
+                    () => Array.from(document.querySelectorAll('[data-config-view=\"contracts\"]')).every((section) => section.classList.contains('config-section-hidden'))
+                    """
+                )
                 backend_selection_state = page.evaluate(
                     """
                     () => Array.from(document.querySelectorAll('#backend-list .backend-card')).map((card) => ({
@@ -1317,16 +1333,28 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-configuration did not initialize the native spotlight summary")
                 if execution_coverage in {"", "Loading"}:
                     failures.append("/haptic-configuration did not initialize the execution coverage summary")
+                if focused_pilot in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the focused pilot summary")
+                if focused_next_step in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the focused next-step summary")
+                if view_summary in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the review-lane summary")
                 if selected_backend_title in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected backend inspector")
                 if selected_backend_probe_summary in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected bridge-probe summary")
                 if selected_backend_focus_reason in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected backend focus reason")
+                if selected_backend_query_frontier in {"", "--"}:
+                    failures.append("/haptic-configuration did not initialize the selected backend query frontier")
                 if bridge_source_root in {"", "Loading source root."}:
                     failures.append("/haptic-configuration did not initialize the native bridge workspace summary")
                 if bridge_command in {"", "Loading build command."}:
                     failures.append("/haptic-configuration did not initialize the native bridge build command")
+                if active_review_lane != "focus":
+                    failures.append("/haptic-configuration did not boot into the focus review lane")
+                if not hidden_contract_lane:
+                    failures.append("/haptic-configuration did not hide the contracts lane while focus is active")
                 spotlight_backend = next(
                     (
                         item
