@@ -157,11 +157,12 @@ Current use:
 - review vendor-aware probe summaries, including OpenHaptics conservative default-device probe states plus reported capability channels and Force Dimension detected-device identities when a supported runtime is present
 - inspect the normalized runtime feature schema that translates vendor-specific evidence into stable cross-backend features
 - distinguish bridge-verified features from still-inferred features instead of treating all capability labels as equally strong evidence
+- use the native spotlight summary and execution-coverage summary to see which non-visual backend currently carries the richest actionable runtime evidence
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - inspect the current design baseline for collision, contact, material rendering, reusable scene primitives, and backend readiness
 - inspect the backend-aware contact rollout plan that names one bounded pilot primitive, one pilot profile, and one next engineering step for each stack
 - inspect the dry-run pilot command payloads that summarize what the native bridge should receive first for each backend-specific pilot
-- inspect whether the current bridge boundary can already acknowledge those bounded pilot payloads safely and whether one first bounded execution step is already available
+- inspect whether the current bridge boundary can already acknowledge those bounded pilot payloads safely and whether bounded execution is already available for OpenHaptics and Force Dimension
 - keep the built-in visual emulator as the safe default runtime until a native bridge is ready
 
 This route is not a substitute for the future native backend. Its role is to make the hardware path explicit, testable, and documentable before real devices are attached.

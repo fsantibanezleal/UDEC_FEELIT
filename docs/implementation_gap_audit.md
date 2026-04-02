@@ -135,7 +135,7 @@ Status:
 
 Interpretation:
 
-FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. It also now has a vendor-aware Force Dimension runtime path that can load the DHD runtime and enumerate devices through the probe contract, plus a vendor-aware OpenHaptics path that can load the HD runtime library set, attempt a conservative default-device open, and report stack-level capability channels. This is a real architectural and product step, but it still stops before force rendering or live scene-coupled control.
+FeelIT now exposes requested backend, active fallback backend, SDK-root intent, bridge-path intent, build-tool readiness, a compiled bridge-probe contract, and a formal contact-model baseline. It also now has a vendor-aware Force Dimension runtime path that can load the DHD runtime, enumerate devices through the probe contract, and execute one bounded no-force rigid-surface pilot step, plus a vendor-aware OpenHaptics path that can load the HD runtime library set, attempt a conservative default-device open, report stack-level capability channels, and execute one bounded no-force button-actuation pilot. This is a real architectural and product step, but it still stops before force rendering or live scene-coupled control.
 
 The runtime now also carries an explicit scene-to-backend contract baseline. That means the repo can already name which tactile primitives and event transitions a future backend must consume for Object Explorer, Braille Reader, and Haptic Desktop, even though the native loop itself is still pending. That contract is no longer just a flat list; it now includes reusable primitive families and a backend-readiness matrix, which makes the remaining gap to scene-coupled force work more auditable.
 
@@ -151,7 +151,7 @@ The current `develop` state now also emits a dry-run pilot command contract for 
 
 This still stops before real servo-loop ownership or force output, but it reduces ambiguity at the next native-integration boundary.
 
-The current shipped baseline now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. It now goes one step further for the OpenHaptics button-actuation pilot: the bridge executable can receive the declared pilot contract, acknowledge it, and execute one bounded native step in a clamped no-force mode.
+The current shipped baseline now also adds a bounded bridge-side acknowledgement path for those dry-run pilot payloads. It now goes one step further for the OpenHaptics button-actuation pilot and the Force Dimension rigid-surface pilot: the bridge executable can receive the declared pilot contract, acknowledge it, and execute one bounded native step per pilot in a clamped no-force mode.
 
 The current `develop` state now also normalizes bridge-reported runtime features into a shared schema and separates bridge-verified features from still-inferred ones. That narrows one important ambiguity: rollout planning no longer depends only on vendor-specific strings when it decides whether a backend is aligned or blocked.
 
@@ -164,7 +164,7 @@ The current bridge path is meaningful because it proves four things end to end:
 - FeelIT can invoke the bridge and parse JSON results back into the API and frontend
 - FeelIT can distinguish scaffold-only bridge readiness from runtime-loaded capability and device-backed capability
 
-The remaining gap is therefore narrower and more concrete: deepen OpenHaptics from conservative default-device probing into richer device characterization and activation, move CHAI3D beyond scaffold-level readiness, then advance from probe states into the actual haptic-control loop.
+The remaining gap is therefore narrower and more concrete: deepen OpenHaptics from conservative default-device probing into richer device characterization and activation, move CHAI3D beyond scaffold-level readiness, make backend-card state semantics clearer in the configuration UX, then advance from bounded pilot execution into the actual haptic-control loop.
 
 ### Pointer Emulation
 
@@ -182,8 +182,8 @@ This is a valid operational fallback, not a replacement for real haptic executio
 The repository does not yet deliver:
 
 - a native haptic backend beside the null backend
-- broad runtime device capability detection and activation beyond the current OpenHaptics conservative default-device probe and Force Dimension enumeration baseline
-- broader native bridge execution beyond the first bounded OpenHaptics no-force pilot
+- broad runtime device capability detection and activation beyond the current OpenHaptics conservative default-device probe and Force Dimension bounded-execution baseline
+- force-enabled bridge execution beyond the current bounded no-force OpenHaptics and Force Dimension pilots
 - full document-format compatibility beyond the current TXT, HTML, and EPUB baseline
 - server-side preprocessing and import pipeline for 3D assets beyond the current validation gate
 - real desktop action execution semantics beyond content launching and playback control

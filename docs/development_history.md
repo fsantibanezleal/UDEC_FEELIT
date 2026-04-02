@@ -15,6 +15,22 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.000 (2026-04-02)
+
+Expand bounded native execution to Force Dimension and sharpen Haptic Configuration focus
+
+Delivered:
+
+- Extended the native bridge so the Force Dimension DHD path can execute one bounded rigid-surface pilot step in the same explicit no-force safety envelope already used for the OpenHaptics button-actuation path.
+- Added stronger Haptic Configuration route hierarchy with a native spotlight summary, execution-coverage summary, default focus on the richest native backend, and clearer card-state semantics for active runtime versus inspector focus versus spotlight.
+- Expanded runtime, smoke, and native integration coverage so the second bounded native execution path and the new configuration-page focus rules are both validated automatically.
+- Refreshed README, technical haptics docs, screenshots, and SVG wording so the release no longer describes bounded execution as OpenHaptics-only.
+
+Rationale:
+
+- This is a material capability expansion rather than a patch because the native bridge now covers bounded execution across two vendor stacks instead of only one.
+- The release also closes a real UX comprehension gap in the Haptic Configuration route by making the richest native evidence visible above the fold without conflating it with the active visual fallback path.
+
 ### v2.17.000 (2026-04-01)
 
 Execute the first bounded native haptic pilot step through the OpenHaptics bridge boundary.

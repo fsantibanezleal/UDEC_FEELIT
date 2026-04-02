@@ -1281,12 +1281,26 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 page_status = (page.locator("#config-page-status").text_content() or "").strip()
                 requested_backend = (page.locator("#config-requested-backend").text_content() or "").strip()
                 active_backend = (page.locator("#config-active-backend").text_content() or "").strip()
+                native_spotlight = (page.locator("#config-native-spotlight").text_content() or "").strip()
+                execution_coverage = (page.locator("#config-execution-coverage").text_content() or "").strip()
                 selected_backend_title = (page.locator("#selected-backend-title").text_content() or "").strip()
                 selected_backend_probe_summary = (
                     page.locator("#selected-backend-probe-summary").text_content() or ""
                 ).strip()
+                selected_backend_focus_reason = (
+                    page.locator("#selected-backend-focus-reason").text_content() or ""
+                ).strip()
                 bridge_source_root = (page.locator("#bridge-source-root").text_content() or "").strip()
                 bridge_command = (page.locator("#bridge-build-command").text_content() or "").strip()
+                backend_selection_state = page.evaluate(
+                    """
+                    () => Array.from(document.querySelectorAll('#backend-list .backend-card')).map((card) => ({
+                      slug: card.dataset.backendSlug || "",
+                      selected: card.dataset.selected === "true",
+                      spotlight: card.dataset.spotlight === "true",
+                    }))
+                    """
+                )
                 if backend_cards == 0:
                     failures.append("/haptic-configuration did not render any backend diagnostics cards")
                 if toolchain_cards == 0:
@@ -1299,14 +1313,38 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append("/haptic-configuration did not initialize the requested backend summary")
                 if active_backend in {"", "Loading"}:
                     failures.append("/haptic-configuration did not initialize the active backend summary")
+                if native_spotlight in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the native spotlight summary")
+                if execution_coverage in {"", "Loading"}:
+                    failures.append("/haptic-configuration did not initialize the execution coverage summary")
                 if selected_backend_title in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected backend inspector")
                 if selected_backend_probe_summary in {"", "--"}:
                     failures.append("/haptic-configuration did not initialize the selected bridge-probe summary")
+                if selected_backend_focus_reason in {"", "--"}:
+                    failures.append("/haptic-configuration did not initialize the selected backend focus reason")
                 if bridge_source_root in {"", "Loading source root."}:
                     failures.append("/haptic-configuration did not initialize the native bridge workspace summary")
                 if bridge_command in {"", "Loading build command."}:
                     failures.append("/haptic-configuration did not initialize the native bridge build command")
+                spotlight_backend = next(
+                    (
+                        item
+                        for item in backend_selection_state
+                        if item.get("spotlight") and item.get("slug") != "visual-emulator"
+                    ),
+                    None,
+                )
+                selected_backend = next(
+                    (item for item in backend_selection_state if item.get("selected")),
+                    None,
+                )
+                if spotlight_backend and (
+                    not selected_backend or selected_backend.get("slug") != spotlight_backend.get("slug")
+                ):
+                    failures.append(
+                        "/haptic-configuration did not focus the native spotlight backend above the fold",
+                    )
 
             print(
                 f"{scene.route}: unique_colors={unique_colors} "

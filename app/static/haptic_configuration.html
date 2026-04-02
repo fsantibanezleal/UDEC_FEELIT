@@ -125,6 +125,14 @@
                 <span class="status-label">Tracked stacks</span>
                 <span id="config-backend-count" class="status-value">0</span>
               </div>
+              <div class="status-card">
+                <span class="status-label">Native spotlight</span>
+                <span id="config-native-spotlight" class="status-value">Loading</span>
+              </div>
+              <div class="status-card">
+                <span class="status-label">Execution coverage</span>
+                <span id="config-execution-coverage" class="status-value">Loading</span>
+              </div>
             </div>
           </div>
 
@@ -256,6 +264,8 @@
             <div><dt>Probe summary</dt><dd id="selected-backend-probe-summary">--</dd></div>
             <div><dt>Device count</dt><dd id="selected-backend-device-count">--</dd></div>
             <div><dt>Preferred selector</dt><dd id="selected-backend-device-selector">--</dd></div>
+            <div><dt>Focus reason</dt><dd id="selected-backend-focus-reason">--</dd></div>
+            <div><dt>Command coverage</dt><dd id="selected-backend-command-coverage">--</dd></div>
             <div><dt>Probe mode</dt><dd id="selected-backend-probe-mode">--</dd></div>
             <div><dt>Capability scope</dt><dd id="selected-backend-capability-scope">--</dd></div>
             <div><dt>Probe capabilities</dt><dd id="selected-backend-probe-capabilities">--</dd></div>
@@ -304,6 +314,7 @@
           <li>See which bounded pilot primitive each backend should implement first before attempting a full scene-wide force loop.</li>
           <li>Inspect the dry-run native command payload that each backend pilot would eventually hand to a bridge or sidecar consumer.</li>
           <li>See whether the current bridge boundary can already acknowledge that bounded pilot payload and whether one first bounded native execution step is already available.</li>
+          <li>Use the runtime summary and the default inspector focus to surface the richest native stack above the fold whenever it carries more real execution evidence than the visual fallback.</li>
           <li>Keep the built-in visual emulator as the safe default while physical-device integration is still under construction.</li>
         </ul>
       </div>

@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -217,11 +219,72 @@ static bool contains_json_key(const std::string& payload, const std::string& key
   return payload.find("\"" + key + "\"") != std::string::npos;
 }
 
+static std::string selector_match_key(const std::string& value) {
+  std::string normalized;
+  normalized.reserve(value.size());
+  for (unsigned char character : value) {
+    if (std::isalnum(character)) {
+      normalized.push_back(static_cast<char>(std::tolower(character)));
+    }
+  }
+  return normalized;
+}
+
+static std::optional<int> select_device_index(
+    const std::vector<std::string>& devices,
+    const std::string& configured_device_selector) {
+  if (devices.empty()) {
+    return std::nullopt;
+  }
+  if (configured_device_selector.empty()) {
+    return 0;
+  }
+
+  const std::string normalized_selector = selector_match_key(configured_device_selector);
+  if (normalized_selector.empty()) {
+    return 0;
+  }
+
+  const bool numeric_selector = std::all_of(
+      configured_device_selector.begin(),
+      configured_device_selector.end(),
+      [](unsigned char character) { return std::isdigit(character); });
+  if (numeric_selector) {
+    const int index = std::stoi(configured_device_selector);
+    if (index >= 0 && index < static_cast<int>(devices.size())) {
+      return index;
+    }
+  }
+
+  for (int index = 0; index < static_cast<int>(devices.size()); ++index) {
+    if (selector_match_key(devices[index]) == normalized_selector) {
+      return index;
+    }
+  }
+  for (int index = 0; index < static_cast<int>(devices.size()); ++index) {
+    const std::string normalized_device = selector_match_key(devices[index]);
+    if (normalized_device.find(normalized_selector) != std::string::npos ||
+        normalized_selector.find(normalized_device) != std::string::npos) {
+      return index;
+    }
+  }
+  return std::nullopt;
+}
+
 static ProbeResult run_openhaptics_probe(
     const std::string& backend_slug,
     const std::string& configured_sdk_root,
     const std::string& configured_device_selector,
     const BackendProfile& profile);
+
+static ProbeResult run_forcedimension_probe(
+    const std::string& backend_slug,
+    const std::string& configured_sdk_root,
+    const BackendProfile& profile);
+
+static CommandExecutionResult run_forcedimension_bounded_execution(
+    const ProbeResult& probe_result,
+    const std::string& configured_device_selector);
 
 static CommandAckResult run_pilot_command_ack(
     const std::string& backend_slug,
@@ -373,46 +436,90 @@ static CommandExecutionResult run_pilot_command_execution(
     return result;
   }
 
-  if (backend_slug != "openhaptics-touch") {
-    result.status = "command-execution-not-implemented";
-    result.summary = "This native bridge execution path is not implemented yet for the selected backend.";
-    result.notes.push_back("The first bounded execution milestone currently targets the OpenHaptics button-actuation path.");
-    return result;
-  }
+  if (backend_slug == "openhaptics-touch") {
+    if (*primitive_family != "button_actuation") {
+      result.status = "command-execution-unsupported-primitive";
+      result.summary = "The OpenHaptics native execution path currently supports only button_actuation primitives.";
+      result.notes.push_back("This keeps the first OpenHaptics execution milestone bounded to launcher-style tactile tiles.");
+      return result;
+    }
 
-  if (*primitive_family != "button_actuation") {
-    result.status = "command-execution-unsupported-primitive";
-    result.summary = "The first native execution path currently supports only button_actuation primitives.";
-    result.notes.push_back("This keeps the first execution milestone bounded to launcher-style tactile tiles.");
-    return result;
-  }
+    const ProbeResult probe_result = run_openhaptics_probe(
+        backend_slug,
+        configured_sdk_root,
+        configured_device_selector,
+        profile);
+    if (probe_result.status != "ready") {
+      result.status = "command-execution-blocked-by-runtime";
+      result.summary =
+          "The OpenHaptics runtime is not ready enough for bounded pilot execution. " + probe_result.summary;
+      result.notes.push_back("The bridge still requires a successful conservative device-open path before bounded execution can proceed.");
+      return result;
+    }
 
-  const ProbeResult probe_result = run_openhaptics_probe(
-      backend_slug,
-      configured_sdk_root,
-      configured_device_selector,
-      profile);
-  if (probe_result.status != "ready") {
-    result.status = "command-execution-blocked-by-runtime";
+    result.executed = true;
+    result.status = "command-executed-bounded-no-force";
+    result.execution_mode = "openhaptics-button-actuation-bounded-no-force";
+    result.safety_state = "no-force-output-clamped";
+    result.device_selector_used = probe_result.effective_device_selector;
     result.summary =
-        "The OpenHaptics runtime is not ready enough for bounded pilot execution. " + probe_result.summary;
-    result.notes.push_back("The bridge still requires a successful conservative device-open path before bounded execution can proceed.");
+        "The native bridge executed the first bounded OpenHaptics button-actuation pilot in a no-force safety mode.";
+    result.notes.push_back(
+        "This execution step proves bridge-side bounded pilot consumption beyond acknowledgement, but it does not start a continuous servo loop.");
+    result.notes.push_back(
+        "The device path was opened through the conservative OpenHaptics selector flow and immediately returned to a clamped no-force state.");
+    result.notes.push_back(
+        "Real actuation envelopes, calibration transitions, and scene-wide force ownership remain future work.");
     return result;
   }
 
-  result.executed = true;
-  result.status = "command-executed-bounded-no-force";
-  result.execution_mode = "openhaptics-button-actuation-bounded-no-force";
-  result.safety_state = "no-force-output-clamped";
-  result.device_selector_used = probe_result.effective_device_selector;
-  result.summary =
-      "The native bridge executed the first bounded OpenHaptics button-actuation pilot in a no-force safety mode.";
-  result.notes.push_back(
-      "This execution step proves bridge-side bounded pilot consumption beyond acknowledgement, but it does not start a continuous servo loop.");
-  result.notes.push_back(
-      "The device path was opened through the conservative OpenHaptics selector flow and immediately returned to a clamped no-force state.");
-  result.notes.push_back(
-      "Real actuation envelopes, calibration transitions, and scene-wide force ownership remain future work.");
+  if (backend_slug == "forcedimension-dhd") {
+    if (*primitive_family != "rigid_surface_following") {
+      result.status = "command-execution-unsupported-primitive";
+      result.summary = "The Force Dimension native execution path currently supports only rigid_surface_following primitives.";
+      result.notes.push_back("This keeps the first Force Dimension execution milestone bounded to one reduced proxy surface.");
+      return result;
+    }
+
+    append_unique(&result.telemetry_fields, "surface_normal");
+    append_unique(&result.telemetry_fields, "penetration_depth_mm");
+
+    const ProbeResult probe_result = run_forcedimension_probe(
+        backend_slug,
+        configured_sdk_root,
+        profile);
+    if (probe_result.status != "ready") {
+      result.status = "command-execution-blocked-by-runtime";
+      result.summary =
+          "The Force Dimension runtime is not ready enough for bounded pilot execution. " + probe_result.summary;
+      result.notes.push_back("The bridge still requires a successful DHD runtime load plus live device enumeration before bounded surface-following can proceed.");
+      return result;
+    }
+    result = run_forcedimension_bounded_execution(
+        probe_result,
+        configured_device_selector);
+    result.backend = backend_slug;
+    result.command_slug = command_slug.value_or("");
+    result.primitive_slug = primitive_slug.value_or("");
+    result.primitive_family = primitive_family.value_or("");
+    result.pilot_mode = pilot_mode.value_or("");
+    result.pilot_route = pilot_route.value_or("");
+    result.telemetry_fields = {
+        "command_slug",
+        "primitive_slug",
+        "backend_slug",
+        "contact_state",
+        "constraint_state",
+        "scene_route",
+        "surface_normal",
+        "penetration_depth_mm",
+    };
+    return result;
+  }
+
+  result.status = "command-execution-not-implemented";
+  result.summary = "This native bridge execution path is not implemented yet for the selected backend.";
+  result.notes.push_back("Bounded native execution currently covers the OpenHaptics button-actuation path and the Force Dimension rigid-surface path only.");
   return result;
 }
 
@@ -481,6 +588,86 @@ class SharedLibrary {
 #endif
   std::string loaded_path_;
 };
+
+static CommandExecutionResult run_forcedimension_bounded_execution(
+    const ProbeResult& probe_result,
+    const std::string& configured_device_selector) {
+  using dhdOpenFn = int (*)();
+  using dhdOpenIDFn = int (*)(char);
+  using dhdCloseFn = int (*)(char);
+  using dhdErrorGetLastStrFn = const char* (*)();
+
+  CommandExecutionResult result;
+  const auto selected_index = select_device_index(
+      probe_result.devices,
+      configured_device_selector);
+  if (!selected_index) {
+    result.status = "command-device-selector-not-found";
+    result.summary = "The configured Force Dimension device selector did not match any enumerated device.";
+    result.notes.push_back("Use an exact device name, a resolvable numeric index, or leave the selector empty to target the first enumerated device.");
+    return result;
+  }
+
+  SharedLibrary library;
+  std::string load_error;
+  if (!library.open(fs::path(probe_result.runtime_library), &load_error)) {
+    result.status = "command-execution-blocked-by-runtime";
+    result.summary = "The Force Dimension runtime library could not be re-opened for bounded pilot execution. " + load_error;
+    result.notes.push_back("The bounded execution step depends on reopening the same runtime library that succeeded during probing.");
+    return result;
+  }
+
+  auto dhd_open = library.symbol<dhdOpenFn>("dhdOpen");
+  auto dhd_open_id = library.symbol<dhdOpenIDFn>("dhdOpenID");
+  auto dhd_close = library.symbol<dhdCloseFn>("dhdClose");
+  auto dhd_error_get_last_str = library.symbol<dhdErrorGetLastStrFn>("dhdErrorGetLastStr");
+  if (!dhd_open || !dhd_close || !dhd_error_get_last_str) {
+    result.status = "command-execution-blocked-by-runtime";
+    result.summary = "The Force Dimension runtime is missing one or more symbols required for bounded pilot execution.";
+    result.notes.push_back("Execution needs a minimal open-close cycle even when the bridge stays in no-force mode.");
+    return result;
+  }
+
+  int opened_device = -1;
+  if (dhd_open_id) {
+    opened_device = dhd_open_id(static_cast<char>(*selected_index));
+  } else if (*selected_index == 0) {
+    opened_device = dhd_open();
+  } else {
+    result.status = "command-device-selector-unsupported";
+    result.summary = "The Force Dimension runtime can only open the first device on this host, so the requested selector cannot be honored safely.";
+    result.notes.push_back("A multi-device bounded execution step requires dhdOpenID support.");
+    return result;
+  }
+
+  if (opened_device < 0) {
+    const char* error = dhd_error_get_last_str();
+    result.status = "command-execution-blocked-by-runtime";
+    result.summary = "The Force Dimension device could not be opened for bounded pilot execution.";
+    if (error && std::string(error).size() > 0) {
+      result.summary += " ";
+      result.summary += error;
+    }
+    result.notes.push_back("The runtime enumerated a device, but a safe open-close cycle still failed for the selected pilot target.");
+    return result;
+  }
+
+  dhd_close(static_cast<char>(opened_device));
+  result.executed = true;
+  result.status = "command-executed-bounded-no-force";
+  result.execution_mode = "forcedimension-rigid-surface-bounded-no-force";
+  result.safety_state = "no-force-output-clamped";
+  result.device_selector_used = probe_result.devices.at(static_cast<std::size_t>(*selected_index));
+  result.summary =
+      "The native bridge executed the first bounded Force Dimension rigid-surface pilot in a no-force safety mode.";
+  result.notes.push_back(
+      "This execution step proves that the bridge can consume one reduced proxy-surface command and complete a safe open-close cycle on the selected DHD runtime path.");
+  result.notes.push_back(
+      "The bounded execution still clamps physical force output and does not start a continuous servo loop or scene-wide contact ownership.");
+  result.notes.push_back(
+      "Stable contact normals, penetration telemetry, and force envelopes remain the next engineering milestone.");
+  return result;
+}
 
 static ProbeResult build_default_probe_result(const std::string& backend_slug, const std::string& configured_sdk_root) {
   ProbeResult result;

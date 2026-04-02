@@ -137,8 +137,8 @@ def build_haptic_pilot_commands(contact_rollout: dict[str, Any]) -> dict[str, An
         ),
         "transport_boundary": (
             "The current contract now reaches acknowledgement for all native-sidecar paths and "
-            "a first bounded execution slice for the OpenHaptics button-actuation pilot. Full "
-            "force-loop ownership and scene-wide execution remain future work."
+            "bounded execution for the first native pilot slices that the bridge already "
+            "supports. Full force-loop ownership and scene-wide execution remain future work."
         ),
         "commands": commands,
     }

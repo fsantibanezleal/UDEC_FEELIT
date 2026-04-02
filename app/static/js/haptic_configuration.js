@@ -11,6 +11,114 @@ const state = {
   selectedBackendSlug: null,
 };
 
+function commandCoverageForBackend(backendSlug) {
+  const commands = state.snapshot?.pilot_command_contract?.commands ?? [];
+  const relevantCommands = commands.filter((command) => command.backend_slug === backendSlug);
+  const acknowledgementCount = relevantCommands.filter(
+    (command) => command.acknowledgement?.accepted,
+  ).length;
+  const executionCount = relevantCommands.filter((command) => command.execution?.executed).length;
+  return {
+    total: relevantCommands.length,
+    acknowledgementCount,
+    executionCount,
+  };
+}
+
+function backendFocusScore(backend) {
+  const coverage = commandCoverageForBackend(backend.slug);
+  let score = 0;
+
+  if (backend.slug === "visual-emulator") {
+    score -= 200;
+  }
+  score += coverage.executionCount * 240;
+  score += coverage.acknowledgementCount * 120;
+  score += (backend.detected_device_count || 0) * 30;
+  score += (backend.verified_features?.length || 0) * 12;
+  score += (backend.normalized_features?.length || 0) * 6;
+  score += (backend.inferred_features?.length || 0) * 3;
+
+  if (backend.bridge_probe_state === "ready") {
+    score += 120;
+  } else if (backend.bridge_probe_state === "runtime-loaded-capability-ready") {
+    score += 90;
+  } else if (backend.bridge_probe_state === "runtime-loaded-no-devices") {
+    score += 65;
+  } else if (backend.bridge_probe_state === "scaffold-only") {
+    score += 20;
+  }
+
+  if (backend.active) {
+    score += 25;
+  }
+  if (backend.requested && backend.slug !== "visual-emulator") {
+    score += 20;
+  }
+  return score;
+}
+
+function spotlightBackend() {
+  const backends = state.snapshot?.backends ?? [];
+  const nativeBackends = backends.filter((backend) => backend.slug !== "visual-emulator");
+  if (!nativeBackends.length) {
+    return backends[0] ?? null;
+  }
+  return [...nativeBackends].sort((left, right) => backendFocusScore(right) - backendFocusScore(left))[0];
+}
+
+function focusReasonForBackend(backend) {
+  const coverage = commandCoverageForBackend(backend.slug);
+  if (coverage.executionCount > 0) {
+    return `${backend.title} already exposes ${coverage.executionCount}/${coverage.total} bounded pilot execution path(s).`;
+  }
+  if (coverage.acknowledgementCount > 0) {
+    return `${backend.title} already acknowledges ${coverage.acknowledgementCount}/${coverage.total} pilot command payload(s).`;
+  }
+  if ((backend.detected_device_count || 0) > 0) {
+    return `${backend.title} is focused because it already reports ${(backend.detected_device_count || 0)} detected device(s).`;
+  }
+  if (backend.bridge_probe_state === "runtime-loaded-capability-ready") {
+    return `${backend.title} is focused because the native runtime can already load and report capability evidence.`;
+  }
+  if (backend.slug === "visual-emulator") {
+    return "The visual emulator stays available as the safe fallback and debug mirror path.";
+  }
+  return `${backend.title} remains the current best native candidate based on the latest runtime and bridge evidence.`;
+}
+
+function coverageSummaryForBackend(backend) {
+  const coverage = commandCoverageForBackend(backend.slug);
+  if (!coverage.total) {
+    return "No bounded pilot commands recorded for this backend yet.";
+  }
+  return `${coverage.executionCount}/${coverage.total} executed | ${coverage.acknowledgementCount}/${coverage.total} acknowledged`;
+}
+
+function totalNativeExecutionCoverage() {
+  const commands = state.snapshot?.pilot_command_contract?.commands ?? [];
+  const nativeCommands = commands.filter((command) => command.backend_slug !== "visual-emulator");
+  const acknowledged = nativeCommands.filter((command) => command.acknowledgement?.accepted).length;
+  const executed = nativeCommands.filter((command) => command.execution?.executed).length;
+  return {
+    total: nativeCommands.length,
+    acknowledged,
+    executed,
+  };
+}
+
+function chooseDefaultBackendSlug(snapshot) {
+  const requestedBackend = snapshot.backends.find((backend) => backend.slug === snapshot.requested_backend);
+  const spotlight = spotlightBackend();
+  if (requestedBackend && requestedBackend.slug !== "visual-emulator") {
+    return requestedBackend.slug;
+  }
+  if (spotlight) {
+    return spotlight.slug;
+  }
+  return requestedBackend?.slug || snapshot.backends[0]?.slug || null;
+}
+
 function setStatus(message, pillText = message) {
   byId("config-status-bar").textContent = message;
   byId("config-page-status").textContent = pillText;
@@ -45,6 +153,8 @@ function renderSelectedBackend() {
     byId("selected-backend-probe-summary").textContent = "--";
     byId("selected-backend-device-count").textContent = "--";
     byId("selected-backend-device-selector").textContent = "--";
+    byId("selected-backend-focus-reason").textContent = "--";
+    byId("selected-backend-command-coverage").textContent = "--";
     byId("selected-backend-probe-mode").textContent = "--";
     byId("selected-backend-capability-scope").textContent = "--";
     byId("selected-backend-probe-capabilities").textContent = "--";
@@ -72,6 +182,8 @@ function renderSelectedBackend() {
     backend.detected_device_count == null ? "0" : String(backend.detected_device_count);
   byId("selected-backend-device-selector").textContent =
     backend.configured_device_selector || "No preferred selector configured.";
+  byId("selected-backend-focus-reason").textContent = focusReasonForBackend(backend);
+  byId("selected-backend-command-coverage").textContent = coverageSummaryForBackend(backend);
   byId("selected-backend-probe-mode").textContent =
     backend.probe_enumeration_mode || "No probe mode reported.";
   byId("selected-backend-capability-scope").textContent =
@@ -112,16 +224,34 @@ function renderSelectedBackend() {
 function renderBackendList() {
   const container = byId("backend-list");
   container.innerHTML = "";
+  const spotlight = spotlightBackend();
+
+  function statePill(label, className) {
+    const pill = document.createElement("span");
+    pill.className = `backend-state-pill ${className}`;
+    pill.textContent = label;
+    return pill;
+  }
 
   state.snapshot.backends.forEach((backend) => {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "workspace-card backend-card";
+    card.dataset.backendSlug = backend.slug;
     if (backend.slug === state.selectedBackendSlug) {
       card.classList.add("is-selected");
+      card.dataset.selected = "true";
+    } else {
+      card.dataset.selected = "false";
     }
     if (backend.active) {
       card.classList.add("backend-card-active");
+    }
+    if (spotlight && backend.slug === spotlight.slug) {
+      card.classList.add("backend-card-spotlight");
+      card.dataset.spotlight = "true";
+    } else {
+      card.dataset.spotlight = "false";
     }
 
     const title = document.createElement("strong");
@@ -146,7 +276,27 @@ function renderBackendList() {
           ? "Requested runtime target"
           : backend.install_hint;
 
-    card.append(title, description, meta, stateLine);
+    const focusLine = document.createElement("span");
+    focusLine.className = "workspace-card-path";
+    if (spotlight && backend.slug === spotlight.slug) {
+      focusLine.textContent = `Native spotlight | ${coverageSummaryForBackend(backend)}`;
+    } else {
+      focusLine.textContent = coverageSummaryForBackend(backend);
+    }
+
+    const stateRow = document.createElement("div");
+    stateRow.className = "backend-card-state-row";
+    if (backend.slug === state.selectedBackendSlug) {
+      stateRow.appendChild(statePill("Inspector focus", "backend-state-pill-selected"));
+    }
+    if (backend.active) {
+      stateRow.appendChild(statePill("Active runtime", "backend-state-pill-active"));
+    }
+    if (spotlight && backend.slug === spotlight.slug) {
+      stateRow.appendChild(statePill("Native spotlight", "backend-state-pill-spotlight"));
+    }
+
+    card.append(title, description, meta, stateRow, stateLine, focusLine);
     card.addEventListener("click", () => {
       state.selectedBackendSlug = backend.slug;
       byId("requested-backend").value = backend.slug;
@@ -470,11 +620,12 @@ function applyFormValues(snapshot) {
 
 function renderSnapshot(snapshot) {
   state.snapshot = snapshot;
-  state.selectedBackendSlug =
-    state.selectedBackendSlug ||
-    snapshot.requested_backend ||
-    snapshot.backends[0]?.slug ||
-    null;
+  if (!backendBySlug(state.selectedBackendSlug)) {
+    state.selectedBackendSlug = chooseDefaultBackendSlug(snapshot);
+  }
+
+  const spotlight = spotlightBackend();
+  const executionCoverage = totalNativeExecutionCoverage();
 
   byId("config-requested-backend").textContent = snapshot.requested_backend;
   byId("config-active-backend").textContent = snapshot.active_backend_title;
@@ -482,6 +633,11 @@ function renderSnapshot(snapshot) {
   byId("config-servo-target").textContent = `${snapshot.contact_design.servo_loop_target_hz} Hz`;
   byId("config-visual-target").textContent = `${snapshot.contact_design.visual_loop_target_hz} Hz`;
   byId("config-backend-count").textContent = String(snapshot.backends.length);
+  byId("config-native-spotlight").textContent = spotlight
+    ? `${spotlight.title} | ${coverageSummaryForBackend(spotlight)}`
+    : "No tracked backend spotlight available.";
+  byId("config-execution-coverage").textContent =
+    `${executionCoverage.executed}/${executionCoverage.total} native commands executed | ${executionCoverage.acknowledged}/${executionCoverage.total} acknowledged`;
   byId("collision-summary").textContent = snapshot.contact_design.collision_strategy.summary;
   byId("material-rendering-summary").textContent =
     `${snapshot.material_rendering.length} material profiles mapped to explicit haptic rendering strategies.`;
