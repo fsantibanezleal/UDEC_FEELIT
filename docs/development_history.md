@@ -15,6 +15,20 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.16.002 (2026-04-01)
+
+Refine Haptic Desktop navigation clarity and normalize native haptic capability reporting.
+
+Delivered:
+
+- Added a Haptic Desktop navigation trail panel plus smoke coverage for launcher, gallery, browser, and reading-scene ancestry.
+- Normalized native bridge capability reporting into a shared runtime-feature schema with verified-versus-inferred evidence in the configuration route.
+- Updated haptic runtime docs and user guidance so the reported backend state matches the current bridge and UX surface.
+
+Rationale:
+
+- This iteration improves diagnostics, UX clarity, and rollout reliability without yet introducing live force execution or a new routed workspace capability boundary.
+
 ### v2.16.001 (2026-04-01)
 
 Declare and install python-multipart so multipart upload routes boot correctly in the project environment.

@@ -48,6 +48,9 @@ function renderSelectedBackend() {
     byId("selected-backend-probe-mode").textContent = "--";
     byId("selected-backend-capability-scope").textContent = "--";
     byId("selected-backend-probe-capabilities").textContent = "--";
+    byId("selected-backend-normalized-features").textContent = "--";
+    byId("selected-backend-verified-features").textContent = "--";
+    byId("selected-backend-inferred-features").textContent = "--";
     byId("backend-evidence").innerHTML = "";
     return;
   }
@@ -77,6 +80,18 @@ function renderSelectedBackend() {
     backend.reported_capabilities.length
       ? backend.reported_capabilities.join(" | ")
       : "No runtime-reported capability channels yet.";
+  byId("selected-backend-normalized-features").textContent =
+    backend.normalized_features.length
+      ? backend.normalized_features.join(" | ")
+      : "No normalized runtime feature set reported.";
+  byId("selected-backend-verified-features").textContent =
+    backend.verified_features.length
+      ? backend.verified_features.join(" | ")
+      : "No bridge-verified runtime features reported.";
+  byId("selected-backend-inferred-features").textContent =
+    backend.inferred_features.length
+      ? backend.inferred_features.join(" | ")
+      : "No inferred feature set recorded.";
 
   const evidenceContainer = byId("backend-evidence");
   evidenceContainer.innerHTML = "";

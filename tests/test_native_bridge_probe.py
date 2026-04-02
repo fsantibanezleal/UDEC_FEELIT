@@ -270,6 +270,9 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     assert probe.detected_device_count == 2
     assert "Mock DHD SDK 3.14.0" == probe.payload["sdk_version"]
     assert probe.payload["runtime_load_state"] == "loaded"
+    assert "device_identity_query" in probe.payload["normalized_features"]
+    assert "device_open_close" in probe.payload["verified_features"]
+    assert "force_path" in probe.payload["inferred_features"]
     assert probe.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
 
     config_path = tmp_path / "haptic_runtime_config.json"
@@ -288,6 +291,9 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     assert forcedimension.detected_device_count == 2
     assert forcedimension.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
     assert forcedimension.availability == "devices-detected"
+    assert "device_identity_query" in forcedimension.normalized_features
+    assert "device_open_close" in forcedimension.verified_features
+    assert "force_path" in forcedimension.inferred_features
     assert any("Bridge runtime load state: loaded" in item for item in forcedimension.evidence)
     assert probe_path == native_root / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe"
     assert probe_path != ROOT / "native" / "build" / "forcedimension-dhd" / "out" / "feelit_bridge_probe.exe"
@@ -319,6 +325,9 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert probe.payload["configured_device_selector"] == "Beta Touch"
     assert probe.payload["effective_device_selector"] == "DEFAULT"
     assert "force-output-path" in probe.payload["reported_capabilities"]
+    assert "force_path" in probe.payload["normalized_features"]
+    assert "device_open_close" in probe.payload["verified_features"]
+    assert "scheduler_or_servo_loop" in probe.payload["inferred_features"]
     assert "hdGetString" in probe.payload["resolved_symbols"]
     assert "scheduler-control" in probe.payload["reported_capabilities"]
     assert "calibration-interface" in probe.payload["reported_capabilities"]
@@ -345,6 +354,9 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert openhaptics.probe_enumeration_mode == "default-device-open"
     assert openhaptics.probe_capability_scope == "runtime-and-default-device-open"
     assert "force-output-path" in openhaptics.reported_capabilities
+    assert "force_path" in openhaptics.normalized_features
+    assert "device_open_close" in openhaptics.verified_features
+    assert "scheduler_or_servo_loop" in openhaptics.inferred_features
     assert "scheduler-control" in openhaptics.reported_capabilities
     assert "calibration-interface" in openhaptics.reported_capabilities
     assert openhaptics.detected_devices == ["OpenHaptics default device (DEFAULT)"]

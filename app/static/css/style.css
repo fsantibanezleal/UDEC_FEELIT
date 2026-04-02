@@ -845,6 +845,33 @@ input[type="range"] {
   margin-top: 10px;
 }
 
+.scene-trail-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.scene-trail-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 231, 135, 0.26);
+  background: rgba(126, 231, 135, 0.08);
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.scene-trail-separator {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+}
+
 .evidence-pill {
   display: inline-flex;
   align-items: center;

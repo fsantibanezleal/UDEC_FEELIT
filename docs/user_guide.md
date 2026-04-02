@@ -105,6 +105,7 @@ Current use:
 - expect file-browser paging to be resolved server-side so larger external folders can still be navigated through bounded scene pages
 - use explicit in-scene `Launcher` controls plus `Gallery` or `Browser` return controls and `Start` or `Root` controls to jump back to the main menu, the current origin page, or the beginning of the active gallery or browser flow
 - expect `Launcher` to return to the neutral launcher hub, while `Gallery` or `Browser` return to the exact gallery page or file-browser location that launched the current scene and `Start` or `Root` return to the beginning of the active gallery or browser flow
+- read the `Navigation Trail` panel as the compact visual explanation of how the current scene relates to the launcher, the current gallery page, the current browser path, or the opened content scene
 - keep the current orbit, pan, and zoom viewpoint while moving through desktop scenes on the same page; the view should only reset when explicitly requested or when leaving the page
 - open a detail plaque that exposes the content name before opening the real scene
 - open 3D model scenes, Braille reading scenes, and audio transport scenes with scene-native return controls
@@ -154,6 +155,8 @@ Current use:
 - review the native bridge source root, build-root pattern, and recommended bootstrap commands
 - inspect per-backend bridge-probe state before claiming that a physical runtime exists
 - review vendor-aware probe summaries, including OpenHaptics conservative default-device probe states plus reported capability channels and Force Dimension detected-device identities when a supported runtime is present
+- inspect the normalized runtime feature schema that translates vendor-specific evidence into stable cross-backend features
+- distinguish bridge-verified features from still-inferred features instead of treating all capability labels as equally strong evidence
 - review dependency readiness for the OpenHaptics, Force Dimension, and CHAI3D-oriented paths
 - inspect the current design baseline for collision, contact, material rendering, reusable scene primitives, and backend readiness
 - inspect the backend-aware contact rollout plan that names one bounded pilot primitive, one pilot profile, and one next engineering step for each stack

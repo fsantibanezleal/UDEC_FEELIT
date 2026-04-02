@@ -23,6 +23,7 @@ from app.core.haptic_feedback_design import (
 )
 from app.core.haptic_contact_rollout import build_haptic_contact_rollout
 from app.core.haptic_pilot_commands import build_haptic_pilot_commands
+from app.core.haptic_runtime_features import normalize_runtime_features
 from app.core.haptic_scene_contracts import build_haptic_scene_contract
 from app.haptics.base import HapticBackend
 from app.haptics.factory import create_haptic_backend
@@ -83,6 +84,9 @@ class HapticBackendCandidate(BaseModel):
     detected_device_count: int | None = None
     detected_devices: list[str] = Field(default_factory=list)
     reported_capabilities: list[str] = Field(default_factory=list)
+    normalized_features: list[str] = Field(default_factory=list)
+    verified_features: list[str] = Field(default_factory=list)
+    inferred_features: list[str] = Field(default_factory=list)
     probe_notes: list[str] = Field(default_factory=list)
     probe_enumeration_mode: str | None = None
     probe_capability_scope: str | None = None
@@ -640,6 +644,9 @@ class HapticRuntimeManager:
             active = slug == "visual-emulator"
 
             if slug == "visual-emulator":
+                normalized_features = normalize_runtime_features(
+                    definition["supported_capabilities"],
+                )
                 candidates.append(
                     HapticBackendCandidate(
                         slug=slug,
@@ -656,6 +663,9 @@ class HapticRuntimeManager:
                         can_activate=True,
                         supported_devices=definition["supported_devices"],
                         supported_capabilities=definition["supported_capabilities"],
+                        normalized_features=normalized_features,
+                        verified_features=normalized_features,
+                        inferred_features=[],
                         expected_env_vars=definition["expected_env_vars"],
                         install_hint=definition["install_hint"],
                         evidence=["Built into FeelIT and always available."],
@@ -684,6 +694,18 @@ class HapticRuntimeManager:
                 for item in bridge_probe.payload.get("reported_capabilities", [])
                 if str(item).strip()
             ]
+            normalized_features = normalize_runtime_features(
+                reported_capabilities,
+                direct_features=bridge_probe.payload.get("normalized_features", []),
+            )
+            verified_features = normalize_runtime_features(
+                direct_features=bridge_probe.payload.get("verified_features", []),
+            )
+            inferred_features = normalize_runtime_features(
+                direct_features=bridge_probe.payload.get("inferred_features", []),
+            )
+            if not verified_features and normalized_features:
+                inferred_features = normalized_features
             probe_notes = [
                 str(item).strip()
                 for item in bridge_probe.payload.get("probe_notes", [])
@@ -726,6 +748,18 @@ class HapticRuntimeManager:
             if reported_capabilities:
                 evidence.append(
                     f"Bridge reported capabilities: {', '.join(reported_capabilities)}",
+                )
+            if normalized_features:
+                evidence.append(
+                    f"Normalized runtime features: {', '.join(normalized_features)}",
+                )
+            if verified_features:
+                evidence.append(
+                    f"Verified runtime features: {', '.join(verified_features)}",
+                )
+            if inferred_features:
+                evidence.append(
+                    f"Inferred runtime features: {', '.join(inferred_features)}",
                 )
             evidence.extend(f"Probe note: {note}" for note in probe_notes)
 
@@ -815,6 +849,9 @@ class HapticRuntimeManager:
                     detected_device_count=bridge_probe.detected_device_count,
                     detected_devices=bridge_probe.detected_devices,
                     reported_capabilities=reported_capabilities,
+                    normalized_features=normalized_features,
+                    verified_features=verified_features,
+                    inferred_features=inferred_features,
                     probe_notes=probe_notes,
                     probe_enumeration_mode=enumeration_mode,
                     probe_capability_scope=capability_scope,

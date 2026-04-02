@@ -171,6 +171,33 @@ function updateWorkspaceSummary() {
   byId("desktop-workspace-chip").textContent = workspace.slug;
 }
 
+function renderSceneTrail(scene = null) {
+  const activeScene = scene ?? state.currentScene;
+  const container = byId("desktop-scene-trail");
+  const summary = byId("desktop-scene-trail-summary");
+  container.innerHTML = "";
+
+  if (!activeScene?.trail?.length) {
+    summary.textContent = "--";
+    return;
+  }
+
+  activeScene.trail.forEach((segment, index) => {
+    const pill = document.createElement("span");
+    pill.className = "scene-trail-pill";
+    pill.textContent = segment;
+    container.appendChild(pill);
+    if (index < activeScene.trail.length - 1) {
+      const separator = document.createElement("span");
+      separator.className = "scene-trail-separator";
+      separator.textContent = ">";
+      container.appendChild(separator);
+    }
+  });
+
+  summary.textContent = activeScene.trailSummary || activeScene.trail.join(" > ");
+}
+
 function updateSceneSummary(scene = null) {
   const activeScene = scene ?? state.currentScene;
   if (!activeScene) {
@@ -182,6 +209,7 @@ function updateSceneSummary(scene = null) {
     byId("desktop-pagination").textContent = "--";
     byId("desktop-scene-subtitle").textContent =
       "Workspace-driven launcher, galleries, and opened-content scenes for blind-first exploration.";
+    renderSceneTrail(null);
     return;
   }
   byId("desktop-scene-code").textContent = activeScene.code;
@@ -191,6 +219,7 @@ function updateSceneSummary(scene = null) {
   byId("desktop-scene-path").textContent = activeScene.path || "--";
   byId("desktop-pagination").textContent = activeScene.pagination || "--";
   byId("desktop-scene-subtitle").textContent = activeScene.subtitle;
+  renderSceneTrail(activeScene);
 }
 
 function formatSeconds(value) {
@@ -1221,6 +1250,39 @@ function detailOriginLabel(origin) {
   return "Launcher";
 }
 
+function launcherTrail(workspace) {
+  return [workspace.title, "Launcher"];
+}
+
+function galleryTrail(workspace, category, page) {
+  return [workspace.title, CATEGORY_META[category].title, `Page ${page + 1}`];
+}
+
+function fileBrowserTrail(workspace, path, page, label = "Root") {
+  return [workspace.title, "File Browser", path || label, `Page ${page + 1}`];
+}
+
+function originTrail(workspace, origin) {
+  if (!origin) {
+    return launcherTrail(workspace);
+  }
+  if (origin.type === "gallery") {
+    return galleryTrail(workspace, origin.category, origin.page ?? 0);
+  }
+  if (origin.type === "file-browser") {
+    return fileBrowserTrail(workspace, origin.path ?? "", origin.page ?? 0);
+  }
+  return launcherTrail(workspace);
+}
+
+function detailTrail(workspace, item, origin) {
+  return [...originTrail(workspace, origin), "Detail", item.title];
+}
+
+function openedSceneTrail(workspace, item, origin, sceneLabel) {
+  return [...originTrail(workspace, origin), sceneLabel, item.title];
+}
+
 function originReturnConfig(origin) {
   if (!origin) {
     return {
@@ -1500,6 +1562,7 @@ async function navigateToLauncher() {
     context: workspace.title,
     path: workspace.file_browser.root_label,
     pagination: "1 / 1",
+    trail: launcherTrail(workspace),
     idleMessage: "Pointer moving across the launcher scene.",
   });
   focusTarget("launcher-hub", { source: "scene", movePointer: false });
@@ -1603,6 +1666,7 @@ async function navigateToGallery(category, page = 0) {
     context: workspace.title,
     path: CATEGORY_META[category].title,
     pagination: `${pageSlice.page + 1} / ${pageSlice.pageCount}`,
+    trail: galleryTrail(workspace, category, pageSlice.page),
     idleMessage: `Pointer moving across the ${CATEGORY_META[category].title.toLowerCase()}.`,
   });
   focusTarget(
@@ -1748,6 +1812,7 @@ async function navigateToFileBrowser(relativePath = "", page = 0) {
     context: workspace.title,
     path: payload.current_path || payload.current_label,
     pagination: `${payload.page + 1} / ${payload.page_count}`,
+    trail: fileBrowserTrail(workspace, payload.current_path, payload.page, payload.current_label),
     idleMessage: "Pointer moving across the workspace file browser.",
   });
   focusTarget(
@@ -1862,6 +1927,7 @@ async function navigateToDetail(item, origin) {
       item.source?.demo_model_slug ??
       item.slug,
     pagination: "1 / 1",
+    trail: detailTrail(state.activeWorkspace, item, origin),
     idleMessage: `Pointer moving across the detail scene for ${item.title}.`,
   });
   focusTarget("detail-return", { source: "scene", movePointer: false });
@@ -1973,6 +2039,7 @@ async function navigateToModelScene(item, origin) {
     context: detailOriginLabel(origin),
     path: item.source?.relative_path ?? item.source?.demo_model_slug ?? item.slug,
     pagination: "1 / 1",
+    trail: openedSceneTrail(state.activeWorkspace, item, origin, "Model Scene"),
     idleMessage: `Pointer moving across the opened 3D model ${item.title}.`,
   });
   focusTarget("model-return", { source: "scene", movePointer: false });
@@ -2178,6 +2245,7 @@ function renderTextScene(token = state.sceneBuildToken) {
     context: detailOriginLabel(textScene.origin),
     path: textScene.item.source?.relative_path ?? textScene.item.source?.document_slug ?? textScene.item.slug,
     pagination: `${textScene.page + 1} / ${textPageCount(textScene)}`,
+    trail: openedSceneTrail(state.activeWorkspace, textScene.item, textScene.origin, "Reading Scene"),
     idleMessage: `Pointer moving across the reading surface for ${textScene.item.title}.`,
   });
   focusTarget("text-return", { source: "scene", movePointer: false });
@@ -2352,6 +2420,7 @@ function renderAudioScene(token = state.sceneBuildToken) {
     context: detailOriginLabel(audioScene.origin),
     path: audioScene.item.source?.relative_path ?? audioScene.item.source?.audio_slug ?? audioScene.item.slug,
     pagination: "1 / 1",
+    trail: openedSceneTrail(state.activeWorkspace, audioScene.item, audioScene.origin, "Audio Scene"),
     idleMessage: `Pointer moving across the audio scene for ${audioScene.item.title}.`,
   });
   focusTarget("audio-toggle", { source: "scene", movePointer: false });

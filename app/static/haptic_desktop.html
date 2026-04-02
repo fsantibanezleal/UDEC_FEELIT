@@ -144,6 +144,14 @@
 
         <section class="panel-section">
           <div class="section-header">
+            <h2>Navigation Trail</h2>
+          </div>
+          <div id="desktop-scene-trail" class="scene-trail-list"></div>
+          <p id="desktop-scene-trail-summary" class="panel-text">--</p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
             <h2>Focused Object</h2>
           </div>
           <dl class="info-grid">
@@ -196,6 +204,7 @@
           <li>Supported files opened from the file browser now enter their corresponding runtime scene directly: models to the 3D model scene, texts to the Braille reading scene, and audio files to the audio transport scene.</li>
           <li>Use `Gallery` or `Browser` to return to the exact gallery page or file-browser location that launched the current scene, and use `Launcher` to return to the workspace start scene.</li>
           <li>Use `Start` or `Root` to return to the first page of a gallery or the root of the file browser, not just to the current origin page.</li>
+          <li>Read the Navigation Trail panel as the compact visual explanation of how the current scene was reached: launcher, gallery or browser context, page or path, and opened detail or content scene.</li>
           <li>Orbit, pan, and zoom changes now persist while you stay on this page, so moving through desktop scenes does not force you to reframe the view after each activation.</li>
           <li>Use tactile scene controls for launcher return, gallery or browser return, gallery start or file-browser root, paging, opening content, and browsing the workspace file root.</li>
           <li>Returning to the launcher should land on the neutral launcher hub first, not on a specific gallery tile.</li>
