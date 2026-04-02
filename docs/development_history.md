@@ -15,6 +15,23 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.001 (2026-04-02)
+
+Add progressive disclosure to Haptic Configuration and expose runtime-query frontiers
+
+Delivered:
+
+- Reworked the Haptic Configuration route into explicit `Focus`, `Contracts`, `Execution`, and `Bridge` review lanes so the operator no longer has to scan the full route wall to find the active diagnostic path.
+- Collapsed advanced SDK-root, bridge-path, and preferred-selector editing behind disclosure panels so the route keeps the current operating focus visible while still preserving full engineering detail.
+- Added focused runtime-summary cards for next pilot, readiness, and next engineering step so the selected backend drill-down is actionable above the fold.
+- Extended the bridge contract and runtime manager with explicit runtime-query frontier semantics plus queryable-versus-already-queried characteristic lists, giving OpenHaptics and Force Dimension a more honest diagnostic boundary.
+- Refreshed the README, user guide, runtime design notes, implementation-gap audit, and haptic-configuration screenshot to reflect the new review flow and query-frontier terminology.
+
+Rationale:
+
+- This is a patch-level release because it improves the structure, diagnosability, and honesty of the shipped haptic runtime surface without claiming a new full native control milestone.
+- The route was carrying too much technically relevant information at one flat hierarchy level. Progressive disclosure plus explicit query-frontier language reduces operator scanning cost while keeping the haptics workbench technically deep.
+
 ### v2.18.000 (2026-04-02)
 
 Expand bounded native execution to Force Dimension and sharpen Haptic Configuration focus

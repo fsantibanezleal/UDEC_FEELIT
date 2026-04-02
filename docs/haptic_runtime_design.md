@@ -52,6 +52,7 @@ The route currently exposes:
 - vendor SDK-root inputs
 - vendor bridge-path inputs
 - preferred device-selector inputs
+- progressive-disclosure review lanes for focus, contracts, execution, and bridge engineering detail
 - build-tool diagnostics
 - bridge workspace commands
 - bridge-probe state per backend
@@ -73,6 +74,7 @@ FeelIT now includes a first reproducible local bridge-bootstrap path:
 The bootstrap layer is deliberately honest. It proves that the bridge executable can be configured, compiled, discovered, and probed from the FeelIT runtime. It now includes a vendor-aware OpenHaptics path that can dynamically load the HD runtime library set, attempt a conservative default-device open, and report capability channels inferred from exported HDAPI surfaces, plus a vendor-aware Force Dimension path that can dynamically load the DHD runtime library, report the SDK version, and enumerate device identities when that runtime is present.
 
 The runtime no longer consumes those vendor strings in isolation. Bridge payloads can now expose a normalized feature schema as a stable cross-backend layer, while vendor-specific strings remain as evidence. The configuration route also distinguishes features that were bridge-verified from features that are still inferred from runtime symbols or stack semantics.
+The current baseline now also distinguishes whether a backend is still `symbol-derived-only`, already `runtime-query-ready`, or already `runtime-queried` for specific characteristic classes. That query frontier is intentionally narrower than full actuation, but it makes the OpenHaptics and Force Dimension maturity boundary more explicit.
 
 ## Contact Model Baseline
 

@@ -52,6 +52,9 @@ struct ProbeResult {
   std::string capability_scope = "none";
   std::string configured_device_selector;
   std::string effective_device_selector;
+  std::string query_frontier_state = "none";
+  std::vector<std::string> queryable_characteristics;
+  std::vector<std::string> queried_characteristics;
 };
 
 struct CommandAckResult {
@@ -810,6 +813,7 @@ static ProbeResult run_forcedimension_probe(const std::string& backend_slug, con
   const char* sdk_version = dhd_get_sdk_version_str();
   if (sdk_version) {
     result.sdk_version = sdk_version;
+    append_unique(&result.queried_characteristics, "sdk_version");
   }
 
   result.device_count = dhd_get_device_count();
@@ -837,6 +841,7 @@ static ProbeResult run_forcedimension_probe(const std::string& backend_slug, con
       const char* device_name = dhd_get_system_name(static_cast<char>(device_id));
       if (device_name && std::string(device_name).size() > 0) {
         result.devices.push_back(device_name);
+        append_unique(&result.queried_characteristics, "device_identity");
       } else {
         result.devices.push_back(std::string("Force Dimension device #") + std::to_string(index));
       }
@@ -857,6 +862,7 @@ static ProbeResult run_forcedimension_probe(const std::string& backend_slug, con
     const char* device_name = dhd_get_system_name(static_cast<char>(device_id));
     if (device_name && std::string(device_name).size() > 0) {
       result.devices.push_back(device_name);
+      append_unique(&result.queried_characteristics, "device_identity");
     } else {
       result.devices.push_back("Force Dimension device");
     }
@@ -864,6 +870,9 @@ static ProbeResult run_forcedimension_probe(const std::string& backend_slug, con
   }
 
   result.status = "ready";
+  result.query_frontier_state = "runtime-queried";
+  append_unique(&result.queryable_characteristics, "sdk_version");
+  append_unique(&result.queryable_characteristics, "device_identity");
   result.summary = "Force Dimension runtime loaded and enumerated " + std::to_string(result.device_count) + " device(s).";
   return result;
 }
@@ -1066,6 +1075,7 @@ static ProbeResult run_openhaptics_probe(
   };
   result.probe_notes.push_back(
       "OpenHaptics capability reporting is currently based on exported HDAPI symbol availability plus a conservative default-device open attempt. It does not yet claim live scene-coupled force output.");
+  result.query_frontier_state = "symbol-derived-only";
 
   std::vector<const char*> device_selectors;
   if (!result.configured_device_selector.empty()) {
@@ -1089,12 +1099,31 @@ static ProbeResult run_openhaptics_probe(
     result.device_count = 1;
     result.device_identity_source = "fallback-default-open-label";
     result.effective_device_selector = selector_used;
+    result.query_frontier_state = "runtime-query-ready";
     append_unique(&result.normalized_features, "device_identity_query");
     append_unique(&result.verified_features, "device_identity_query");
+    if (hd_get_string) {
+      append_unique(&result.queryable_characteristics, "device_identity");
+    }
+    if (hd_get_integerv || hd_get_doublev) {
+      append_unique(&result.queryable_characteristics, "device_characteristics");
+      append_unique(&result.queryable_characteristics, "state_vector");
+    }
+    if (hd_get_integerv) {
+      append_unique(&result.queryable_characteristics, "button_state");
+    }
+    if (hd_check_calibration || hd_update_calibration) {
+      append_unique(&result.queryable_characteristics, "calibration_state");
+    }
+    if (hd_get_doublev) {
+      append_unique(&result.queryable_characteristics, "workspace_mapping");
+    }
     result.devices.push_back(
         selector_used.empty() ? "OpenHaptics default device" : "OpenHaptics default device (" + selector_used + ")");
     result.summary =
         "OpenHaptics runtime libraries loaded and a default-device open probe succeeded for safe enumeration.";
+    result.probe_notes.push_back(
+        "The current OpenHaptics bridge now proves that a live default-device handle exists and that runtime-query surfaces are present, but it still reports selector-based identity until specific safe HDAPI field queries are integrated.");
     hd_disable_device(device_handle);
     return result;
   }
@@ -1293,6 +1322,9 @@ int main(int argc, char* argv[]) {
   append_json_string(&output, "capability_scope", result.capability_scope, &first_field);
   append_json_string(&output, "configured_device_selector", result.configured_device_selector, &first_field);
   append_json_string(&output, "effective_device_selector", result.effective_device_selector, &first_field);
+  append_json_string(&output, "query_frontier_state", result.query_frontier_state, &first_field);
+  append_json_array(&output, "queryable_characteristics", result.queryable_characteristics, &first_field);
+  append_json_array(&output, "queried_characteristics", result.queried_characteristics, &first_field);
   output << "}";
 
   std::cout << output.str() << std::endl;

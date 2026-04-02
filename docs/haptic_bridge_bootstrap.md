@@ -26,7 +26,7 @@ FeelIT now ships:
 - `native/CMakeLists.txt`
 - `native/src/feelit_bridge_probe.cpp`
 
-Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The executable now covers three bounded bridge responsibilities: a probe path, a dry-run pilot-command acknowledgement path, and first bounded no-force execution paths for the OpenHaptics button-actuation pilot plus the Force Dimension rigid-surface pilot. The probe already contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, and enumerates devices when the runtime is available.
+Together, these provide a first native bridge scaffold that can be configured and built on Windows without already linking against vendor SDKs. The executable now covers three bounded bridge responsibilities: a probe path, a dry-run pilot-command acknowledgement path, and first bounded no-force execution paths for the OpenHaptics button-actuation pilot plus the Force Dimension rigid-surface pilot. The probe already contains two vendor-aware paths: an OpenHaptics path that dynamically loads the HD runtime library set, attempts a conservative default-device open, and reports capability channels inferred from exported HDAPI surfaces plus a runtime-query frontier, and a Force Dimension path that dynamically loads the DHD runtime, reports the SDK version, enumerates devices when the runtime is available, and classifies that path as runtime-queried.
 
 The probe payload now also has room for a normalized feature schema. That stable layer is what the Python runtime should eventually rely on for rollout alignment and pilot execution gating, while the raw vendor capability labels remain supporting evidence.
 
@@ -185,7 +185,7 @@ Current bootstrap scope:
 
 The next bridge milestone is to move from the current vendor-aware probe coverage into controlled backend activation. In practice that means:
 
-- OpenHaptics still needs deeper device characterization, calibration-state reporting, and live control beyond the current conservative default-device probe and stack-level capability reporting
+- OpenHaptics still needs deeper runtime-queried device characterization, calibration-state reporting, and live control beyond the current conservative default-device probe and runtime-query-ready boundary
 - CHAI3D still needs the same kind of runtime-load and device-ready probe states
 - the probe contract should carry richer capability data once those stacks are live
 - the backend still needs calibration, homing, button-state, and force-output stages after enumeration

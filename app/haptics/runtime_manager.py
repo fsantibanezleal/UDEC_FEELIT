@@ -92,6 +92,9 @@ class HapticBackendCandidate(BaseModel):
     probe_notes: list[str] = Field(default_factory=list)
     probe_enumeration_mode: str | None = None
     probe_capability_scope: str | None = None
+    query_frontier_state: str | None = None
+    queryable_characteristics: list[str] = Field(default_factory=list)
+    queried_characteristics: list[str] = Field(default_factory=list)
     evidence: list[str] = Field(default_factory=list)
     install_hint: str = ""
 
@@ -749,6 +752,19 @@ class HapticRuntimeManager:
                 for item in bridge_probe.payload.get("probe_notes", [])
                 if str(item).strip()
             ]
+            query_frontier_state = (
+                str(bridge_probe.payload.get("query_frontier_state", "")).strip() or None
+            )
+            queryable_characteristics = [
+                str(item).strip()
+                for item in bridge_probe.payload.get("queryable_characteristics", [])
+                if str(item).strip()
+            ]
+            queried_characteristics = [
+                str(item).strip()
+                for item in bridge_probe.payload.get("queried_characteristics", [])
+                if str(item).strip()
+            ]
             resolved_symbols = [
                 str(item).strip()
                 for item in bridge_probe.payload.get("resolved_symbols", [])
@@ -779,6 +795,16 @@ class HapticRuntimeManager:
                 evidence.append(f"Bridge enumeration mode: {enumeration_mode}")
             if capability_scope:
                 evidence.append(f"Bridge capability scope: {capability_scope}")
+            if query_frontier_state:
+                evidence.append(f"Bridge query frontier: {query_frontier_state}")
+            if queryable_characteristics:
+                evidence.append(
+                    f"Runtime-query-ready characteristics: {', '.join(queryable_characteristics)}",
+                )
+            if queried_characteristics:
+                evidence.append(
+                    f"Runtime-queried characteristics: {', '.join(queried_characteristics)}",
+                )
             if resolved_symbols:
                 evidence.append(f"Bridge symbols: {', '.join(resolved_symbols)}")
             if open_attempt_labels:
@@ -893,6 +919,9 @@ class HapticRuntimeManager:
                     probe_notes=probe_notes,
                     probe_enumeration_mode=enumeration_mode,
                     probe_capability_scope=capability_scope,
+                    query_frontier_state=query_frontier_state,
+                    queryable_characteristics=queryable_characteristics,
+                    queried_characteristics=queried_characteristics,
                     evidence=evidence,
                     install_hint=definition["install_hint"],
                 )

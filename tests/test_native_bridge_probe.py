@@ -277,6 +277,10 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     assert "device_identity_query" in probe.payload["normalized_features"]
     assert "device_open_close" in probe.payload["verified_features"]
     assert "force_path" in probe.payload["inferred_features"]
+    assert probe.payload["query_frontier_state"] == "runtime-queried"
+    assert "sdk_version" in probe.payload["queryable_characteristics"]
+    assert "sdk_version" in probe.payload["queried_characteristics"]
+    assert "device_identity" in probe.payload["queried_characteristics"]
     assert probe.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
 
     config_path = tmp_path / "haptic_runtime_config.json"
@@ -295,6 +299,9 @@ def test_forcedimension_vendor_probe_reports_runtime_and_devices(tmp_path, monke
     assert forcedimension.detected_device_count == 2
     assert forcedimension.detected_devices == ["Mock SIGMA.7", "Mock OMEGA.7 Left"]
     assert forcedimension.availability == "devices-detected"
+    assert forcedimension.query_frontier_state == "runtime-queried"
+    assert "sdk_version" in forcedimension.queryable_characteristics
+    assert "device_identity" in forcedimension.queried_characteristics
     assert "device_identity_query" in forcedimension.normalized_features
     assert "device_open_close" in forcedimension.verified_features
     assert "force_path" in forcedimension.inferred_features
@@ -328,6 +335,10 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert probe.payload["capability_scope"] == "runtime-and-default-device-open"
     assert probe.payload["configured_device_selector"] == "Beta Touch"
     assert probe.payload["effective_device_selector"] == "DEFAULT"
+    assert probe.payload["query_frontier_state"] == "runtime-query-ready"
+    assert "device_identity" in probe.payload["queryable_characteristics"]
+    assert "workspace_mapping" in probe.payload["queryable_characteristics"]
+    assert probe.payload["queried_characteristics"] == []
     assert "force-output-path" in probe.payload["reported_capabilities"]
     assert "force_path" in probe.payload["normalized_features"]
     assert "device_open_close" in probe.payload["verified_features"]
@@ -357,6 +368,9 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert openhaptics.configured_device_selector == "Beta Touch"
     assert openhaptics.probe_enumeration_mode == "default-device-open"
     assert openhaptics.probe_capability_scope == "runtime-and-default-device-open"
+    assert openhaptics.query_frontier_state == "runtime-query-ready"
+    assert "device_identity" in openhaptics.queryable_characteristics
+    assert openhaptics.queried_characteristics == []
     assert "force-output-path" in openhaptics.reported_capabilities
     assert "force_path" in openhaptics.normalized_features
     assert "device_open_close" in openhaptics.verified_features
@@ -364,6 +378,7 @@ def test_openhaptics_vendor_probe_reports_device_ready_capability(tmp_path, monk
     assert "scheduler-control" in openhaptics.reported_capabilities
     assert "calibration-interface" in openhaptics.reported_capabilities
     assert openhaptics.detected_devices == ["OpenHaptics default device (DEFAULT)"]
+    assert any("Bridge query frontier: runtime-query-ready" in item for item in openhaptics.evidence)
     assert any("Bridge enumeration mode: default-device-open" in item for item in openhaptics.evidence)
     assert any("Bridge runtime load state: loaded" in item for item in openhaptics.evidence)
     assert probe_path == native_root / "build" / "openhaptics-touch" / "out" / "feelit_bridge_probe.exe"
