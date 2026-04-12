@@ -1,38 +1,50 @@
 {
   "app": "FeelIT",
-  "version": "2.18.001",
+  "version": "2.18.002",
   "base_url": "local_smoke_capture",
   "routes": [
     {
+      "capture_slug": "object-explorer",
       "route": "/object-explorer",
-      "image": "object_explorer.png",
+      "image": "frontend_3d_objects.png",
       "archived": true,
       "visual_source_version": null
     },
     {
+      "capture_slug": "braille-launcher",
       "route": "/braille-reader",
-      "image": "braille_reader.png",
+      "image": "frontend_braille_launcher.png",
       "archived": true,
       "visual_source_version": null
     },
     {
+      "capture_slug": "braille-reading-world",
+      "route": "/braille-reader",
+      "image": "frontend_braille_hapticreader.png",
+      "archived": true,
+      "visual_source_version": null
+    },
+    {
+      "capture_slug": "haptic-desktop",
       "route": "/haptic-desktop",
-      "image": "haptic_desktop.png",
+      "image": "frontend_hapticdesktop.png",
       "archived": true,
       "visual_source_version": null
     },
     {
+      "capture_slug": "haptic-workspace-manager",
       "route": "/haptic-workspace-manager",
-      "image": "haptic_workspace_manager.png",
+      "image": "frontend_workspacemanager.png",
       "archived": true,
       "visual_source_version": null
     },
     {
+      "capture_slug": "haptic-configuration",
       "route": "/haptic-configuration",
-      "image": "haptic_configuration.png",
+      "image": "frontend_haptic_configuration.png",
       "archived": true,
       "visual_source_version": null
     }
   ],
-  "generated_at_utc": "2026-04-02T08:06:47+00:00"
+  "generated_at_utc": "2026-04-12T12:51:31+00:00"
 }

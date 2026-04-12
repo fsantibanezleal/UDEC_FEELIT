@@ -46,6 +46,15 @@ class SnapshotReference:
     path: Path
 
 
+@dataclass(frozen=True)
+class CaptureSpec:
+    """Describe one curated screenshot target produced by the smoke workflow."""
+
+    slug: str
+    route: str
+    image_name: str
+
+
 SCENES: tuple[SceneSpec, ...] = (
     SceneSpec(route="/object-explorer", canvas_selector="#object-canvas", min_unique_colors=1200),
     SceneSpec(route="/braille-reader", canvas_selector="#braille-canvas", min_unique_colors=1500),
@@ -61,6 +70,39 @@ SCENES: tuple[SceneSpec, ...] = (
         canvas_selector=".workspace-grid",
         min_unique_colors=1200,
         wait_until="commit",
+    ),
+)
+
+CAPTURES: tuple[CaptureSpec, ...] = (
+    CaptureSpec(
+        slug="object-explorer",
+        route="/object-explorer",
+        image_name="frontend_3d_objects.png",
+    ),
+    CaptureSpec(
+        slug="braille-launcher",
+        route="/braille-reader",
+        image_name="frontend_braille_launcher.png",
+    ),
+    CaptureSpec(
+        slug="braille-reading-world",
+        route="/braille-reader",
+        image_name="frontend_braille_hapticreader.png",
+    ),
+    CaptureSpec(
+        slug="haptic-desktop",
+        route="/haptic-desktop",
+        image_name="frontend_hapticdesktop.png",
+    ),
+    CaptureSpec(
+        slug="haptic-workspace-manager",
+        route="/haptic-workspace-manager",
+        image_name="frontend_workspacemanager.png",
+    ),
+    CaptureSpec(
+        slug="haptic-configuration",
+        route="/haptic-configuration",
+        image_name="frontend_haptic_configuration.png",
     ),
 )
 
@@ -357,10 +399,16 @@ def assert_view_state_close(
         )
 
 
-def snapshot_image_name(scene: SceneSpec | str) -> str:
-    """Return the canonical image filename for one routed frontend surface."""
-    route = scene.route if isinstance(scene, SceneSpec) else scene
-    return f"{route.strip('/').replace('-', '_')}.png"
+def capture_image_name(capture: CaptureSpec | str) -> str:
+    """Return the canonical image filename for one curated capture target."""
+    if isinstance(capture, CaptureSpec):
+        return capture.image_name
+    return capture
+
+
+def captures_for_route(route: str, captures: tuple[CaptureSpec, ...] = CAPTURES) -> tuple[CaptureSpec, ...]:
+    """Return the curated captures that belong to one route."""
+    return tuple(capture for capture in captures if capture.route == route)
 
 
 def version_sort_key(version_label: str) -> tuple[int, ...]:
@@ -399,34 +447,36 @@ def same_file_content(left: Path, right: Path) -> bool:
     return file_digest(left) == file_digest(right)
 
 
-def build_current_manifest_entries(routes: tuple[SceneSpec, ...]) -> list[dict[str, object]]:
-    """Describe the fully populated `current/` snapshot baseline."""
+def build_current_manifest_entries(captures: tuple[CaptureSpec, ...]) -> list[dict[str, object]]:
+    """Describe the fully populated `current/` curated snapshot baseline."""
     return [
         {
-            "route": scene.route,
-            "image": snapshot_image_name(scene),
+            "capture_slug": capture.slug,
+            "route": capture.route,
+            "image": capture.image_name,
             "archived": True,
             "visual_source_version": None,
         }
-        for scene in routes
+        for capture in captures
     ]
 
 
 def build_history_manifest_entries(
     version: str,
     version_dir: Path,
-    routes: tuple[SceneSpec, ...],
+    captures: tuple[CaptureSpec, ...],
     latest_refs: dict[str, SnapshotReference],
 ) -> list[dict[str, object]]:
-    """Describe a sparse archived version directory with per-route provenance."""
+    """Describe a sparse archived version directory with per-capture provenance."""
     entries: list[dict[str, object]] = []
-    for scene in routes:
-        image_name = snapshot_image_name(scene)
+    for capture in captures:
+        image_name = capture.image_name
         image_path = version_dir / image_name
         active_ref = latest_refs.get(image_name)
         entries.append(
             {
-                "route": scene.route,
+                "capture_slug": capture.slug,
+                "route": capture.route,
                 "image": image_name,
                 "archived": image_path.exists(),
                 "visual_source_version": version if image_path.exists() else active_ref.version if active_ref else None,
@@ -439,14 +489,14 @@ def write_snapshot_manifest(
     target_dir: Path,
     *,
     base_url: str,
-    routes: tuple[SceneSpec, ...],
+    captures: tuple[CaptureSpec, ...],
     version: str,
     route_entries: list[dict[str, object]] | None = None,
     history_policy: str | None = None,
 ) -> None:
     """Write a small manifest describing one captured visual snapshot set."""
     target_dir.mkdir(parents=True, exist_ok=True)
-    entries = route_entries or build_current_manifest_entries(routes)
+    entries = route_entries or build_current_manifest_entries(captures)
     manifest = {
         "app": "FeelIT",
         "version": version,
@@ -455,9 +505,9 @@ def write_snapshot_manifest(
     }
     if history_policy:
         manifest["history_policy"] = history_policy
-        manifest["changed_routes"] = [
-            entry["route"] for entry in entries if entry.get("archived")
-        ]
+        manifest["changed_routes"] = list(
+            dict.fromkeys(entry["route"] for entry in entries if entry.get("archived"))
+        )
     manifest_path = target_dir / "snapshot_manifest.json"
     existing_manifest: dict[str, object] | None = None
     if manifest_path.exists():
@@ -482,6 +532,65 @@ def prepare_snapshot_dir(target_dir: Path) -> None:
     for pattern in ("*.png", "*.json"):
         for file_path in target_dir.glob(pattern):
             file_path.unlink()
+
+
+def capture_canvas(page, selector: str, target_path: Path) -> int:
+    """Capture one visible frontend surface and return its unique-color count."""
+    page.locator(selector).screenshot(path=str(target_path))
+    return measure_canvas_colors(target_path)
+
+
+def sync_curated_docs_png(
+    screenshot_dir: Path,
+    *,
+    captures: tuple[CaptureSpec, ...] = CAPTURES,
+    docs_dir: Path | None = None,
+) -> None:
+    """Copy the curated current capture set into the tracked README-facing docs directory."""
+    target_dir = docs_dir or (ROOT / "docs" / "png")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for capture in captures:
+        source_path = screenshot_dir / capture.image_name
+        if source_path.exists():
+            shutil.copy2(source_path, target_dir / capture.image_name)
+
+
+def activate_first_braille_library_document(page) -> bool:
+    """Activate the first scene-native Braille library target through the debug API."""
+    return bool(
+        page.evaluate(
+            """
+            async () => {
+              const debug = window.__feelitBrailleDebug;
+              if (!debug?.targetIds || !debug?.activateTarget) {
+                return false;
+              }
+              const targetId = debug.targetIds().find((id) => id.startsWith('library-document-'));
+              if (!targetId) {
+                return false;
+              }
+              return debug.activateTarget(targetId);
+            }
+            """,
+        ),
+    )
+
+
+def return_braille_reader_to_library(page) -> bool:
+    """Return the Braille reader from the reading world back to the library launcher."""
+    return bool(
+        page.evaluate(
+            """
+            async () => {
+              const debug = window.__feelitBrailleDebug;
+              if (!debug?.activateTarget) {
+                return false;
+              }
+              return debug.activateTarget('control-library');
+            }
+            """,
+        ),
+    )
 
 
 def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
@@ -667,21 +776,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append(
                         f"/braille-reader did not boot into the library launcher; scene_mode={scene_mode!r}",
                     )
-                launcher_target_activated = page.evaluate(
-                    """
-                    async () => {
-                      const debug = window.__feelitBrailleDebug;
-                      if (!debug?.targetIds || !debug?.activateTarget) {
-                        return false;
-                      }
-                      const targetId = debug.targetIds().find((id) => id.startsWith('library-document-'));
-                      if (!targetId) {
-                        return false;
-                      }
-                      return debug.activateTarget(targetId);
-                    }
-                    """,
-                )
+                launcher_target_activated = activate_first_braille_library_document(page)
                 if not launcher_target_activated:
                     failures.append("/braille-reader could not activate a scene-native library document target")
                 else:
@@ -691,17 +786,7 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         """,
                         timeout=15_000,
                     )
-                    library_return_activated = page.evaluate(
-                        """
-                        async () => {
-                          const debug = window.__feelitBrailleDebug;
-                          if (!debug?.activateTarget) {
-                            return false;
-                          }
-                          return debug.activateTarget('control-library');
-                        }
-                        """,
-                    )
+                    library_return_activated = return_braille_reader_to_library(page)
                     if not library_return_activated:
                         failures.append("/braille-reader could not activate the library return control")
                     else:
@@ -1165,9 +1250,26 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
             page.wait_for_timeout(1_200)
             overflow_metrics = viewport_overflow_metrics(page)
 
-            screenshot_path = screenshot_dir / f"{scene.route.strip('/').replace('-', '_')}.png"
-            page.locator(scene.canvas_selector).screenshot(path=str(screenshot_path))
-            unique_colors = measure_canvas_colors(screenshot_path)
+            route_captures = captures_for_route(scene.route)
+            capture_results: list[tuple[CaptureSpec, Path, int]] = []
+            for capture in route_captures:
+                if capture.slug == "braille-reading-world":
+                    if not activate_first_braille_library_document(page):
+                        failures.append(
+                            "/braille-reader could not activate a scene-native library document target for the reading-world capture",
+                        )
+                        continue
+                    page.wait_for_function(
+                        """
+                        () => (document.querySelector('#reader-scene-mode')?.textContent?.trim() ?? '') === 'Reading scene'
+                        """,
+                        timeout=15_000,
+                    )
+                    page.wait_for_timeout(150)
+
+                capture_path = screenshot_dir / capture.image_name
+                unique_colors = capture_canvas(page, scene.canvas_selector, capture_path)
+                capture_results.append((capture, capture_path, unique_colors))
             version_text = (page.locator('[data-runtime="version"]').first.text_content() or "").strip()
             api_status_text = (page.locator('[data-runtime="api-status"]').first.text_content() or "").strip()
             error_overlay_count = page.locator(".stage-error-overlay").count()
@@ -1177,11 +1279,14 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 failures.extend(page_errors)
             if error_logs:
                 failures.extend(error_logs)
-            if unique_colors < scene.min_unique_colors:
-                failures.append(
-                    f"{scene.route} capture looks under-rendered: "
-                    f"{unique_colors} unique colors < {scene.min_unique_colors}",
-                )
+            if not capture_results:
+                failures.append(f"{scene.route} did not produce any curated captures")
+            for capture, capture_path, unique_colors in capture_results:
+                if unique_colors < scene.min_unique_colors:
+                    failures.append(
+                        f"{scene.route} capture {capture.image_name} looks under-rendered: "
+                        f"{unique_colors} unique colors < {scene.min_unique_colors}",
+                    )
             if version_text in {"", "v--", "Loading", "Error"}:
                 failures.append(f"{scene.route} runtime version slot did not initialize: {version_text!r}")
             if api_status_text in {"", "Loading", "error"}:
@@ -1374,10 +1479,13 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         "/haptic-configuration did not focus the native spotlight backend above the fold",
                     )
 
+            capture_summary = ", ".join(
+                f"{capture.image_name}:{unique_colors}"
+                for capture, _, unique_colors in capture_results
+            )
             print(
-                f"{scene.route}: unique_colors={unique_colors} "
-                f"version={version_text} api_status={api_status_text} "
-                f"screenshot={screenshot_path}",
+                f"{scene.route}: captures=[{capture_summary}] "
+                f"version={version_text} api_status={api_status_text}",
             )
             page.close()
 
@@ -1389,22 +1497,22 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
     write_snapshot_manifest(
         screenshot_dir,
         base_url="local_smoke_capture",
-        routes=SCENES,
+        captures=CAPTURES,
         version=APP_VERSION,
-        route_entries=build_current_manifest_entries(SCENES),
+        route_entries=build_current_manifest_entries(CAPTURES),
     )
 
 
 def normalize_sparse_history(
     history_root: Path,
-    routes: tuple[SceneSpec, ...] = SCENES,
+    captures: tuple[CaptureSpec, ...] = CAPTURES,
 ) -> None:
-    """Retrofit sparse history manifests and remove redundant archived route images."""
+    """Retrofit sparse history manifests and remove redundant archived capture images."""
     latest_refs: dict[str, SnapshotReference] = {}
 
     for version, version_dir in iter_history_versions(history_root):
-        for scene in routes:
-            image_name = snapshot_image_name(scene)
+        for capture in captures:
+            image_name = capture.image_name
             image_path = version_dir / image_name
             previous_ref = latest_refs.get(image_name)
             if not image_path.exists():
@@ -1417,9 +1525,9 @@ def normalize_sparse_history(
         write_snapshot_manifest(
             version_dir,
             base_url="archived_release_snapshot",
-            routes=routes,
+            captures=captures,
             version=version,
-            route_entries=build_history_manifest_entries(version, version_dir, routes, latest_refs),
+            route_entries=build_history_manifest_entries(version, version_dir, captures, latest_refs),
             history_policy="sparse_changed_routes_only",
         )
 
@@ -1428,10 +1536,10 @@ def archive_snapshot_set(
     current_dir: Path,
     archive_version: str,
     *,
-    routes: tuple[SceneSpec, ...] = SCENES,
+    captures: tuple[CaptureSpec, ...] = CAPTURES,
     history_root: Path | None = None,
 ) -> Path:
-    """Freeze only the route snapshots that changed relative to prior archived baselines."""
+    """Freeze only the curated screenshots that changed relative to prior archived baselines."""
     resolved_history_root = history_root or history_root_dir()
     archive_dir = resolved_history_root / f"v{archive_version}"
     prepare_snapshot_dir(archive_dir)
@@ -1440,14 +1548,14 @@ def archive_snapshot_set(
     for version, version_dir in iter_history_versions(resolved_history_root):
         if version == archive_version:
             continue
-        for scene in routes:
-            image_name = snapshot_image_name(scene)
+        for capture in captures:
+            image_name = capture.image_name
             image_path = version_dir / image_name
             if image_path.exists():
                 latest_refs[image_name] = SnapshotReference(version=version, path=image_path)
 
-    for scene in routes:
-        image_name = snapshot_image_name(scene)
+    for capture in captures:
+        image_name = capture.image_name
         current_image = current_dir / image_name
         if not current_image.exists():
             continue
@@ -1456,13 +1564,13 @@ def archive_snapshot_set(
             continue
         shutil.copy2(current_image, archive_dir / image_name)
 
-    normalize_sparse_history(resolved_history_root, routes)
+    normalize_sparse_history(resolved_history_root, captures)
     refreshed_refs = {
         image_name: ref
         for image_name, ref in latest_refs.items()
     }
-    for scene in routes:
-        image_name = snapshot_image_name(scene)
+    for capture in captures:
+        image_name = capture.image_name
         image_path = archive_dir / image_name
         if image_path.exists():
             refreshed_refs[image_name] = SnapshotReference(version=archive_version, path=image_path)
@@ -1470,12 +1578,12 @@ def archive_snapshot_set(
     write_snapshot_manifest(
         archive_dir,
         base_url="archived_release_snapshot",
-        routes=routes,
+        captures=captures,
         version=archive_version,
         route_entries=build_history_manifest_entries(
             archive_version,
             archive_dir,
-            routes,
+            captures,
             refreshed_refs,
         ),
         history_policy="sparse_changed_routes_only",
@@ -1503,6 +1611,11 @@ def main() -> None:
         help="Normalize the tracked frontend history into sparse changed-route archives after capturing the current baseline.",
     )
     parser.add_argument(
+        "--sync-docs-png",
+        action="store_true",
+        help="Copy the current curated capture set into docs/png for README-facing screenshot sync.",
+    )
+    parser.add_argument(
         "--no-launch",
         action="store_true",
         help="Do not launch a local server; assume --base-url is already running.",
@@ -1526,11 +1639,14 @@ def main() -> None:
             wait_for_server(base_url, timeout_seconds=30)
 
         run_browser_smoke(base_url, Path(args.screenshot_dir))
+        if args.sync_docs_png:
+            sync_curated_docs_png(Path(args.screenshot_dir))
+            print(f"Synchronized README-facing captures into {ROOT / 'docs' / 'png'}")
         if args.archive_version:
             archive_dir = archive_snapshot_set(Path(args.screenshot_dir), args.archive_version)
             print(f"Archived snapshot set at {archive_dir}")
         elif args.normalize_history:
-            normalize_sparse_history(history_root_dir(), SCENES)
+            normalize_sparse_history(history_root_dir(), CAPTURES)
             print(f"Normalized sparse snapshot history at {history_root_dir()}")
         print("Browser smoke test passed.")
     finally:
