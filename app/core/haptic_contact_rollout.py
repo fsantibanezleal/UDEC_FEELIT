@@ -7,7 +7,6 @@ from typing import Any
 from app.core.haptic_materials import build_material_catalog
 from app.core.haptic_runtime_features import normalize_runtime_features
 
-
 ROLLOUT_BLUEPRINTS: tuple[dict[str, object], ...] = (
     {
         "backend_slug": "visual-emulator",
