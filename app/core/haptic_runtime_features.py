@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Iterable
 
-
 FEATURE_ALIASES: dict[str, set[str]] = {
     "scene_debug": {"scene-debug"},
     "pointer_path": {"pointer-emulation", "button-proxy-input-path", "button-and-proxy-input"},

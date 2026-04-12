@@ -9,7 +9,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 MAX_LOCAL_MODEL_FILE_BYTES = 60 * 1024 * 1024
 LARGE_MODEL_WARNING_BYTES = 20 * 1024 * 1024
 

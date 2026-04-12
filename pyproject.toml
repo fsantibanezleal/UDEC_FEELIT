@@ -45,3 +45,10 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"passenger_wsgi.py" = ["F401"]
+"scripts/browser_scene_smoke.py" = ["E402"]
+"scripts/bump_version.py" = ["E402"]
+"scripts/sync_version.py" = ["E402"]

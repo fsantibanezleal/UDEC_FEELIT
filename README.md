@@ -80,11 +80,11 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Local multi-file bundle intake | bundle-aware `gltf` sidecar resolution with explicit main-file selection |
 | Public port | `8101` |
-| Release-synced version | `2.18.002` |
+| Release-synced version | `2.18.003` |
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `101` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `102` automated tests passing plus browser smoke validation across the `5` routed pages |
 | GitHub validation baseline | GitHub Actions runs unit/API validation plus browser smoke on pushes and pull requests |
 
 ## Current Frontend Views
@@ -196,12 +196,13 @@ python -m pytest tests -v
 ### Repo-managed validation
 
 ```powershell
+python scripts\validate_repo.py --mode lint
 python scripts\validate_repo.py --mode unit
 python scripts\validate_repo.py --mode full --install-browser
 python scripts\validate_repo.py --mode lint-baseline
 ```
 
-The repo-managed validator keeps local execution aligned with the GitHub Actions baseline. `unit` runs the current Python test suite, `smoke` runs the browser scene smoke workflow, `full` runs both in sequence, and `lint-baseline` reports the current Ruff debt without pretending that the repo is already lint-clean.
+The repo-managed validator keeps local execution aligned with the GitHub Actions baseline. `lint` runs the currently enforced Ruff rule set, `unit` runs the Python test suite, `smoke` runs the browser scene smoke workflow, `full` runs the enforced baseline in sequence, and `lint-baseline` reports the remaining staged Ruff debt profile. The current enforced Ruff baseline intentionally ignores the historical line-length backlog while requiring import order, unused-import cleanup, and other non-length structural rules to stay clean.
 
 ### Browser smoke validation
 
@@ -219,7 +220,7 @@ python scripts\browser_scene_smoke.py --sync-docs-png --archive-version <release
 
 The curated captures are expected to come from stable canonical route states so the visual history does not over-report change because of idle animation or leftover post-validation state. Braille specifically archives separate launcher and reading-world captures instead of collapsing them into one generic route screenshot.
 
-GitHub Actions now runs the unit/API validation job and the browser-smoke job automatically on pushes and pull requests targeting `main` or `develop`.
+GitHub Actions now runs lint, unit/API validation, and browser smoke automatically on pushes and pull requests targeting `main` or `develop`.
 
 ### Native bridge diagnostics
 

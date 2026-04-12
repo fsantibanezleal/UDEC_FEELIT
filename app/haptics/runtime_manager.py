@@ -9,25 +9,24 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.core.haptic_contact_rollout import build_haptic_contact_rollout
+from app.core.haptic_feedback_design import (
+    build_haptic_contact_design,
+    build_haptic_material_rendering_matrix,
+)
+from app.core.haptic_pilot_commands import build_haptic_pilot_commands
+from app.core.haptic_runtime_features import normalize_runtime_features
+from app.core.haptic_scene_contracts import build_haptic_scene_contract
+from app.haptics.base import HapticBackend
 from app.haptics.bridge_probe import (
     HapticBridgeCommandAckSnapshot,
     HapticBridgeCommandExecutionSnapshot,
-    HapticBridgeProbeSnapshot,
     acknowledge_native_bridge_command,
     default_bridge_output_candidates,
     execute_native_bridge_command,
     native_bridge_root,
     probe_native_bridge,
 )
-from app.core.haptic_feedback_design import (
-    build_haptic_contact_design,
-    build_haptic_material_rendering_matrix,
-)
-from app.core.haptic_contact_rollout import build_haptic_contact_rollout
-from app.core.haptic_pilot_commands import build_haptic_pilot_commands
-from app.core.haptic_runtime_features import normalize_runtime_features
-from app.core.haptic_scene_contracts import build_haptic_scene_contract
-from app.haptics.base import HapticBackend
 from app.haptics.factory import create_haptic_backend
 from app.haptics.toolchain import ToolchainComponentStatus, build_native_toolchain_statuses
 

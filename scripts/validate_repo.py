@@ -30,6 +30,14 @@ def build_validation_plan(
     python = sys.executable
     plan: list[ValidationCommand] = []
 
+    if mode in {"lint", "full"}:
+        plan.append(
+            ValidationCommand(
+                label="ruff-check",
+                argv=(python, "-m", "ruff", "check", "."),
+            ),
+        )
+
     if mode in {"unit", "full"}:
         plan.append(
             ValidationCommand(
@@ -85,7 +93,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run FeelIT validation workflows.")
     parser.add_argument(
         "--mode",
-        choices=("unit", "smoke", "full", "lint-baseline"),
+        choices=("lint", "unit", "smoke", "full", "lint-baseline"),
         default="unit",
         help="Validation mode to run.",
     )

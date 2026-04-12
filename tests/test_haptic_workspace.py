@@ -7,10 +7,13 @@ import time
 
 from fastapi.testclient import TestClient
 
+from app.core import haptic_workspace, library_assets
 from app.core.demo_assets import build_demo_model_catalog
-from app.core import haptic_workspace
-from app.core import library_assets
-from app.core.library_assets import build_audio_catalog, build_document_catalog, build_text_payload_from_path
+from app.core.library_assets import (
+    build_audio_catalog,
+    build_document_catalog,
+    build_text_payload_from_path,
+)
 from app.main import app
 
 

@@ -12,7 +12,6 @@ from app.core.demo_assets import build_demo_model_catalog
 from app.core.haptic_materials import build_material_catalog
 from app.core.haptic_workspace import (
     DEFAULT_FILE_BROWSER_PAGE_SIZE,
-    build_haptic_workspace_catalog,
     build_haptic_workspace_payload,
     build_workspace_browser_payload,
     build_workspace_manager_payload,
