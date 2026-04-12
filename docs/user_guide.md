@@ -198,6 +198,7 @@ On 3D routes, orbit, pan, and zoom changes should persist across scene rebuilds 
 For the repo-managed validation entrypoint:
 
 ```powershell
+python scripts\validate_repo.py --mode lint
 python scripts\validate_repo.py --mode unit
 python scripts\validate_repo.py --mode full --install-browser
 ```

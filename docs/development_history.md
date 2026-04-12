@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.003 (2026-04-12)
+
+Established an enforced Ruff baseline and wired it into the repo-managed validation flow.
+
+Delivered:
+
+- Configured Ruff to enforce structural rules while staging the historical line-length backlog as explicit debt.
+- Integrated lint into scripts/validate_repo.py and GitHub Actions so local and CI validation now share the same enforced baseline.
+- Fixed the import-order and unused-import findings that blocked the initial enforced Ruff pass.
+
+Rationale:
+
+- The repository now has CI, so lint needed to become actionable instead of remaining a local-only failing report.
+- A progressive baseline is more credible than either ignoring Ruff completely or trying to clean hundreds of line-length findings in one noisy slice.
+
 ### v2.18.002 (2026-04-12)
 
 Strengthened FeelIT's validation baseline and documentation-facing screenshot workflow.

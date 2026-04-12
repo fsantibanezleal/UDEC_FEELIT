@@ -13,7 +13,6 @@ from app.core.demo_assets import build_demo_model_catalog
 from app.core.library_assets import (
     build_audio_catalog,
     build_document_catalog,
-    build_document_payload,
     build_text_payload_from_path,
 )
 

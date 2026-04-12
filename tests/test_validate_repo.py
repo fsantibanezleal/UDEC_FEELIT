@@ -14,6 +14,13 @@ def test_unit_plan_runs_pytest_only() -> None:
     assert plan[0].argv == (sys.executable, "-m", "pytest", "tests", "-q")
 
 
+def test_lint_plan_runs_ruff_check() -> None:
+    plan = build_validation_plan("lint")
+
+    assert [command.label for command in plan] == ["ruff-check"]
+    assert plan[0].argv == (sys.executable, "-m", "ruff", "check", ".")
+
+
 def test_smoke_plan_can_include_browser_install() -> None:
     plan = build_validation_plan("smoke", install_browser=True)
 
@@ -26,6 +33,7 @@ def test_full_plan_can_forward_docs_png_sync() -> None:
     plan = build_validation_plan("full", install_browser=True, sync_docs_png=True)
 
     assert [command.label for command in plan] == [
+        "ruff-check",
         "pytest",
         "playwright-install",
         "browser-smoke",
