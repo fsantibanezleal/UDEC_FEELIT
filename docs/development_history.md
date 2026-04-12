@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.002 (2026-04-12)
+
+Strengthened FeelIT's validation baseline and documentation-facing screenshot workflow.
+
+Delivered:
+
+- Extended the browser smoke workflow so Braille launcher and Braille reading-world screenshots are captured as separate curated artifacts.
+- Added a repo-managed validation entrypoint with unit, browser-smoke, full, and lint-baseline modes.
+- Added GitHub Actions CI for unit/API validation plus browser smoke on pushes and pull requests.
+
+Rationale:
+
+- README-facing screenshots should come from intentional canonical states instead of manual drift-prone updates.
+- FeelIT needed one validation contract that works locally and in GitHub Actions instead of relying only on manual discipline.
+
 ### v2.18.001 (2026-04-02)
 
 Add progressive disclosure to Haptic Configuration and expose runtime-query frontiers

@@ -195,12 +195,19 @@ On 3D routes, orbit, pan, and zoom changes should persist across scene rebuilds 
 
 ## Browser Smoke Validation
 
+For the repo-managed validation entrypoint:
+
+```powershell
+python scripts\validate_repo.py --mode unit
+python scripts\validate_repo.py --mode full --install-browser
+```
+
 For scene-regression checks beyond API tests:
 
 ```powershell
 pip install -e ".[dev]"
 python -m playwright install chromium
-python scripts\browser_scene_smoke.py
+python scripts\browser_scene_smoke.py --sync-docs-png
 ```
 
 This validation opens the three 3D routes, captures the scene canvas in Chromium, and fails if the pages log runtime errors, miss workspace bootstrap data, or if the rendered scene looks under-populated.
