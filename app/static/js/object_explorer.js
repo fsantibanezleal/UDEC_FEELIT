@@ -871,6 +871,44 @@ function createControlGroup({
   };
 }
 
+function buildExplorationControlRail(bounds) {
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const controlSpacing = Math.max(0.96, Math.min(1.42, size.x * 0.58 + 0.34));
+  const controlRailZ = Math.max(bounds.max.z + 0.68, 1.02);
+
+  const positions = {
+    launcher: new THREE.Vector3(center.x - controlSpacing, 0, controlRailZ),
+    materialPrev: new THREE.Vector3(center.x, 0, controlRailZ),
+    materialNext: new THREE.Vector3(center.x + controlSpacing, 0, controlRailZ),
+  };
+
+  const minX = Math.min(bounds.min.x - 0.28, positions.launcher.x - 0.46);
+  const maxX = Math.max(bounds.max.x + 0.28, positions.materialNext.x + 0.46);
+  const minZ = Math.min(bounds.min.z - 0.24, controlRailZ - 0.48);
+  const maxZ = Math.max(bounds.max.z + 0.24, controlRailZ + 0.48);
+
+  return {
+    positions,
+    pointerBoundsMin: new THREE.Vector3(minX, 0.14, minZ),
+    pointerBoundsMax: new THREE.Vector3(
+      maxX,
+      Math.max(1.45, size.y + 0.82),
+      maxZ,
+    ),
+    boundarySize: new THREE.Vector3(
+      Math.max(4.2, maxX - minX + 0.8),
+      Math.max(2.3, size.y + 1.0),
+      Math.max(4.2, maxZ - minZ + 0.8),
+    ),
+    initialPointerPosition: new THREE.Vector3(
+      center.x,
+      Math.min(Math.max(bounds.max.y + 0.18, 0.44), 1.26),
+      Math.min(controlRailZ - 0.18, bounds.max.z + Math.max(0.24, size.z * 0.28)),
+    ),
+  };
+}
+
 async function createLauncherItemGroup(model, position) {
   const group = new THREE.Group();
   group.position.copy(position.clone().setY(0.12));
@@ -1173,15 +1211,8 @@ async function loadObjectIntoScene(sceneApi, object, model, statusMessage) {
   state.currentObject = object;
   state.currentBounds = new THREE.Box3().setFromObject(object);
 
-  const objectSize = state.currentBounds.getSize(new THREE.Vector3());
-  const objectCenter = state.currentBounds.getCenter(new THREE.Vector3());
-  sceneApi.setBoundarySize(
-    new THREE.Vector3(
-      Math.max(4.2, objectSize.x + 2.1),
-      Math.max(2.3, objectSize.y + 1.0),
-      Math.max(4.2, objectSize.z + 2.1),
-    ),
-  );
+  const controlRail = buildExplorationControlRail(state.currentBounds);
+  sceneApi.setBoundarySize(controlRail.boundarySize);
 
   const launcherControl = createControlGroup({
     id: "exploration-launcher",
@@ -1189,7 +1220,7 @@ async function loadObjectIntoScene(sceneApi, object, model, statusMessage) {
     type: "exploration-control",
     label: "Launcher",
     kind: "launcher",
-    position: new THREE.Vector3(-1.65, 0, 1.18),
+    position: controlRail.positions.launcher,
     actionLabel: "Return to the object session launcher on the current page.",
     accentHex: 0xf2cc60,
     action: async () => renderLauncher(sceneApi, state.launcherPage),
@@ -1202,7 +1233,7 @@ async function loadObjectIntoScene(sceneApi, object, model, statusMessage) {
     type: "exploration-control",
     label: "Material -",
     kind: "material-prev",
-    position: new THREE.Vector3(0, 0, 1.18),
+    position: controlRail.positions.materialPrev,
     actionLabel: "Cycle to the previous tactile material profile.",
     accentHex: 0x7ee787,
     action: async () => {
@@ -1217,7 +1248,7 @@ async function loadObjectIntoScene(sceneApi, object, model, statusMessage) {
     type: "exploration-control",
     label: "Material +",
     kind: "material-next",
-    position: new THREE.Vector3(1.65, 0, 1.18),
+    position: controlRail.positions.materialNext,
     actionLabel: "Cycle to the next tactile material profile.",
     accentHex: 0x58a6ff,
     action: async () => {
@@ -1227,12 +1258,10 @@ async function loadObjectIntoScene(sceneApi, object, model, statusMessage) {
   registerInteractiveTarget(nextMaterial.group, nextMaterial.target);
 
   state.pointerController?.setBounds(
-    new THREE.Vector3(objectCenter.x - objectSize.x * 0.8, 0.14, objectCenter.z - objectSize.z * 0.82),
-    new THREE.Vector3(objectCenter.x + objectSize.x * 0.8, Math.max(1.45, objectSize.y + 0.82), objectCenter.z + objectSize.z * 0.82),
+    controlRail.pointerBoundsMin,
+    controlRail.pointerBoundsMax,
   );
-  state.pointerController?.setPosition(
-    objectCenter.clone().add(new THREE.Vector3(objectSize.x * 0.35, Math.min(objectSize.y + 0.38, 1.26), objectSize.z * 0.35)),
-  );
+  state.pointerController?.setPosition(controlRail.initialPointerPosition);
 
   updateModelInspector(model);
   updatePointerFeedback(sceneApi, state.pointerController.position);
@@ -1491,7 +1520,10 @@ document.addEventListener("DOMContentLoaded", () => {
             type: target.type,
             actionLabel: target.actionLabel,
             disabled: target.disabled,
+            position: target.position?.toArray?.() ?? null,
+            radius: target.radius ?? 0,
           })),
+        pointerBounds: () => state.pointerController?.getBounds?.() ?? null,
         activateTarget: async (targetId) => activateDebugTarget(targetId),
         navigateToLauncher: async (page = state.launcherPage) => renderLauncher(sceneApi, page),
         stabilizeForCapture: async () => stabilizeObjectExplorerForCapture(),

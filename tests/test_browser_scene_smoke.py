@@ -1,8 +1,12 @@
-"""Targeted classification tests for browser smoke console filtering."""
+"""Targeted tests for browser smoke helpers."""
 
 from __future__ import annotations
 
-from scripts.browser_scene_smoke import is_benign_console_warning, is_relevant_console_failure
+from scripts.browser_scene_smoke import (
+    is_benign_console_warning,
+    is_relevant_console_failure,
+    target_within_pointer_bounds,
+)
 
 
 def test_benign_gpu_readpixels_warning_is_ignored() -> None:
@@ -33,3 +37,15 @@ def test_real_404_log_still_fails() -> None:
 def test_failed_to_load_log_still_fails() -> None:
     line = "/object-explorer console[warning]: Failed to load resource: net::ERR_FILE_NOT_FOUND"
     assert is_relevant_console_failure(line)
+
+
+def test_target_within_pointer_bounds_accepts_reachable_target() -> None:
+    target = {"position": [0.0, 0.24, 1.18], "radius": 0.32}
+    bounds = {"min": [-1.4, 0.14, 0.6], "max": [1.4, 1.45, 1.7]}
+    assert target_within_pointer_bounds(target, bounds)
+
+
+def test_target_within_pointer_bounds_rejects_out_of_bounds_target() -> None:
+    target = {"position": [0.0, 0.24, 1.18], "radius": 0.32}
+    bounds = {"min": [-1.4, 0.14, 0.9], "max": [1.4, 1.45, 1.1]}
+    assert not target_within_pointer_bounds(target, bounds)

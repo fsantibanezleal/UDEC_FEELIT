@@ -62,6 +62,8 @@ MODEL_FORMAT_LABELS = {
     "gltf": "glTF",
     "glb": "GLB",
 }
+
+
 def _display_label_from_path(path: Path | str) -> str:
     """Return a safe user-facing label derived from one filesystem path."""
     return Path(path).name or str(path)
@@ -148,6 +150,11 @@ def _resolve_child_path(root: Path, relative_path: str) -> Path:
     if not candidate.is_relative_to(root.resolve()):
         raise ValueError("Requested path escapes the configured workspace root.")
     return candidate
+
+
+def _is_hidden_browser_entry(path: Path) -> bool:
+    """Return True when one filesystem entry should stay out of the tactile browser."""
+    return path.is_file() and path.name.endswith(WORKSPACE_SUFFIX)
 
 
 def detect_entry_kind(path: Path) -> str:
@@ -510,6 +517,8 @@ def build_workspace_browser_payload(
     normalized_path = _normalize_relative_path(relative_path)
     entries: list[dict[str, Any]] = []
     for child in sorted(current_directory.iterdir(), key=lambda path: (not path.is_dir(), path.name.lower())):
+        if _is_hidden_browser_entry(child):
+            continue
         child_relative = child.relative_to(record["file_browser_root"]).as_posix()
         kind = detect_entry_kind(child)
         entry = {
