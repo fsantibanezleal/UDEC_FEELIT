@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from scripts.browser_scene_smoke import (
+    assert_targets_within_bounds,
     is_benign_console_warning,
     is_relevant_console_failure,
     target_within_pointer_bounds,
@@ -49,3 +50,37 @@ def test_target_within_pointer_bounds_rejects_out_of_bounds_target() -> None:
     target = {"position": [0.0, 0.24, 1.18], "radius": 0.32}
     bounds = {"min": [-1.4, 0.14, 0.9], "max": [1.4, 1.45, 1.1]}
     assert not target_within_pointer_bounds(target, bounds)
+
+
+def test_target_within_pointer_bounds_allows_shallow_control_deck_offset() -> None:
+    target = {"position": [0.0, 0.12, 1.18], "radius": 0.32}
+    bounds = {"min": [-1.4, 0.14, 0.6], "max": [1.4, 1.45, 1.7]}
+    assert target_within_pointer_bounds(target, bounds)
+
+
+def test_assert_targets_within_bounds_passes_for_present_reachable_targets() -> None:
+    failures: list[str] = []
+    geometry = {
+        "bounds": {"min": [-1.4, 0.14, 0.6], "max": [1.4, 1.45, 1.7]},
+        "targets": [
+            {"id": "launcher", "position": [0.0, 0.24, 1.18], "radius": 0.32},
+            {"id": "next", "position": [1.0, 0.24, 1.18], "radius": 0.24},
+        ],
+    }
+    assert_targets_within_bounds(failures, "/demo", geometry, ("launcher", "next"))
+    assert failures == []
+
+
+def test_assert_targets_within_bounds_reports_missing_and_out_of_bounds_targets() -> None:
+    failures: list[str] = []
+    geometry = {
+        "bounds": {"min": [-1.4, 0.14, 0.6], "max": [1.4, 1.45, 1.1]},
+        "targets": [
+            {"id": "launcher", "position": [0.0, 0.24, 1.18], "radius": 0.32},
+        ],
+    }
+    assert_targets_within_bounds(failures, "/demo", geometry, ("launcher", "next"))
+    assert failures == [
+        "/demo target launcher sits outside the pointer bounds",
+        "/demo missing required debug target next",
+    ]

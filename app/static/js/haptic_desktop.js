@@ -2522,6 +2522,8 @@ function desktopDebugTargets() {
     type: target.type,
     actionLabel: target.actionLabel,
     disabled: target.disabled,
+    position: target.position?.toArray?.() ?? null,
+    radius: target.radius ?? 0,
   }));
 }
 
@@ -2606,6 +2608,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentScene: () => state.currentScene,
         targetIds: () => Array.from(state.targets.keys()),
         targets: () => desktopDebugTargets(),
+        pointerBounds: () => state.pointerController?.getBounds?.() ?? null,
         focusTarget: (targetId) => {
           if (!state.targets.has(targetId)) {
             return false;
