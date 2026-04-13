@@ -201,8 +201,30 @@ def test_workspace_browser_payload_paginates_server_side(tmp_path, monkeypatch) 
     assert payload["page"] == 1
     assert payload["page_size"] == 3
     assert payload["page_count"] == 3
-    assert payload["total_entries"] == 9
+    assert payload["total_entries"] == 8
     assert len(payload["entries"]) == 3
+
+
+def test_workspace_browser_payload_hides_workspace_descriptor_files(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("Braille note", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="Hidden Descriptor Workspace",
+        slug="hidden_descriptor_workspace",
+        description="Temporary workspace for descriptor filtering tests.",
+        root_path=str(workspace_root),
+        auto_populate=False,
+    )
+
+    payload = haptic_workspace.build_workspace_browser_payload("hidden_descriptor_workspace")
+
+    assert payload["total_entries"] == 1
+    assert [entry["title"] for entry in payload["entries"]] == ["notes.txt"]
 
 
 def test_workspace_text_payload_reuses_cached_path_extraction(tmp_path, monkeypatch) -> None:
