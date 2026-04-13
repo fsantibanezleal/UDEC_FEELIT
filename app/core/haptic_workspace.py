@@ -69,6 +69,12 @@ def _display_label_from_path(path: Path | str) -> str:
     return Path(path).name or str(path)
 
 
+def _registry_key_for_path(path: Path | str) -> str:
+    """Return one opaque stable key for a registered workspace file path."""
+    normalized = str(Path(path).expanduser().resolve()).lower()
+    return hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:12]
+
+
 def local_app_state_dir() -> Path:
     """Return the local writable directory used for user-scoped FeelIT state."""
     if os.name == "nt":
@@ -114,6 +120,20 @@ def _save_registry_payload(payload: dict[str, Any]) -> None:
     """Persist the local registry payload."""
     _ensure_registry_file()
     REGISTRY_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _registered_workspace_paths() -> list[Path]:
+    """Return the resolved registered workspace descriptor paths from the local registry."""
+    payload = _load_registry_payload()
+    return [Path(item).expanduser().resolve() for item in payload.get("workspace_files", [])]
+
+
+def _registry_path_by_key(registry_key: str) -> Path:
+    """Resolve one opaque registry key back into the registered workspace path."""
+    for path in _registered_workspace_paths():
+        if _registry_key_for_path(path) == registry_key:
+            return path
+    raise KeyError(registry_key)
 
 
 def _resolve_location(descriptor_path: Path, location: dict[str, Any]) -> Path:
@@ -191,6 +211,62 @@ def _read_workspace_descriptor(path: Path) -> dict[str, Any]:
         raise ValueError(f"Unsupported workspace format_version in {path.name}.")
     if not descriptor.get("slug") or not descriptor.get("title"):
         raise ValueError(f"Workspace descriptor {path.name} is missing required title/slug fields.")
+    return descriptor
+
+
+def _safe_location_object(path: Path, raw_location: Any) -> dict[str, Any]:
+    """Return one validated location object or fall back to the descriptor folder."""
+    if isinstance(raw_location, dict) and raw_location.get("mode") and raw_location.get("path"):
+        return {
+            "mode": str(raw_location["mode"]),
+            "path": str(raw_location["path"]),
+        }
+    return {"mode": "absolute", "path": str(path.parent.resolve())}
+
+
+def _repair_workspace_descriptor(path: Path) -> dict[str, Any]:
+    """Rewrite one broken descriptor into the current normalized baseline."""
+    try:
+        raw_descriptor = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        raw_descriptor = {}
+
+    if not isinstance(raw_descriptor, dict):
+        raw_descriptor = {}
+
+    title = str(raw_descriptor.get("title") or "").strip()
+    slug = str(raw_descriptor.get("slug") or "").strip()
+    if not slug:
+        filename_stem = path.name.removesuffix(WORKSPACE_SUFFIX)
+        slug = _slugify(title or filename_stem)
+    if not title:
+        title = slug.replace("_", " ").replace("-", " ").title()
+
+    content_location = _safe_location_object(path, raw_descriptor.get("content_root"))
+    file_browser_location = _safe_location_object(path, raw_descriptor.get("file_browser_root"))
+    content_root = _resolve_location(path, content_location)
+    file_browser_root = _resolve_location(path, file_browser_location)
+    if not content_root.exists() or not content_root.is_dir():
+        raise ValueError("Workspace content root must exist before the descriptor can be repaired.")
+    if not file_browser_root.exists() or not file_browser_root.is_dir():
+        raise ValueError("Workspace file-browser root must exist before the descriptor can be repaired.")
+
+    descriptor = {
+        "format": WORKSPACE_FORMAT,
+        "format_version": 1,
+        "slug": slug,
+        "title": title,
+        "description": str(raw_descriptor.get("description") or "").strip(),
+        "is_default": bool(raw_descriptor.get("is_default")),
+        "content_root": content_location,
+        "file_browser_root": file_browser_location,
+        "libraries": {
+            "models": _auto_collect_workspace_items(content_root, "models"),
+            "texts": _auto_collect_workspace_items(content_root, "texts"),
+            "audio": _auto_collect_workspace_items(content_root, "audio"),
+        },
+    }
+    path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
     return descriptor
 
 
@@ -275,6 +351,7 @@ def _load_workspace_record(path: Path, *, registry_source: str) -> dict[str, Any
         "description": descriptor.get("description", ""),
         "is_default": bool(descriptor.get("is_default")),
         "registry_source": registry_source,
+        "registry_key": _registry_key_for_path(path),
         "workspace_file_path": str(path.resolve()),
         "workspace_file_label": _display_label_from_path(path),
         "content_root": content_root,
@@ -301,6 +378,7 @@ def _workspace_registry_snapshot() -> dict[str, list[dict[str, Any]]]:
         if not path.exists():
             invalid_records.append(
                 {
+                    "registry_key": _registry_key_for_path(path),
                     "workspace_file_path": str(path),
                     "workspace_file_label": _display_label_from_path(path),
                     "registry_source": "user_registered",
@@ -315,6 +393,7 @@ def _workspace_registry_snapshot() -> dict[str, list[dict[str, Any]]]:
         except ValueError as error:
             invalid_records.append(
                 {
+                    "registry_key": _registry_key_for_path(path),
                     "workspace_file_path": str(path),
                     "workspace_file_label": _display_label_from_path(path),
                     "registry_source": "user_registered",
@@ -451,6 +530,9 @@ def build_haptic_workspace_catalog() -> list[dict[str, Any]]:
                 "description": record["description"],
                 "is_default": record["is_default"],
                 "registry_source": record["registry_source"],
+                "registry_key": record["registry_key"],
+                "can_unregister": record["registry_source"] == "user_registered",
+                "can_rescan": record["registry_source"] == "user_registered",
                 "workspace_file_label": record["workspace_file_label"],
                 "category_counts": {
                     "models": len(record["libraries"].get("models", [])),
@@ -626,6 +708,52 @@ def register_workspace_file(workspace_file_path: str) -> dict[str, Any]:
     return _load_workspace_record(path, registry_source="user_registered")
 
 
+def unregister_workspace_file(registry_key: str) -> dict[str, str]:
+    """Remove one registered workspace descriptor reference from the local registry."""
+    path = _registry_path_by_key(registry_key)
+    payload = _load_registry_payload()
+    remaining_paths = [
+        str(Path(item).expanduser().resolve())
+        for item in payload.get("workspace_files", [])
+        if Path(item).expanduser().resolve() != path
+    ]
+    if len(remaining_paths) == len(payload.get("workspace_files", [])):
+        raise KeyError(registry_key)
+    payload["workspace_files"] = sorted(remaining_paths)
+    _save_registry_payload(payload)
+    return {
+        "registry_key": registry_key,
+        "workspace_file_label": _display_label_from_path(path),
+    }
+
+
+def rescan_workspace_file(slug: str) -> dict[str, Any]:
+    """Rebuild one registered workspace library catalog from its current content root."""
+    record = _workspace_record_by_slug(slug)
+    if record["registry_source"] != "user_registered":
+        raise ValueError("Only user-registered workspaces can be rescanned.")
+
+    path = Path(record["workspace_file_path"]).resolve()
+    descriptor = _read_workspace_descriptor(path)
+    content_root = _resolve_location(path, descriptor["content_root"])
+    descriptor["libraries"] = {
+        "models": _auto_collect_workspace_items(content_root, "models"),
+        "texts": _auto_collect_workspace_items(content_root, "texts"),
+        "audio": _auto_collect_workspace_items(content_root, "audio"),
+    }
+    path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return _load_workspace_record(path, registry_source="user_registered")
+
+
+def repair_workspace_file(registry_key: str) -> dict[str, Any]:
+    """Repair one invalid registered descriptor when it still exists on disk."""
+    path = _registry_path_by_key(registry_key)
+    if not path.exists() or not path.is_file():
+        raise ValueError("Missing workspace files cannot be repaired in place.")
+    _repair_workspace_descriptor(path)
+    return _load_workspace_record(path, registry_source="user_registered")
+
+
 def _auto_collect_workspace_items(root_path: Path, kind: str) -> list[dict[str, Any]]:
     """Discover workspace files of a given kind under a user root."""
     suffixes = {
@@ -699,10 +827,13 @@ def build_workspace_manager_payload() -> dict[str, Any]:
         "workspaces": build_haptic_workspace_catalog(),
         "invalid_workspaces": [
             {
+                "registry_key": record["registry_key"],
                 "workspace_file_label": record["workspace_file_label"],
                 "registry_source": record["registry_source"],
                 "error_code": record["error_code"],
                 "error": record["error"],
+                "can_unregister": True,
+                "can_repair": record["error_code"] == "invalid_descriptor",
             }
             for record in snapshot["invalid_records"]
         ],

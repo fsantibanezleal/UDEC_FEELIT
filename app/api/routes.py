@@ -19,6 +19,9 @@ from app.core.haptic_workspace import (
     create_workspace_file,
     raw_workspace_file_path,
     register_workspace_file,
+    repair_workspace_file,
+    rescan_workspace_file,
+    unregister_workspace_file,
 )
 from app.core.library_assets import (
     build_audio_catalog,
@@ -262,6 +265,56 @@ async def haptic_workspace_create(payload: CreateHapticWorkspaceRequest) -> dict
                 "workspace_file_label": record["workspace_file_label"],
             },
         }
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/haptic-workspaces/{slug}/rescan")
+async def haptic_workspace_rescan(slug: str) -> dict:
+    """Rebuild one registered workspace descriptor library catalog from disk."""
+    try:
+        record = rescan_workspace_file(slug)
+        return {
+            "rescanned": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=f"Unknown workspace slug: {slug}") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.delete("/haptic-workspaces/{registry_key}")
+async def haptic_workspace_unregister(registry_key: str) -> dict:
+    """Remove one registered workspace descriptor reference from the local registry."""
+    try:
+        removed = unregister_workspace_file(registry_key)
+        return {"unregistered": True, "workspace": removed}
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Unknown workspace registry entry.") from error
+
+
+@router.post("/haptic-workspaces/invalid/{registry_key}/repair")
+async def haptic_workspace_repair(registry_key: str) -> dict:
+    """Repair one invalid registered workspace descriptor when it can be normalized safely."""
+    try:
+        record = repair_workspace_file(registry_key)
+        return {
+            "repaired": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Unknown workspace registry entry.") from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

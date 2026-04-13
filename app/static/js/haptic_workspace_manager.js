@@ -19,21 +19,45 @@ function setStatus(message, pillText = message) {
   byId("manager-page-status").textContent = pillText;
 }
 
+function selectedWorkspace() {
+  return state.workspaces.find((workspace) => workspace.slug === state.selectedSlug) ?? null;
+}
+
+function syncSelectedWorkspaceActions(workspace) {
+  const canManage = Boolean(workspace?.can_unregister);
+  byId("rescan-workspace").disabled = !workspace?.can_rescan;
+  byId("unregister-workspace").disabled = !canManage;
+
+  if (!workspace) {
+    byId("selected-workspace-action-note").textContent =
+      "Select one registry-backed workspace to manage its lifecycle.";
+    return;
+  }
+
+  byId("selected-workspace-action-note").textContent = canManage
+    ? "Rescan rebuilds the library lists from the current workspace root. Unregister removes the descriptor reference from the local registry only."
+    : "The bundled demo workspace is built into FeelIT and cannot be unregistered from the local registry.";
+}
+
 function renderSelectedWorkspace(workspace) {
   if (!workspace) {
     byId("selected-workspace-title").textContent = "--";
     byId("selected-workspace-source").textContent = "--";
+    byId("selected-workspace-file").textContent = "--";
     byId("selected-workspace-models").textContent = "--";
     byId("selected-workspace-texts").textContent = "--";
     byId("selected-workspace-audio").textContent = "--";
+    syncSelectedWorkspaceActions(null);
     return;
   }
 
   byId("selected-workspace-title").textContent = workspace.title;
   byId("selected-workspace-source").textContent = workspace.registry_source;
+  byId("selected-workspace-file").textContent = workspace.workspace_file_label;
   byId("selected-workspace-models").textContent = String(workspace.category_counts.models);
   byId("selected-workspace-texts").textContent = String(workspace.category_counts.texts);
   byId("selected-workspace-audio").textContent = String(workspace.category_counts.audio);
+  syncSelectedWorkspaceActions(workspace);
 }
 
 function renderWorkspaceList() {
@@ -109,7 +133,34 @@ function renderInvalidWorkspaceList() {
     path.className = "workspace-card-path";
     path.textContent = workspace.workspace_file_label;
 
-    card.append(title, description, meta, path);
+    const actions = document.createElement("div");
+    actions.className = "workspace-card-actions";
+
+    if (workspace.can_repair) {
+      const repairButton = document.createElement("button");
+      repairButton.type = "button";
+      repairButton.className = "btn btn-secondary";
+      repairButton.textContent = "Repair + Rescan";
+      repairButton.addEventListener("click", () => {
+        repairInvalidWorkspace(workspace).catch((error) => setStatus(error.message, "Repair failed"));
+      });
+      actions.appendChild(repairButton);
+    }
+
+    if (workspace.can_unregister) {
+      const forgetButton = document.createElement("button");
+      forgetButton.type = "button";
+      forgetButton.className = "btn btn-danger";
+      forgetButton.textContent = "Forget Entry";
+      forgetButton.addEventListener("click", () => {
+        unregisterWorkspaceByRegistryKey(workspace.registry_key, workspace.workspace_file_label, "Forgot").catch(
+          (error) => setStatus(error.message, "Forget failed"),
+        );
+      });
+      actions.appendChild(forgetButton);
+    }
+
+    card.append(title, description, meta, path, actions);
     container.appendChild(card);
   });
 }
@@ -176,6 +227,42 @@ async function registerWorkspace() {
   await refreshCatalog();
 }
 
+async function unregisterWorkspaceByRegistryKey(registryKey, workspaceLabel, pillText = "Unregistered") {
+  await fetchJson(`/api/haptic-workspaces/${registryKey}`, {
+    method: "DELETE",
+  });
+  setStatus(`${workspaceLabel} was removed from the local registry.`, pillText);
+  await refreshCatalog();
+}
+
+async function rescanSelectedWorkspace() {
+  const workspace = selectedWorkspace();
+  if (!workspace?.can_rescan) {
+    return;
+  }
+  const response = await fetchJson(`/api/haptic-workspaces/${workspace.slug}/rescan`, {
+    method: "POST",
+  });
+  setStatus(`Rescanned workspace ${response.workspace.title}.`, "Rescanned");
+  await refreshCatalog();
+}
+
+async function unregisterSelectedWorkspace() {
+  const workspace = selectedWorkspace();
+  if (!workspace?.can_unregister) {
+    return;
+  }
+  await unregisterWorkspaceByRegistryKey(workspace.registry_key, workspace.title);
+}
+
+async function repairInvalidWorkspace(workspace) {
+  const response = await fetchJson(`/api/haptic-workspaces/invalid/${workspace.registry_key}/repair`, {
+    method: "POST",
+  });
+  setStatus(`Repaired workspace ${response.workspace.title}.`, "Repaired");
+  await refreshCatalog();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   bootWorkspace(
     {
@@ -199,6 +286,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       byId("register-workspace").addEventListener("click", () => {
         registerWorkspace().catch((error) => setStatus(error.message, "Register failed"));
+      });
+      byId("rescan-workspace").addEventListener("click", () => {
+        rescanSelectedWorkspace().catch((error) => setStatus(error.message, "Rescan failed"));
+      });
+      byId("unregister-workspace").addEventListener("click", () => {
+        unregisterSelectedWorkspace().catch((error) => setStatus(error.message, "Unregister failed"));
       });
       byId("refresh-workspaces").addEventListener("click", () => {
         refreshCatalog().catch((error) => setStatus(error.message, "Refresh failed"));

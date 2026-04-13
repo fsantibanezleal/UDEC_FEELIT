@@ -149,6 +149,76 @@ def test_workspace_auto_populate_generates_collision_safe_library_slugs(tmp_path
     assert len(browser_slugs) == len(set(browser_slugs))
 
 
+def test_unregister_workspace_file_removes_registered_entry(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("hello", encoding="utf-8")
+
+    record = haptic_workspace.create_workspace_file(
+        title="Disposable Workspace",
+        slug="disposable_workspace",
+        description="Temporary workspace for unregister tests.",
+        root_path=str(workspace_root),
+        auto_populate=True,
+    )
+
+    removed = haptic_workspace.unregister_workspace_file(record["registry_key"])
+
+    assert removed["registry_key"] == record["registry_key"]
+    payload = haptic_workspace.build_workspace_manager_payload()
+    assert not any(workspace["slug"] == "disposable_workspace" for workspace in payload["workspaces"])
+
+
+def test_rescan_workspace_file_rebuilds_library_entries_from_current_root(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("hello", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="Rescan Workspace",
+        slug="rescan_workspace",
+        description="Temporary workspace for rescan tests.",
+        root_path=str(workspace_root),
+        auto_populate=True,
+    )
+    (workspace_root / "shape.obj").write_text("v 0 0 0\nv 0 1 0\nv 1 0 0\nf 1 2 3\n", encoding="utf-8")
+
+    rescanned = haptic_workspace.rescan_workspace_file("rescan_workspace")
+
+    assert rescanned["slug"] == "rescan_workspace"
+    payload = haptic_workspace.build_haptic_workspace_payload("rescan_workspace")
+    assert any(item["kind"] == "model" for item in payload["libraries"]["models"])
+
+
+def test_repair_workspace_file_normalizes_invalid_descriptor(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("hello", encoding="utf-8")
+    invalid_descriptor = workspace_root / "broken_workspace.haptic_workspace.json"
+    invalid_descriptor.write_text('{"title":"Broken Workspace"}', encoding="utf-8")
+    registry_file.write_text(
+        json.dumps({"workspace_files": [str(invalid_descriptor)]}, indent=2),
+        encoding="utf-8",
+    )
+
+    invalid_entry = haptic_workspace.build_workspace_manager_payload()["invalid_workspaces"][0]
+    repaired = haptic_workspace.repair_workspace_file(invalid_entry["registry_key"])
+
+    assert repaired["title"] == "Broken Workspace"
+    payload = haptic_workspace.build_workspace_manager_payload()
+    assert not payload["invalid_workspaces"]
+    assert any(workspace["slug"] == "broken_workspace" for workspace in payload["workspaces"])
+
+
 def test_workspace_text_payload_uses_collision_safe_slug_seed(tmp_path) -> None:
     document_a = tmp_path / "a" / "sample.txt"
     document_b = tmp_path / "b" / "sample.txt"
@@ -392,6 +462,7 @@ def test_workspace_manager_payload_surfaces_invalid_registered_descriptors(tmp_p
         "invalid_descriptor",
         "missing_file",
     }
+    assert all("registry_key" in entry for entry in payload["invalid_workspaces"])
     assert all("workspace_file_path" not in entry for entry in payload["invalid_workspaces"])
     assert all(entry["workspace_file_label"].endswith(".haptic_workspace.json") for entry in payload["invalid_workspaces"])
 
@@ -418,6 +489,60 @@ def test_haptic_workspace_api_returns_demo_workspace_payload_browse_and_text() -
     assert browse_response.json()["page_size"] == 2
     assert browse_response.json()["total_entries"] >= 2
     assert "Alice" in text_response.json()["text"]
+
+
+def test_haptic_workspace_api_supports_unregister_rescan_and_repair(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    rescan_root = tmp_path / "rescan_workspace"
+    rescan_root.mkdir()
+    (rescan_root / "notes.txt").write_text("Braille library note.", encoding="utf-8")
+    haptic_workspace.create_workspace_file(
+        title="Rescan Workspace",
+        slug="rescan_workspace",
+        description="Workspace for API lifecycle tests.",
+        root_path=str(rescan_root),
+        auto_populate=True,
+    )
+    (rescan_root / "shape.obj").write_text("v 0 0 0\nv 0 1 0\nv 1 0 0\nf 1 2 3\n", encoding="utf-8")
+
+    invalid_root = tmp_path / "invalid_workspace"
+    invalid_root.mkdir()
+    invalid_descriptor = invalid_root / "repair_me.haptic_workspace.json"
+    invalid_descriptor.write_text('{"title":"Repair Me"}', encoding="utf-8")
+    registry_file.write_text(
+        json.dumps(
+            {
+                "workspace_files": [
+                    str(rescan_root / "rescan_workspace.haptic_workspace.json"),
+                    str(invalid_descriptor),
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    with TestClient(app) as client:
+        before_payload = client.get("/api/haptic-workspaces").json()
+        valid_workspace = next(
+            workspace for workspace in before_payload["workspaces"] if workspace["slug"] == "rescan_workspace"
+        )
+        invalid_workspace = next(
+            workspace for workspace in before_payload["invalid_workspaces"] if workspace["workspace_file_label"] == "repair_me.haptic_workspace.json"
+        )
+
+        rescan_response = client.post("/api/haptic-workspaces/rescan_workspace/rescan")
+        repair_response = client.post(f"/api/haptic-workspaces/invalid/{invalid_workspace['registry_key']}/repair")
+        unregister_response = client.delete(f"/api/haptic-workspaces/{valid_workspace['registry_key']}")
+        after_payload = client.get("/api/haptic-workspaces").json()
+
+    assert rescan_response.status_code == 200
+    assert repair_response.status_code == 200
+    assert unregister_response.status_code == 200
+    assert not any(workspace["slug"] == "rescan_workspace" for workspace in after_payload["workspaces"])
+    assert any(workspace["slug"] == "repair_me" for workspace in after_payload["workspaces"])
 
 
 def test_detect_entry_kind_maps_supported_file_types_to_modes(tmp_path) -> None:

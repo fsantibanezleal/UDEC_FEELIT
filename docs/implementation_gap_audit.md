@@ -112,7 +112,7 @@ Still limited:
 - no desktop-wide automation beyond curated content opening and file browsing
 - no support yet for unsupported file types beyond explicit placeholders
 - no real blind-user validation round on the new desktop scene flow
-- no unregister, rescan, or descriptor-repair lifecycle actions yet in the workspace manager
+- no descriptor preview/editor yet beyond the current unregister, rescan, and conservative repair lifecycle actions in the workspace manager
 
 ## Partial Or Prototype-Only Areas
 

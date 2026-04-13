@@ -139,10 +139,16 @@
           <dl class="info-grid">
             <div><dt>Title</dt><dd id="selected-workspace-title">--</dd></div>
             <div><dt>Source</dt><dd id="selected-workspace-source">--</dd></div>
+            <div><dt>Descriptor</dt><dd id="selected-workspace-file">--</dd></div>
             <div><dt>Models</dt><dd id="selected-workspace-models">--</dd></div>
             <div><dt>Texts</dt><dd id="selected-workspace-texts">--</dd></div>
             <div><dt>Audio</dt><dd id="selected-workspace-audio">--</dd></div>
           </dl>
+          <div class="button-row panel-actions">
+            <button id="rescan-workspace" class="btn btn-secondary" type="button">Rescan Libraries</button>
+            <button id="unregister-workspace" class="btn btn-danger" type="button">Unregister</button>
+          </div>
+          <p id="selected-workspace-action-note" class="panel-text">Select one registry-backed workspace to manage its lifecycle.</p>
         </section>
 
         <section class="panel-section">
