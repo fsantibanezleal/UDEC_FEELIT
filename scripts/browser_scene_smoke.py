@@ -256,6 +256,23 @@ def object_explorer_activate_matching_target(
     )
 
 
+def target_within_pointer_bounds(target: dict[str, object], bounds: dict[str, object]) -> bool:
+    """Return True when one scene target center stays inside the current pointer bounds."""
+    position = target.get("position")
+    minimum = bounds.get("min")
+    maximum = bounds.get("max")
+    if not isinstance(position, (list, tuple)) or len(position) != 3:
+        return False
+    if not isinstance(minimum, (list, tuple)) or len(minimum) != 3:
+        return False
+    if not isinstance(maximum, (list, tuple)) or len(maximum) != 3:
+        return False
+    return all(
+        float(lower) <= float(value) <= float(upper)
+        for value, lower, upper in zip(position, minimum, maximum, strict=True)
+    )
+
+
 def stabilize_scene_for_capture(page, route: str) -> None:
     """Reset one routed frontend surface into a deterministic capture state."""
     if route == "/object-explorer":
@@ -681,6 +698,66 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         timeout=15_000,
                     )
                     object_model_loaded = True
+                    exploration_geometry = page.evaluate(
+                        """
+                        () => {
+                          const debug = window.__feelitObjectExplorerDebug;
+                          return {
+                            bounds: debug?.pointerBounds?.() ?? null,
+                            targets: debug?.targets?.() ?? [],
+                            material: document.querySelector('#telemetry-material')?.textContent?.trim() ?? '',
+                          };
+                        }
+                        """,
+                    )
+                    exploration_bounds = exploration_geometry.get("bounds") or {}
+                    exploration_targets = {
+                        target["id"]: target
+                        for target in exploration_geometry.get("targets", [])
+                        if isinstance(target, dict)
+                    }
+                    for target_id in (
+                        "exploration-launcher",
+                        "exploration-material-prev",
+                        "exploration-material-next",
+                    ):
+                        target = exploration_targets.get(target_id)
+                        if target is None:
+                            failures.append(
+                                f"/object-explorer did not expose the {target_id} scene-native target",
+                            )
+                            continue
+                        if not target_within_pointer_bounds(target, exploration_bounds):
+                            failures.append(
+                                f"/object-explorer target {target_id} sits outside the pointer bounds",
+                            )
+                    initial_material = exploration_geometry.get("material", "")
+                    if not object_explorer_activate_matching_target(page, title="Next material"):
+                        failures.append("/object-explorer could not activate the next-material control")
+                    else:
+                        page.wait_for_function(
+                            """
+                            (previousMaterial) => {
+                              const current = document.querySelector('#telemetry-material')?.textContent?.trim() ?? '';
+                              return current !== '' && current !== previousMaterial;
+                            }
+                            """,
+                            arg=initial_material,
+                            timeout=15_000,
+                        )
+                        if not object_explorer_activate_matching_target(page, title="Previous material"):
+                            failures.append("/object-explorer could not activate the previous-material control")
+                        else:
+                            page.wait_for_function(
+                                """
+                                (expectedMaterial) => {
+                                  const current = document.querySelector('#telemetry-material')?.textContent?.trim() ?? '';
+                                  return current === expectedMaterial;
+                                }
+                                """,
+                                arg=initial_material,
+                                timeout=15_000,
+                            )
                     if not page.evaluate(
                         """
                         async () => {

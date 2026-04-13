@@ -80,11 +80,11 @@ The contact pipeline captures the current design rule for future native hardware
 | Bundled reading-source formats | `txt`, `html`, `epub` |
 | Local multi-file bundle intake | bundle-aware `gltf` sidecar resolution with explicit main-file selection |
 | Public port | `8101` |
-| Release-synced version | `2.18.003` |
+| Release-synced version | `2.18.004` |
 | Haptic backend candidates tracked | `4` |
 | Native bridge bootstrap surface | toolchain diagnostics + PowerShell bootstrap + JSON probe scaffold |
 | Verified legacy baseline | Braille loading and conversion with optional Falcon-class haptics |
-| Current validation surface | `102` automated tests passing plus browser smoke validation across the `5` routed pages |
+| Current validation surface | `105` automated tests passing plus browser smoke validation across the `5` routed pages |
 | GitHub validation baseline | GitHub Actions runs unit/API validation plus browser smoke on pushes and pull requests |
 
 ## Current Frontend Views

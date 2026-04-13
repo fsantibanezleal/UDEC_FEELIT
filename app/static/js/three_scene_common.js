@@ -497,6 +497,13 @@ export function attachPointerEmulation(sceneApi, options = {}) {
     options.onMove?.(position.clone());
   }
 
+  function getBounds() {
+    return {
+      min: boundsMin.toArray(),
+      max: boundsMax.toArray(),
+    };
+  }
+
   function activate() {
     options.onActivate?.(position.clone());
   }
@@ -578,6 +585,7 @@ export function attachPointerEmulation(sceneApi, options = {}) {
     position,
     setBounds,
     setPosition,
+    getBounds,
     activate,
     destroy() {
       document.removeEventListener("keydown", handleKeyDown);
