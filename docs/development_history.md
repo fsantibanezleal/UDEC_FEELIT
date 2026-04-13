@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.006 (2026-04-13)
+
+Add lifecycle actions to the Haptic Workspace Manager so registered descriptors can be rescanned, unregistered, and conservatively repaired from the UI.
+
+Delivered:
+
+- Added registry-backed lifecycle actions for Haptic Workspace Manager workspaces: unregister, library rescan, and invalid-descriptor repair.
+- Extended the FastAPI workspace endpoints plus Python tests so registry operations are covered through both core functions and the public API surface.
+- Updated the manager UI so selected workspaces and invalid registry entries expose lifecycle actions directly instead of remaining read-only diagnostics.
+
+Rationale:
+
+- Workspace management had progressed beyond first registration, so the route needed real recovery and maintenance operations rather than another passive diagnostics panel.
+- The new actions close the most immediate lifecycle gap while leaving richer descriptor editing and preview tooling as a separate future concern.
+
 ### v2.18.005 (2026-04-13)
 
 Extend scene-native control reachability regression coverage from Object Explorer into Braille Reader and Haptic Desktop.

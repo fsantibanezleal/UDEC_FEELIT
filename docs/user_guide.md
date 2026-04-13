@@ -136,6 +136,9 @@ Current use:
 - register an existing `.haptic_workspace.json` descriptor file
 - review the current workspace catalog before opening a workspace inside Haptic Desktop
 - inspect registry diagnostics when a previously registered workspace file is missing or its descriptor is invalid
+- rescan one registered workspace so its descriptor libraries are rebuilt from the current filesystem root
+- unregister one registered workspace without deleting the heavy external media folder
+- repair one structurally broken descriptor conservatively when the file still exists and its root folder can be inferred safely
 - expect the manager to show descriptor labels and registry file labels by default rather than full absolute local paths
 
 ### 5. Haptic Configuration
