@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.004 (2026-04-13)
+
+Hide internal workspace descriptor files from the tactile browser and make Object Explorer scene-native controls provably reachable inside the pointer workspace.
+
+Delivered:
+
+- Filtered .haptic_workspace.json descriptor files out of the Haptic Desktop file browser payload so internal metadata no longer appears as unsupported user content.
+- Derived the Object Explorer exploration control rail from the staged object bounds and exposed debug geometry so the Launcher and material-cycle targets stay inside the navigable pointer volume.
+- Extended browser smoke and Python tests to validate scene-native control reachability plus the new browser filtering rule.
+
+Rationale:
+
+- The tactile browser should present user content, not implementation metadata.
+- Object Explorer control reachability needed an explicit geometric rule and regression coverage rather than another static layout tweak.
+
 ### v2.18.003 (2026-04-12)
 
 Established an enforced Ruff baseline and wired it into the repo-managed validation flow.
