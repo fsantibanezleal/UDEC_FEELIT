@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.005 (2026-04-13)
+
+Extend scene-native control reachability regression coverage from Object Explorer into Braille Reader and Haptic Desktop.
+
+Delivered:
+
+- Exposed Braille Reader and Haptic Desktop debug geometry for scene-native targets plus current pointer bounds so reachability can be asserted from browser smoke.
+- Extended browser smoke to verify critical launcher, return, gallery, and file-browser controls remain inside the bounded interaction volume across the other spatial routes.
+- Added targeted helper tests for the shared reachability assertions and documented the deeper validation surface through the release metadata update.
+
+Rationale:
+
+- Object Explorer already proved that static scene-control layout can drift out of the navigable volume unless the browser smoke contract checks geometry explicitly.
+- Reachability is a blind-first runtime guarantee, so it should be enforced consistently across the spatial routes instead of route by route.
+
 ### v2.18.004 (2026-04-13)
 
 Hide internal workspace descriptor files from the tactile browser and make Object Explorer scene-native controls provably reachable inside the pointer workspace.

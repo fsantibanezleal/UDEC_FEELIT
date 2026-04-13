@@ -1400,6 +1400,16 @@ document.addEventListener("DOMContentLoaded", () => {
         getSelectedLibrarySlug: () => state.selectedLibrarySlug,
         getLibraryPage: () => state.libraryPage,
         targetIds: () => Array.from(state.targetById.keys()),
+        targets: () =>
+          Array.from(state.targetById.values()).map((target) => ({
+            id: target.id,
+            title: target.title,
+            type: target.type,
+            position: target.position?.toArray?.() ?? null,
+            radius: target.radius ?? 0,
+            active: target.active ?? true,
+          })),
+        pointerBounds: () => state.pointerController?.getBounds?.() ?? null,
         activateTarget: async (targetId) => {
           const target = state.targetById.get(targetId);
           if (!target) {
