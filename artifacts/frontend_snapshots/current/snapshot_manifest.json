@@ -1,6 +1,6 @@
 {
   "app": "FeelIT",
-  "version": "2.18.004",
+  "version": "2.18.005",
   "base_url": "local_smoke_capture",
   "routes": [
     {
@@ -46,5 +46,5 @@
       "visual_source_version": null
     }
   ],
-  "generated_at_utc": "2026-04-13T11:29:47+00:00"
+  "generated_at_utc": "2026-04-13T11:44:00+00:00"
 }
