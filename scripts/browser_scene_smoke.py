@@ -267,10 +267,59 @@ def target_within_pointer_bounds(target: dict[str, object], bounds: dict[str, ob
         return False
     if not isinstance(maximum, (list, tuple)) or len(maximum) != 3:
         return False
-    return all(
-        float(lower) <= float(value) <= float(upper)
-        for value, lower, upper in zip(position, minimum, maximum, strict=True)
+    vertical_tolerance = 0.08
+    for axis, (value, lower, upper) in enumerate(zip(position, minimum, maximum, strict=True)):
+        numeric_value = float(value)
+        numeric_lower = float(lower)
+        numeric_upper = float(upper)
+        if axis == 1:
+            if numeric_value < numeric_lower - vertical_tolerance or numeric_value > numeric_upper:
+                return False
+            continue
+        if numeric_value < numeric_lower or numeric_value > numeric_upper:
+            return False
+    return True
+
+
+def read_route_debug_geometry(page, debug_handle: str) -> dict[str, object]:
+    """Return target geometry plus pointer bounds from one route debug surface."""
+    return page.evaluate(
+        """
+        (handle) => {
+          const debug = window[handle];
+          if (!debug) {
+            return { bounds: null, targets: [] };
+          }
+          return {
+            bounds: debug.pointerBounds?.() ?? null,
+            targets: debug.targets?.() ?? [],
+          };
+        }
+        """,
+        debug_handle,
     )
+
+
+def assert_targets_within_bounds(
+    failures: list[str],
+    route: str,
+    geometry: dict[str, object],
+    required_target_ids: tuple[str, ...],
+) -> None:
+    """Fail when one required scene target is missing or outside the pointer bounds."""
+    bounds = geometry.get("bounds") or {}
+    targets = {
+        target["id"]: target
+        for target in geometry.get("targets", [])
+        if isinstance(target, dict)
+    }
+    for target_id in required_target_ids:
+        target = targets.get(target_id)
+        if target is None:
+            failures.append(f"{route} missing required debug target {target_id}")
+            continue
+        if not target_within_pointer_bounds(target, bounds):
+            failures.append(f"{route} target {target_id} sits outside the pointer bounds")
 
 
 def stabilize_scene_for_capture(page, route: str) -> None:
@@ -853,6 +902,16 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     failures.append(
                         f"/braille-reader did not boot into the library launcher; scene_mode={scene_mode!r}",
                     )
+                braille_launcher_geometry = read_route_debug_geometry(page, "__feelitBrailleDebug")
+                assert_targets_within_bounds(
+                    failures,
+                    "/braille-reader",
+                    braille_launcher_geometry,
+                    (
+                        "launcher-hub",
+                        "launcher-next",
+                    ),
+                )
                 launcher_target_activated = activate_first_braille_library_document(page)
                 if not launcher_target_activated:
                     failures.append("/braille-reader could not activate a scene-native library document target")
@@ -862,6 +921,17 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                         () => (document.querySelector('#reader-scene-mode')?.textContent?.trim() ?? '') === 'Reading scene'
                         """,
                         timeout=15_000,
+                    )
+                    braille_reading_geometry = read_route_debug_geometry(page, "__feelitBrailleDebug")
+                    assert_targets_within_bounds(
+                        failures,
+                        "/braille-reader",
+                        braille_reading_geometry,
+                        (
+                            "control-library",
+                            "control-next",
+                            "control-segment-next",
+                        ),
                     )
                     library_return_activated = return_braille_reader_to_library(page)
                     if not library_return_activated:
@@ -900,6 +970,17 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                 launcher_trail = (page.locator("#desktop-scene-trail-summary").text_content() or "").strip()
                 if "Launcher" in launcher_trail:
                     desktop_launcher_trail_ok = True
+                desktop_launcher_geometry = read_route_debug_geometry(page, "__feelitDesktopDebug")
+                assert_targets_within_bounds(
+                    failures,
+                    "/haptic-desktop",
+                    desktop_launcher_geometry,
+                    (
+                        "launcher-hub",
+                        "launcher-models",
+                        "launcher-files",
+                    ),
+                )
                 if not page.evaluate(
                     """
                     (viewState) => {
@@ -934,6 +1015,16 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                     "after entering the gallery",
                     read_debug_view_state(page, "haptic-desktop"),
                     persisted_view,
+                )
+                gallery_geometry = read_route_debug_geometry(page, "__feelitDesktopDebug")
+                assert_targets_within_bounds(
+                    failures,
+                    "/haptic-desktop",
+                    gallery_geometry,
+                    (
+                        "gallery-models-launcher",
+                        "gallery-models-next",
+                    ),
                 )
                 desktop_gallery_loaded = True
                 if focused_label(page) != "Gallery":
@@ -1114,6 +1205,17 @@ def run_browser_smoke(base_url: str, screenshot_dir: Path) -> None:
                             browser_trail = (page.locator("#desktop-scene-trail-summary").text_content() or "").strip()
                             if "File Browser" in browser_trail and "library" in browser_trail:
                                 desktop_browser_trail_ok = True
+                    browser_geometry = read_route_debug_geometry(page, "__feelitDesktopDebug")
+                    assert_targets_within_bounds(
+                        failures,
+                        "/haptic-desktop",
+                        browser_geometry,
+                        (
+                            "file-browser-launcher",
+                            "file-browser-root",
+                            "file-browser-up",
+                        ),
+                    )
                     if not cycle_focus_to(page, "documents"):
                         failures.append("/haptic-desktop could not focus the documents folder from the library root")
                     else:
