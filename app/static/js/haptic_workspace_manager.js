@@ -24,11 +24,21 @@ function selectedWorkspace() {
   return state.workspaces.find((workspace) => workspace.slug === state.selectedSlug) ?? null;
 }
 
+function categoryLabel(category) {
+  return {
+    models: "Models",
+    texts: "Texts",
+    audio: "Audio",
+  }[category] || category;
+}
+
 function formatPreviewItems(items = []) {
   if (!items.length) {
     return "None.";
   }
-  return items.map((item) => `${item.title || item.slug} (${item.source_kind || "unknown"})`).join(", ");
+  const visibleItems = items.slice(0, 4).map((item) => `${item.title || item.slug} (${item.source_kind || "unknown"})`);
+  const suffix = items.length > 4 ? `, +${items.length - 4} more` : "";
+  return visibleItems.join(", ") + suffix;
 }
 
 function renderDescriptorEditPreview() {
@@ -154,11 +164,230 @@ function renderSelectedWorkspacePreview(preview) {
   });
 }
 
+async function addDescriptorLibraryItem(relativePath) {
+  const workspace = selectedWorkspace();
+  if (!workspace || !state.descriptorPreview?.can_edit) {
+    return;
+  }
+  const response = await fetchJson(`/api/haptic-workspaces/${workspace.slug}/library-items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ relative_path: relativePath }),
+  });
+  setStatus(`Added workspace asset to ${response.workspace.title}.`, "Library updated");
+  await refreshCatalog();
+}
+
+async function updateDescriptorLibraryItem(category, itemSlug, title, summary) {
+  const workspace = selectedWorkspace();
+  if (!workspace || !state.descriptorPreview?.can_edit) {
+    return;
+  }
+  const response = await fetchJson(`/api/haptic-workspaces/${workspace.slug}/library-items/${category}/${itemSlug}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, summary }),
+  });
+  setStatus(`Updated library item in ${response.workspace.title}.`, "Library updated");
+  await refreshCatalog();
+}
+
+async function moveDescriptorLibraryItem(category, itemSlug, direction) {
+  const workspace = selectedWorkspace();
+  if (!workspace || !state.descriptorPreview?.can_edit) {
+    return;
+  }
+  const response = await fetchJson(`/api/haptic-workspaces/${workspace.slug}/library-items/${category}/${itemSlug}/move`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ direction }),
+  });
+  setStatus(`Reordered library items in ${response.workspace.title}.`, "Library updated");
+  await refreshCatalog();
+}
+
+async function removeDescriptorLibraryItem(category, itemSlug) {
+  const workspace = selectedWorkspace();
+  if (!workspace || !state.descriptorPreview?.can_edit) {
+    return;
+  }
+  const response = await fetchJson(`/api/haptic-workspaces/${workspace.slug}/library-items/${category}/${itemSlug}`, {
+    method: "DELETE",
+  });
+  setStatus(`Removed library item from ${response.workspace.title}.`, "Library updated");
+  await refreshCatalog();
+}
+
+function renderLibraryEditor(preview) {
+  const container = byId("selected-workspace-library-editor");
+  container.innerHTML = "";
+
+  if (!preview) {
+    const message = document.createElement("p");
+    message.className = "panel-text";
+    message.textContent = "Select one workspace to inspect and curate its authored library items.";
+    container.appendChild(message);
+    return;
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "library-editor-grid";
+
+  ["models", "texts", "audio"].forEach((category) => {
+    const currentCategory = preview.libraries.categories[category];
+    const candidateCategory = preview.candidate_assets.categories[category];
+    const section = document.createElement("section");
+    section.className = "library-editor-section";
+
+    const heading = document.createElement("div");
+    heading.className = "section-header";
+    heading.innerHTML = `<h3>${categoryLabel(category)}</h3><span class="status-label">Current ${currentCategory.count} | Candidates ${candidateCategory.count}</span>`;
+    section.appendChild(heading);
+
+    const currentList = document.createElement("div");
+    currentList.className = "library-editor-list";
+
+    if (!currentCategory.items.length) {
+      const empty = document.createElement("p");
+      empty.className = "panel-text";
+      empty.textContent = "No authored items in this category yet.";
+      currentList.appendChild(empty);
+    }
+
+    currentCategory.items.forEach((item, index) => {
+      const card = document.createElement("article");
+      card.className = "library-editor-card";
+
+      const meta = document.createElement("div");
+      meta.className = "library-editor-meta";
+      meta.innerHTML = `
+        <span><strong>Source:</strong> ${item.source_label}</span>
+        <span><strong>Location:</strong> ${item.relative_path || item.source_ref || "--"}</span>
+        <span><strong>Order:</strong> ${index + 1}</span>
+      `;
+      card.appendChild(meta);
+
+      if (preview.can_edit) {
+        const titleInput = document.createElement("input");
+        titleInput.type = "text";
+        titleInput.value = item.title || "";
+        titleInput.placeholder = "Item title";
+
+        const summaryInput = document.createElement("textarea");
+        summaryInput.rows = 3;
+        summaryInput.value = item.summary || "";
+        summaryInput.placeholder = "Short item summary";
+
+        const actions = document.createElement("div");
+        actions.className = "button-row panel-actions";
+
+        const saveButton = document.createElement("button");
+        saveButton.type = "button";
+        saveButton.className = "btn btn-primary";
+        saveButton.textContent = "Save Item";
+        saveButton.addEventListener("click", () => {
+          updateDescriptorLibraryItem(category, item.slug, titleInput.value.trim(), summaryInput.value.trim()).catch(
+            (error) => setStatus(error.message, "Item update failed"),
+          );
+        });
+
+        const upButton = document.createElement("button");
+        upButton.type = "button";
+        upButton.className = "btn btn-secondary";
+        upButton.textContent = "Move Up";
+        upButton.disabled = index === 0;
+        upButton.addEventListener("click", () => {
+          moveDescriptorLibraryItem(category, item.slug, "up").catch((error) => setStatus(error.message, "Move failed"));
+        });
+
+        const downButton = document.createElement("button");
+        downButton.type = "button";
+        downButton.className = "btn btn-secondary";
+        downButton.textContent = "Move Down";
+        downButton.disabled = index === currentCategory.items.length - 1;
+        downButton.addEventListener("click", () => {
+          moveDescriptorLibraryItem(category, item.slug, "down").catch((error) => setStatus(error.message, "Move failed"));
+        });
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "btn btn-danger";
+        removeButton.textContent = "Remove";
+        removeButton.addEventListener("click", () => {
+          removeDescriptorLibraryItem(category, item.slug).catch((error) => setStatus(error.message, "Remove failed"));
+        });
+
+        actions.append(saveButton, upButton, downButton, removeButton);
+        card.append(titleInput, summaryInput, actions);
+      } else {
+        const title = document.createElement("strong");
+        title.className = "workspace-card-title";
+        title.textContent = item.title || "--";
+        const summary = document.createElement("span");
+        summary.className = "workspace-card-body";
+        summary.textContent = item.summary || "No summary recorded.";
+        card.append(title, summary);
+      }
+
+      currentList.appendChild(card);
+    });
+
+    section.appendChild(currentList);
+
+    const candidateList = document.createElement("div");
+    candidateList.className = "library-editor-list";
+    const candidateHeading = document.createElement("span");
+    candidateHeading.className = "status-label";
+    candidateHeading.textContent = "Discovered candidates";
+    candidateList.appendChild(candidateHeading);
+
+    if (!candidateCategory.items.length) {
+      const empty = document.createElement("p");
+      empty.className = "panel-text";
+      empty.textContent = "No new discoverable files in this category under the current content root.";
+      candidateList.appendChild(empty);
+    }
+
+    candidateCategory.items.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "library-editor-card";
+      card.innerHTML = `
+        <strong class="workspace-card-title">${item.title || "--"}</strong>
+        <span class="workspace-card-body">${item.summary || "Candidate item."}</span>
+        <div class="library-editor-meta">
+          <span><strong>Source:</strong> ${item.source_label}</span>
+          <span><strong>Location:</strong> ${item.relative_path || item.source_ref || "--"}</span>
+        </div>
+      `;
+      if (preview.can_edit) {
+        const actions = document.createElement("div");
+        actions.className = "button-row panel-actions";
+        const addButton = document.createElement("button");
+        addButton.type = "button";
+        addButton.className = "btn btn-secondary";
+        addButton.textContent = "Add To Library";
+        addButton.addEventListener("click", () => {
+          addDescriptorLibraryItem(item.relative_path).catch((error) => setStatus(error.message, "Add failed"));
+        });
+        actions.appendChild(addButton);
+        card.appendChild(actions);
+      }
+      candidateList.appendChild(card);
+    });
+
+    section.appendChild(candidateList);
+    grid.appendChild(section);
+  });
+
+  container.appendChild(grid);
+}
+
 async function loadDescriptorPreview(slug) {
   const preview = await fetchJson(`/api/haptic-workspaces/${slug}/descriptor`);
   state.descriptorPreview = preview;
   syncDescriptorEditor(selectedWorkspace(), preview);
   renderSelectedWorkspacePreview(preview);
+  renderLibraryEditor(preview);
 }
 
 function syncSelectedWorkspaceActions(workspace) {
@@ -189,6 +418,7 @@ function renderSelectedWorkspace(workspace) {
     syncSelectedWorkspaceActions(null);
     syncDescriptorEditor(null, null);
     renderSelectedWorkspacePreview(null);
+    renderLibraryEditor(null);
     return;
   }
 
@@ -349,6 +579,7 @@ async function refreshCatalog() {
     state.descriptorPreview = null;
     syncDescriptorEditor(null, null);
     renderSelectedWorkspacePreview(null);
+    renderLibraryEditor(null);
   }
   byId("manager-runtime-pill").textContent = "Registry ready";
   setStatus(

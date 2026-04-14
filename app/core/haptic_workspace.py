@@ -444,8 +444,16 @@ def _library_item_preview(item: dict[str, Any]) -> dict[str, str]:
     return {
         "slug": str(item.get("slug", "")),
         "title": str(item.get("title", "")),
+        "summary": str(item.get("summary", "")),
         "source_kind": source_kind,
         "source_ref": source_ref,
+        "relative_path": str(source.get("relative_path", "")),
+        "source_label": {
+            "demo_model": "Bundled demo model",
+            "library_document": "Bundled text library",
+            "library_audio": "Bundled audio library",
+            "workspace_file": "Workspace file",
+        }.get(source_kind, source_kind or "Unknown"),
     }
 
 
@@ -466,7 +474,7 @@ def _library_collection_preview(libraries: dict[str, list[dict[str, Any]]]) -> d
         total_items += len(entries)
         categories[category] = {
             "count": len(entries),
-            "items": [_library_item_preview(item) for item in entries[:4]],
+            "items": [_library_item_preview(item) for item in entries],
         }
     return {
         "total_items": total_items,
@@ -499,6 +507,94 @@ def _rescan_delta_preview(
     return {"categories": categories}
 
 
+def _candidate_library_preview(
+    current_libraries: dict[str, list[dict[str, Any]]],
+    rescanned_libraries: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Return one preview of discoverable workspace-file candidates not yet in the descriptor."""
+    categories: dict[str, Any] = {}
+    total_items = 0
+    for category in ("models", "texts", "audio"):
+        current_ids = {
+            _library_item_identity(item)
+            for item in current_libraries.get(category, [])
+        }
+        candidates = [
+            item
+            for item in rescanned_libraries.get(category, [])
+            if _library_item_identity(item) not in current_ids
+        ]
+        total_items += len(candidates)
+        categories[category] = {
+            "count": len(candidates),
+            "items": [_library_item_preview(item) for item in candidates],
+        }
+    return {
+        "total_items": total_items,
+        "categories": categories,
+    }
+
+
+def _editable_workspace_descriptor(slug: str) -> tuple[dict[str, Any], Path, dict[str, Any]]:
+    """Return one editable user-registered workspace record plus its descriptor payload."""
+    record = _workspace_record_by_slug(slug)
+    if record["registry_source"] != "user_registered":
+        raise ValueError("Only user-registered workspaces can be edited from the manager.")
+    descriptor_path = Path(record["workspace_file_path"]).resolve()
+    descriptor = _read_workspace_descriptor(descriptor_path)
+    return record, descriptor_path, descriptor
+
+
+def _validate_workspace_library_category(category: str) -> str:
+    """Return one validated descriptor library category."""
+    normalized = str(category).strip().lower()
+    if normalized not in {"models", "texts", "audio"}:
+        raise ValueError(f"Unsupported workspace library category: {category}")
+    return normalized
+
+
+def _workspace_item_from_relative_path(relative_path: str, *, root_path: Path) -> tuple[str, dict[str, Any]]:
+    """Return one descriptor library item derived from a workspace-root file path."""
+    normalized_relative_path = _normalize_relative_path(relative_path)
+    file_path = _resolve_child_path(root_path, normalized_relative_path)
+    if not file_path.exists() or not file_path.is_file():
+        raise ValueError("Workspace library item path must point to one existing file inside the content root.")
+    if file_path.name.endswith(WORKSPACE_SUFFIX):
+        raise ValueError("Workspace descriptor files cannot be added to the authored library.")
+
+    kind = detect_entry_kind(file_path)
+    category_map = {
+        "model": "models",
+        "text": "texts",
+        "audio": "audio",
+    }
+    category = category_map.get(kind)
+    if category is None:
+        raise ValueError("Only supported model, text, or audio files can be added to the authored library.")
+
+    item = {
+        "slug": _stable_slug(normalized_relative_path, prefix=category[:-1]),
+        "title": file_path.stem.replace("_", " ").replace("-", " ").title(),
+        "summary": f"Curated {category[:-1]} from the workspace root.",
+        "source": {"kind": "workspace_file", "relative_path": normalized_relative_path},
+    }
+    return category, item
+
+
+def _descriptor_library_entry_by_slug(
+    descriptor: dict[str, Any],
+    category: str,
+    item_slug: str,
+) -> tuple[int, dict[str, Any]]:
+    """Return one descriptor library item and its index by slug."""
+    normalized_category = _validate_workspace_library_category(category)
+    entries = descriptor.get("libraries", {}).get(normalized_category, [])
+    for index, entry in enumerate(entries):
+        if str(entry.get("slug", "")) == item_slug:
+            return index, entry
+    raise KeyError(item_slug)
+
+
 def _workspace_descriptor_preview(path: Path, *, registry_source: str) -> dict[str, Any]:
     """Return one descriptor preview payload, including the current rescan delta."""
     descriptor = _read_workspace_descriptor(path)
@@ -521,6 +617,7 @@ def _workspace_descriptor_preview(path: Path, *, registry_source: str) -> dict[s
         "content_root": _location_preview(descriptor["content_root"]),
         "file_browser_root": _location_preview(descriptor["file_browser_root"]),
         "libraries": _library_collection_preview(descriptor.get("libraries", {})),
+        "candidate_assets": _candidate_library_preview(descriptor.get("libraries", {}), rescanned_libraries),
         "rescan_preview": _rescan_delta_preview(descriptor.get("libraries", {}), rescanned_libraries),
     }
 
@@ -931,6 +1028,96 @@ def update_workspace_file(
             "audio": _auto_collect_workspace_items(new_content_root, "audio"),
         }
 
+    descriptor_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return _load_workspace_record(descriptor_path, registry_source="user_registered")
+
+
+def add_workspace_library_item(
+    slug: str,
+    *,
+    relative_path: str,
+    title: str | None = None,
+    summary: str | None = None,
+) -> dict[str, Any]:
+    """Add one discoverable workspace-file asset into the authored descriptor library."""
+    record, descriptor_path, descriptor = _editable_workspace_descriptor(slug)
+    category, item = _workspace_item_from_relative_path(relative_path, root_path=record["content_root"])
+
+    entries = descriptor.setdefault("libraries", {}).setdefault(category, [])
+    candidate_identity = _library_item_identity(item)
+    if any(_library_item_identity(entry) == candidate_identity for entry in entries):
+        raise ValueError("The selected workspace file is already present in the descriptor library.")
+
+    if title and title.strip():
+        item["title"] = title.strip()
+    if summary is not None:
+        item["summary"] = summary.strip()
+
+    entries.append(item)
+    descriptor_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return _load_workspace_record(descriptor_path, registry_source="user_registered")
+
+
+def update_workspace_library_item(
+    slug: str,
+    *,
+    category: str,
+    item_slug: str,
+    title: str,
+    summary: str,
+) -> dict[str, Any]:
+    """Update one authored library item label and summary without changing its source."""
+    _, descriptor_path, descriptor = _editable_workspace_descriptor(slug)
+    normalized_category = _validate_workspace_library_category(category)
+    _, entry = _descriptor_library_entry_by_slug(descriptor, normalized_category, item_slug)
+    normalized_title = title.strip()
+    if not normalized_title:
+        raise ValueError("Workspace library items require a non-empty title.")
+
+    entry["title"] = normalized_title
+    entry["summary"] = summary.strip()
+    descriptor_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return _load_workspace_record(descriptor_path, registry_source="user_registered")
+
+
+def move_workspace_library_item(
+    slug: str,
+    *,
+    category: str,
+    item_slug: str,
+    direction: str,
+) -> dict[str, Any]:
+    """Move one authored library item up or down inside its category ordering."""
+    _, descriptor_path, descriptor = _editable_workspace_descriptor(slug)
+    normalized_category = _validate_workspace_library_category(category)
+    normalized_direction = str(direction).strip().lower()
+    if normalized_direction not in {"up", "down"}:
+        raise ValueError("Workspace library move direction must be 'up' or 'down'.")
+
+    entries = descriptor.setdefault("libraries", {}).setdefault(normalized_category, [])
+    index, entry = _descriptor_library_entry_by_slug(descriptor, normalized_category, item_slug)
+    target_index = index - 1 if normalized_direction == "up" else index + 1
+    if target_index < 0 or target_index >= len(entries):
+        raise ValueError("Workspace library item is already at the requested boundary.")
+
+    entries.pop(index)
+    entries.insert(target_index, entry)
+    descriptor_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return _load_workspace_record(descriptor_path, registry_source="user_registered")
+
+
+def remove_workspace_library_item(
+    slug: str,
+    *,
+    category: str,
+    item_slug: str,
+) -> dict[str, Any]:
+    """Remove one authored library item from its category."""
+    _, descriptor_path, descriptor = _editable_workspace_descriptor(slug)
+    normalized_category = _validate_workspace_library_category(category)
+    entries = descriptor.setdefault("libraries", {}).setdefault(normalized_category, [])
+    index, _ = _descriptor_library_entry_by_slug(descriptor, normalized_category, item_slug)
+    entries.pop(index)
     descriptor_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
     return _load_workspace_record(descriptor_path, registry_source="user_registered")
 

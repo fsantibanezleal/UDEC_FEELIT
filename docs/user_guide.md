@@ -137,6 +137,9 @@ Current use:
 - review the current workspace catalog before opening a workspace inside Haptic Desktop
 - inspect the current descriptor state of one selected workspace before changing it
 - edit workspace title, description, content root, and file-browser root through the manager instead of editing JSON blindly
+- preview authored model, text, and audio entries per category plus newly discovered content-root candidates
+- add discovered workspace files into the descriptor library, then edit item labels and summaries without touching raw JSON
+- reorder or remove authored library items directly from the manager to curate launch order and subset selection
 - inspect registry diagnostics when a previously registered workspace file is missing or its descriptor is invalid
 - rescan one registered workspace so its descriptor libraries are rebuilt from the current filesystem root
 - unregister one registered workspace without deleting the heavy external media folder

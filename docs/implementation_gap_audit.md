@@ -108,11 +108,11 @@ Implemented:
 Still limited:
 
 - no native hardware-backed haptic actuation yet
-- no asset-aware workspace editor beyond the current structured descriptor preview and root/metadata editing route
+- no bulk validation or richer bundle-aware previews yet inside the current workspace authoring surface
 - no desktop-wide automation beyond curated content opening and file browsing
 - no support yet for unsupported file types beyond explicit placeholders
 - no real blind-user validation round on the new desktop scene flow
-- no descriptor-diff preview for staged edits beyond the current structured form preview and repair/rescan summaries in the workspace manager
+- no staged multi-item authoring review yet beyond the current per-item edit controls plus repair/rescan summaries in the workspace manager
 
 ## Partial Or Prototype-Only Areas
 

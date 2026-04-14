@@ -188,6 +188,17 @@
 
         <section class="panel-section">
           <div class="section-header">
+            <h2>Library Items</h2>
+          </div>
+          <p class="panel-text">
+            Review the authored model, text, and audio entries that currently live in the descriptor, then add
+            newly discovered workspace files from the current content root without editing raw JSON.
+          </p>
+          <div id="selected-workspace-library-editor" class="preview-stack"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
             <h2>Status</h2>
           </div>
           <p id="manager-status-bar" class="panel-text">Loading workspace registry.</p>
@@ -215,6 +226,7 @@
           <li>Auto-populate that workspace from supported files already present in the chosen root.</li>
           <li>Register an existing `.haptic_workspace.json` file.</li>
           <li>Review and edit one selected descriptor before saving structured metadata or root changes.</li>
+          <li>Curate descriptor library items directly: add discovered assets, reorder them, or edit item labels and summaries.</li>
           <li>Preview what a library rescan or invalid-descriptor repair would change before writing it.</li>
           <li>Review the currently known workspaces before using them inside Haptic Desktop.</li>
         </ul>
