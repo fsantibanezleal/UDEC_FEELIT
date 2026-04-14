@@ -267,7 +267,7 @@ Current baseline:
 
 Next additions:
 
-- richer workspace authoring tools and validation beyond the first JSON descriptor baseline
+- bulk validation, richer bundle-aware previews, and deeper authored-workspace review workflows beyond the current item-level editor
 - audio naming and cue refinement tied to real user workflows
 - assistive focus and activation rules tuned against real haptic-device constraints
 - integration with native hardware and richer desktop action execution
