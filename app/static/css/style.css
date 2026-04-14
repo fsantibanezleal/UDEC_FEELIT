@@ -893,6 +893,18 @@ input[type="range"] {
   margin-top: 4px;
 }
 
+.workspace-card-preview,
+.preview-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.descriptor-preview-panel {
+  margin-top: 12px;
+  padding: 12px;
+  max-height: none;
+}
+
 .workspace-card-static {
   cursor: default;
 }

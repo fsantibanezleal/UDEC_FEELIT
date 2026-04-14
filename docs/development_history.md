@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.007 (2026-04-14)
+
+Add descriptor preview and structured editing to the Haptic Workspace Manager so registered workspace files can be inspected and edited before lifecycle actions rewrite them.
+
+Delivered:
+
+- Added descriptor-preview and structured-editing API surfaces for registered workspaces plus repair-preview payloads for invalid descriptors.
+- Extended the Workspace Manager UI with an editable descriptor form, a pending-edit preview, and current-versus-rescan preview summaries for models, texts, and audio.
+- Expanded automated coverage around descriptor preview, structured updates, repair preview, and the updated browser-smoke capture surface.
+
+Rationale:
+
+- Lifecycle actions without preview kept the manager too opaque for real workspace authoring work.
+- This slice moves the manager from registry maintenance toward a safer descriptor-authoring surface while preserving conservative write rules.
+
 ### v2.18.006 (2026-04-13)
 
 Add lifecycle actions to the Haptic Workspace Manager so registered descriptors can be rescanned, unregistered, and conservatively repaired from the UI.
