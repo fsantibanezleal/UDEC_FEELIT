@@ -12,6 +12,7 @@ from app.core.demo_assets import build_demo_model_catalog
 from app.core.haptic_materials import build_material_catalog
 from app.core.haptic_workspace import (
     DEFAULT_FILE_BROWSER_PAGE_SIZE,
+    add_workspace_library_item,
     build_haptic_workspace_payload,
     build_invalid_workspace_repair_preview,
     build_workspace_browser_payload,
@@ -19,12 +20,15 @@ from app.core.haptic_workspace import (
     build_workspace_manager_payload,
     build_workspace_text_payload,
     create_workspace_file,
+    move_workspace_library_item,
     raw_workspace_file_path,
     register_workspace_file,
+    remove_workspace_library_item,
     repair_workspace_file,
     rescan_workspace_file,
     unregister_workspace_file,
     update_workspace_file,
+    update_workspace_library_item,
 )
 from app.core.library_assets import (
     build_audio_catalog,
@@ -68,6 +72,27 @@ class UpdateHapticWorkspaceRequest(BaseModel):
     content_root_path: str = Field(..., min_length=1, max_length=2048)
     file_browser_root_path: str = Field(..., min_length=1, max_length=2048)
     refresh_libraries: bool = False
+
+
+class AddWorkspaceLibraryItemRequest(BaseModel):
+    """Payload for adding one discovered content-root asset into the descriptor library."""
+
+    relative_path: str = Field(..., min_length=1, max_length=2048)
+    title: str | None = Field(default=None, max_length=160)
+    summary: str | None = Field(default=None, max_length=500)
+
+
+class UpdateWorkspaceLibraryItemRequest(BaseModel):
+    """Payload for editing one authored descriptor library item."""
+
+    title: str = Field(..., min_length=1, max_length=160)
+    summary: str = Field(default="", max_length=500)
+
+
+class MoveWorkspaceLibraryItemRequest(BaseModel):
+    """Payload for reordering one authored descriptor library item."""
+
+    direction: str = Field(..., pattern="^(up|down)$")
 
 
 class HapticConfigurationRequest(BaseModel):
@@ -319,6 +344,123 @@ async def haptic_workspace_update_descriptor(
         }
     except KeyError as error:
         raise HTTPException(status_code=404, detail=f"Unknown workspace slug: {slug}") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/haptic-workspaces/{slug}/library-items")
+async def haptic_workspace_add_library_item(
+    slug: str,
+    payload: AddWorkspaceLibraryItemRequest,
+) -> dict:
+    """Add one discovered content-root asset into the authored descriptor library."""
+    try:
+        record = add_workspace_library_item(
+            slug,
+            relative_path=payload.relative_path,
+            title=payload.title,
+            summary=payload.summary,
+        )
+        return {
+            "added": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=f"Unknown workspace slug: {slug}") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.patch("/haptic-workspaces/{slug}/library-items/{category}/{item_slug}")
+async def haptic_workspace_update_library_item(
+    slug: str,
+    category: str,
+    item_slug: str,
+    payload: UpdateWorkspaceLibraryItemRequest,
+) -> dict:
+    """Update one authored descriptor library item label and summary."""
+    try:
+        record = update_workspace_library_item(
+            slug,
+            category=category,
+            item_slug=item_slug,
+            title=payload.title,
+            summary=payload.summary,
+        )
+        return {
+            "updated": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Unknown workspace or workspace library item.") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/haptic-workspaces/{slug}/library-items/{category}/{item_slug}/move")
+async def haptic_workspace_move_library_item(
+    slug: str,
+    category: str,
+    item_slug: str,
+    payload: MoveWorkspaceLibraryItemRequest,
+) -> dict:
+    """Move one authored descriptor library item inside its category ordering."""
+    try:
+        record = move_workspace_library_item(
+            slug,
+            category=category,
+            item_slug=item_slug,
+            direction=payload.direction,
+        )
+        return {
+            "moved": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Unknown workspace or workspace library item.") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.delete("/haptic-workspaces/{slug}/library-items/{category}/{item_slug}")
+async def haptic_workspace_remove_library_item(
+    slug: str,
+    category: str,
+    item_slug: str,
+) -> dict:
+    """Remove one authored descriptor library item from its category."""
+    try:
+        record = remove_workspace_library_item(
+            slug,
+            category=category,
+            item_slug=item_slug,
+        )
+        return {
+            "removed": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Unknown workspace or workspace library item.") from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

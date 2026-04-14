@@ -15,6 +15,21 @@ The archived user manual describes the software as a digital-to-relief presentat
 
 ## Modern Rebuild Timeline
 
+### v2.18.008 (2026-04-14)
+
+Add asset-aware library previews and item-level editing to the Haptic Workspace Manager so curated descriptor authoring can happen safely from the UI instead of raw JSON edits.
+
+Delivered:
+
+- Extended the workspace descriptor preview contract with full authored item lists plus discovered content-root candidates per category.
+- Added safe add, update, reorder, and remove operations for user-registered workspace library items, with API coverage and descriptor persistence.
+- Expanded the Workspace Manager UI so users can curate model, text, and audio entries directly from the manager.
+
+Rationale:
+
+- The manager can now author curated workspace subsets and ordering instead of stopping at aggregate count previews.
+- This closes the main product gap left after descriptor preview and lifecycle actions were added in previous cycles.
+
 ### v2.18.007 (2026-04-14)
 
 Add descriptor preview and structured editing to the Haptic Workspace Manager so registered workspace files can be inspected and edited before lifecycle actions rewrite them.

@@ -905,6 +905,46 @@ input[type="range"] {
   max-height: none;
 }
 
+.library-editor-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.library-editor-section {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(8, 12, 18, 0.58);
+  border: 1px solid rgba(139, 148, 158, 0.16);
+}
+
+.library-editor-list {
+  display: grid;
+  gap: 10px;
+}
+
+.library-editor-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(10, 16, 28, 0.9);
+  border: 1px solid rgba(139, 148, 158, 0.16);
+}
+
+.library-editor-card textarea,
+.library-editor-card input[type="text"] {
+  margin: 0;
+}
+
+.library-editor-meta {
+  display: grid;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
 .workspace-card-static {
   cursor: default;
 }

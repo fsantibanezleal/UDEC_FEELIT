@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core import haptic_workspace, library_assets
@@ -244,6 +245,8 @@ def test_build_workspace_descriptor_preview_exposes_current_descriptor_and_resca
     assert preview["slug"] == "preview_workspace"
     assert preview["content_root"]["path"] == str(workspace_root.resolve())
     assert preview["libraries"]["categories"]["texts"]["count"] == 1
+    assert preview["libraries"]["categories"]["texts"]["items"][0]["relative_path"] == "notes.txt"
+    assert preview["candidate_assets"]["categories"]["models"]["count"] == 1
     assert preview["rescan_preview"]["categories"]["models"]["added_count"] == 1
     assert preview["rescan_preview"]["categories"]["models"]["rescanned_count"] == 1
 
@@ -301,6 +304,89 @@ def test_update_workspace_file_applies_safe_descriptor_edits(tmp_path, monkeypat
     preview = haptic_workspace.build_workspace_descriptor_preview("editable_workspace")
     assert preview["description"] == "Updated description."
     assert preview["file_browser_root"]["path"] == str(new_browser_root.resolve())
+
+
+def test_workspace_library_item_lifecycle_supports_add_edit_move_and_remove(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "shape_a.obj").write_text("v 0 0 0\n", encoding="utf-8")
+    (workspace_root / "shape_b.obj").write_text("v 0 0 0\n", encoding="utf-8")
+    (workspace_root / "notes.txt").write_text("Braille note.", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="Curated Workspace",
+        slug="curated_workspace",
+        description="Workspace for authored library item tests.",
+        root_path=str(workspace_root),
+        auto_populate=False,
+    )
+
+    preview_before = haptic_workspace.build_workspace_descriptor_preview("curated_workspace")
+    assert preview_before["candidate_assets"]["categories"]["models"]["count"] == 2
+    assert preview_before["libraries"]["categories"]["models"]["count"] == 0
+
+    added = haptic_workspace.add_workspace_library_item("curated_workspace", relative_path="shape_a.obj")
+    assert len(added["libraries"]["models"]) == 1
+
+    model_slug = added["libraries"]["models"][0]["slug"]
+    updated = haptic_workspace.update_workspace_library_item(
+        "curated_workspace",
+        category="models",
+        item_slug=model_slug,
+        title="Primary Shape",
+        summary="Curated primary model.",
+    )
+    assert updated["libraries"]["models"][0]["title"] == "Primary Shape"
+    assert updated["libraries"]["models"][0]["summary"] == "Curated primary model."
+
+    haptic_workspace.add_workspace_library_item("curated_workspace", relative_path="shape_b.obj")
+    after_second_add = haptic_workspace.build_workspace_descriptor_preview("curated_workspace")
+    moved_slug = after_second_add["libraries"]["categories"]["models"]["items"][1]["slug"]
+    moved = haptic_workspace.move_workspace_library_item(
+        "curated_workspace",
+        category="models",
+        item_slug=moved_slug,
+        direction="up",
+    )
+    assert moved["libraries"]["models"][0]["source"]["relative_path"] == "shape_b.obj"
+
+    removed = haptic_workspace.remove_workspace_library_item(
+        "curated_workspace",
+        category="models",
+        item_slug=moved_slug,
+    )
+    assert [item["source"]["relative_path"] for item in removed["libraries"]["models"]] == ["shape_a.obj"]
+
+    preview_after = haptic_workspace.build_workspace_descriptor_preview("curated_workspace")
+    assert preview_after["candidate_assets"]["categories"]["models"]["count"] == 1
+    assert preview_after["candidate_assets"]["categories"]["models"]["items"][0]["relative_path"] == "shape_b.obj"
+
+
+def test_workspace_library_item_lifecycle_rejects_duplicate_or_unsupported_additions(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "shape.obj").write_text("v 0 0 0\n", encoding="utf-8")
+    (workspace_root / "blob.bin").write_bytes(b"\x00\x01")
+
+    haptic_workspace.create_workspace_file(
+        title="Strict Workspace",
+        slug="strict_workspace",
+        description="Workspace for item validation tests.",
+        root_path=str(workspace_root),
+        auto_populate=False,
+    )
+
+    haptic_workspace.add_workspace_library_item("strict_workspace", relative_path="shape.obj")
+    with pytest.raises(ValueError, match="already present"):
+        haptic_workspace.add_workspace_library_item("strict_workspace", relative_path="shape.obj")
+    with pytest.raises(ValueError, match="Only supported model, text, or audio files"):
+        haptic_workspace.add_workspace_library_item("strict_workspace", relative_path="blob.bin")
 
 
 def test_workspace_text_payload_uses_collision_safe_slug_seed(tmp_path) -> None:
@@ -672,6 +758,59 @@ def test_haptic_workspace_api_supports_descriptor_preview_and_patch(tmp_path, mo
     assert after_preview_response.json()["description"] == "Updated from API."
     assert after_preview_response.json()["file_browser_root"]["path"] == str(browser_root.resolve())
     assert after_preview_response.json()["libraries"]["categories"]["models"]["count"] == 1
+
+
+def test_haptic_workspace_api_supports_library_item_add_edit_move_and_remove(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "shape_a.obj").write_text("v 0 0 0\n", encoding="utf-8")
+    (workspace_root / "shape_b.obj").write_text("v 0 0 0\n", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="API Library Workspace",
+        slug="api_library_workspace",
+        description="Workspace for API library editing tests.",
+        root_path=str(workspace_root),
+        auto_populate=False,
+    )
+
+    with TestClient(app) as client:
+        add_first = client.post(
+            "/api/haptic-workspaces/api_library_workspace/library-items",
+            json={"relative_path": "shape_a.obj"},
+        )
+        add_second = client.post(
+            "/api/haptic-workspaces/api_library_workspace/library-items",
+            json={"relative_path": "shape_b.obj"},
+        )
+        preview_before_update = client.get("/api/haptic-workspaces/api_library_workspace/descriptor")
+        second_slug = preview_before_update.json()["libraries"]["categories"]["models"]["items"][1]["slug"]
+        move_response = client.post(
+            f"/api/haptic-workspaces/api_library_workspace/library-items/models/{second_slug}/move",
+            json={"direction": "up"},
+        )
+        preview_after_move = client.get("/api/haptic-workspaces/api_library_workspace/descriptor")
+        first_slug = preview_after_move.json()["libraries"]["categories"]["models"]["items"][0]["slug"]
+        update_response = client.patch(
+            f"/api/haptic-workspaces/api_library_workspace/library-items/models/{first_slug}",
+            json={"title": "Edited Shape", "summary": "Edited from API."},
+        )
+        remove_response = client.delete(
+            f"/api/haptic-workspaces/api_library_workspace/library-items/models/{first_slug}"
+        )
+        final_preview = client.get("/api/haptic-workspaces/api_library_workspace/descriptor")
+
+    assert add_first.status_code == 200
+    assert add_second.status_code == 200
+    assert move_response.status_code == 200
+    assert update_response.status_code == 200
+    assert remove_response.status_code == 200
+    assert preview_after_move.json()["libraries"]["categories"]["models"]["items"][0]["relative_path"] == "shape_b.obj"
+    assert final_preview.json()["libraries"]["categories"]["models"]["count"] == 1
+    assert final_preview.json()["candidate_assets"]["categories"]["models"]["count"] == 1
 
 
 def test_detect_entry_kind_maps_supported_file_types_to_modes(tmp_path) -> None:
