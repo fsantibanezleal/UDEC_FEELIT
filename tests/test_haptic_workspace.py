@@ -219,6 +219,90 @@ def test_repair_workspace_file_normalizes_invalid_descriptor(tmp_path, monkeypat
     assert any(workspace["slug"] == "broken_workspace" for workspace in payload["workspaces"])
 
 
+def test_build_workspace_descriptor_preview_exposes_current_descriptor_and_rescan_delta(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("hello", encoding="utf-8")
+
+    haptic_workspace.create_workspace_file(
+        title="Preview Workspace",
+        slug="preview_workspace",
+        description="Temporary workspace for preview tests.",
+        root_path=str(workspace_root),
+        auto_populate=True,
+    )
+    (workspace_root / "shape.obj").write_text("v 0 0 0\nv 0 1 0\nv 1 0 0\nf 1 2 3\n", encoding="utf-8")
+
+    preview = haptic_workspace.build_workspace_descriptor_preview("preview_workspace")
+
+    assert preview["slug"] == "preview_workspace"
+    assert preview["content_root"]["path"] == str(workspace_root.resolve())
+    assert preview["libraries"]["categories"]["texts"]["count"] == 1
+    assert preview["rescan_preview"]["categories"]["models"]["added_count"] == 1
+    assert preview["rescan_preview"]["categories"]["models"]["rescanned_count"] == 1
+
+
+def test_build_invalid_workspace_repair_preview_exposes_normalized_descriptor(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("hello", encoding="utf-8")
+    invalid_descriptor = workspace_root / "repair_preview.haptic_workspace.json"
+    invalid_descriptor.write_text('{"title":"Repair Preview"}', encoding="utf-8")
+    registry_file.write_text(
+        json.dumps({"workspace_files": [str(invalid_descriptor)]}, indent=2),
+        encoding="utf-8",
+    )
+
+    invalid_entry = haptic_workspace.build_workspace_manager_payload()["invalid_workspaces"][0]
+    preview = haptic_workspace.build_invalid_workspace_repair_preview(invalid_entry["registry_key"])
+
+    assert preview["slug"] == "repair_preview"
+    assert preview["title"] == "Repair Preview"
+    assert preview["libraries"]["categories"]["texts"]["count"] == 1
+
+
+def test_update_workspace_file_applies_safe_descriptor_edits(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("hello", encoding="utf-8")
+    new_browser_root = tmp_path / "browser_root"
+    new_browser_root.mkdir()
+
+    haptic_workspace.create_workspace_file(
+        title="Editable Workspace",
+        slug="editable_workspace",
+        description="Original description.",
+        root_path=str(workspace_root),
+        auto_populate=True,
+    )
+
+    updated = haptic_workspace.update_workspace_file(
+        "editable_workspace",
+        title="Edited Workspace",
+        description="Updated description.",
+        content_root_path=str(workspace_root),
+        file_browser_root_path=str(new_browser_root),
+        refresh_libraries=False,
+    )
+
+    assert updated["title"] == "Edited Workspace"
+    preview = haptic_workspace.build_workspace_descriptor_preview("editable_workspace")
+    assert preview["description"] == "Updated description."
+    assert preview["file_browser_root"]["path"] == str(new_browser_root.resolve())
+
+
 def test_workspace_text_payload_uses_collision_safe_slug_seed(tmp_path) -> None:
     document_a = tmp_path / "a" / "sample.txt"
     document_b = tmp_path / "b" / "sample.txt"
@@ -463,6 +547,7 @@ def test_workspace_manager_payload_surfaces_invalid_registered_descriptors(tmp_p
         "missing_file",
     }
     assert all("registry_key" in entry for entry in payload["invalid_workspaces"])
+    assert any(entry["repair_preview"]["slug"] == "invalid_workspace" for entry in payload["invalid_workspaces"] if entry["error_code"] == "invalid_descriptor")
     assert all("workspace_file_path" not in entry for entry in payload["invalid_workspaces"])
     assert all(entry["workspace_file_label"].endswith(".haptic_workspace.json") for entry in payload["invalid_workspaces"])
 
@@ -543,6 +628,50 @@ def test_haptic_workspace_api_supports_unregister_rescan_and_repair(tmp_path, mo
     assert unregister_response.status_code == 200
     assert not any(workspace["slug"] == "rescan_workspace" for workspace in after_payload["workspaces"])
     assert any(workspace["slug"] == "repair_me" for workspace in after_payload["workspaces"])
+
+
+def test_haptic_workspace_api_supports_descriptor_preview_and_patch(tmp_path, monkeypatch) -> None:
+    registry_file = tmp_path / "registry.json"
+    monkeypatch.setattr(haptic_workspace, "REGISTRY_FILE", registry_file)
+
+    workspace_root = tmp_path / "workspace_root"
+    workspace_root.mkdir()
+    (workspace_root / "notes.txt").write_text("Braille note.", encoding="utf-8")
+    (workspace_root / "shape.obj").write_text("v 0 0 0\nv 0 1 0\nv 1 0 0\nf 1 2 3\n", encoding="utf-8")
+    browser_root = tmp_path / "browser_root"
+    browser_root.mkdir()
+
+    haptic_workspace.create_workspace_file(
+        title="Editable Workspace",
+        slug="editable_workspace",
+        description="Original description.",
+        root_path=str(workspace_root),
+        auto_populate=False,
+    )
+
+    with TestClient(app) as client:
+        preview_response = client.get("/api/haptic-workspaces/editable_workspace/descriptor")
+        update_response = client.patch(
+            "/api/haptic-workspaces/editable_workspace/descriptor",
+            json={
+                "title": "Editable Workspace Updated",
+                "description": "Updated from API.",
+                "content_root_path": str(workspace_root),
+                "file_browser_root_path": str(browser_root),
+                "refresh_libraries": True,
+            },
+        )
+        after_preview_response = client.get("/api/haptic-workspaces/editable_workspace/descriptor")
+
+    assert preview_response.status_code == 200
+    assert preview_response.json()["title"] == "Editable Workspace"
+    assert preview_response.json()["rescan_preview"]["categories"]["models"]["added_count"] == 1
+    assert update_response.status_code == 200
+    assert after_preview_response.status_code == 200
+    assert after_preview_response.json()["title"] == "Editable Workspace Updated"
+    assert after_preview_response.json()["description"] == "Updated from API."
+    assert after_preview_response.json()["file_browser_root"]["path"] == str(browser_root.resolve())
+    assert after_preview_response.json()["libraries"]["categories"]["models"]["count"] == 1
 
 
 def test_detect_entry_kind_maps_supported_file_types_to_modes(tmp_path) -> None:

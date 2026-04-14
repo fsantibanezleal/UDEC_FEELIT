@@ -13,7 +13,9 @@ from app.core.haptic_materials import build_material_catalog
 from app.core.haptic_workspace import (
     DEFAULT_FILE_BROWSER_PAGE_SIZE,
     build_haptic_workspace_payload,
+    build_invalid_workspace_repair_preview,
     build_workspace_browser_payload,
+    build_workspace_descriptor_preview,
     build_workspace_manager_payload,
     build_workspace_text_payload,
     create_workspace_file,
@@ -22,6 +24,7 @@ from app.core.haptic_workspace import (
     repair_workspace_file,
     rescan_workspace_file,
     unregister_workspace_file,
+    update_workspace_file,
 )
 from app.core.library_assets import (
     build_audio_catalog,
@@ -55,6 +58,16 @@ class CreateHapticWorkspaceRequest(BaseModel):
     description: str = Field(default="", max_length=500)
     root_path: str = Field(..., min_length=1, max_length=2048)
     auto_populate: bool = True
+
+
+class UpdateHapticWorkspaceRequest(BaseModel):
+    """Payload for editing one existing registered workspace descriptor."""
+
+    title: str = Field(..., min_length=1, max_length=120)
+    description: str = Field(default="", max_length=500)
+    content_root_path: str = Field(..., min_length=1, max_length=2048)
+    file_browser_root_path: str = Field(..., min_length=1, max_length=2048)
+    refresh_libraries: bool = False
 
 
 class HapticConfigurationRequest(BaseModel):
@@ -269,6 +282,47 @@ async def haptic_workspace_create(payload: CreateHapticWorkspaceRequest) -> dict
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
+@router.get("/haptic-workspaces/{slug}/descriptor")
+async def haptic_workspace_descriptor_preview(slug: str) -> dict:
+    """Return one preview payload for the selected workspace descriptor."""
+    try:
+        return build_workspace_descriptor_preview(slug)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=f"Unknown workspace slug: {slug}") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.patch("/haptic-workspaces/{slug}/descriptor")
+async def haptic_workspace_update_descriptor(
+    slug: str,
+    payload: UpdateHapticWorkspaceRequest,
+) -> dict:
+    """Apply one safe structured descriptor update for a registered workspace."""
+    try:
+        record = update_workspace_file(
+            slug,
+            title=payload.title,
+            description=payload.description,
+            content_root_path=payload.content_root_path,
+            file_browser_root_path=payload.file_browser_root_path,
+            refresh_libraries=payload.refresh_libraries,
+        )
+        return {
+            "updated": True,
+            "workspace": {
+                "slug": record["slug"],
+                "title": record["title"],
+                "registry_key": record["registry_key"],
+                "workspace_file_label": record["workspace_file_label"],
+            },
+        }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=f"Unknown workspace slug: {slug}") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @router.post("/haptic-workspaces/{slug}/rescan")
 async def haptic_workspace_rescan(slug: str) -> dict:
     """Rebuild one registered workspace descriptor library catalog from disk."""
@@ -313,6 +367,17 @@ async def haptic_workspace_repair(registry_key: str) -> dict:
                 "workspace_file_label": record["workspace_file_label"],
             },
         }
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Unknown workspace registry entry.") from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.get("/haptic-workspaces/invalid/{registry_key}/preview")
+async def haptic_workspace_invalid_preview(registry_key: str) -> dict:
+    """Return one preview payload for a potential invalid-descriptor repair."""
+    try:
+        return build_invalid_workspace_repair_preview(registry_key)
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Unknown workspace registry entry.") from error
     except ValueError as error:
