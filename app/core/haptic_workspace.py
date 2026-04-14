@@ -224,8 +224,8 @@ def _safe_location_object(path: Path, raw_location: Any) -> dict[str, Any]:
     return {"mode": "absolute", "path": str(path.parent.resolve())}
 
 
-def _repair_workspace_descriptor(path: Path) -> dict[str, Any]:
-    """Rewrite one broken descriptor into the current normalized baseline."""
+def _normalized_repair_descriptor(path: Path) -> dict[str, Any]:
+    """Return the normalized descriptor that would be written by one repair action."""
     try:
         raw_descriptor = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
@@ -251,7 +251,7 @@ def _repair_workspace_descriptor(path: Path) -> dict[str, Any]:
     if not file_browser_root.exists() or not file_browser_root.is_dir():
         raise ValueError("Workspace file-browser root must exist before the descriptor can be repaired.")
 
-    descriptor = {
+    return {
         "format": WORKSPACE_FORMAT,
         "format_version": 1,
         "slug": slug,
@@ -266,6 +266,11 @@ def _repair_workspace_descriptor(path: Path) -> dict[str, Any]:
             "audio": _auto_collect_workspace_items(content_root, "audio"),
         },
     }
+
+
+def _repair_workspace_descriptor(path: Path) -> dict[str, Any]:
+    """Rewrite one broken descriptor into the current normalized baseline."""
+    descriptor = _normalized_repair_descriptor(path)
     path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
     return descriptor
 
@@ -419,6 +424,105 @@ def _workspace_record_by_slug(slug: str) -> dict[str, Any]:
         if record["slug"] == slug:
             return record
     raise KeyError(slug)
+
+
+def _location_preview(location: dict[str, Any]) -> dict[str, str]:
+    """Return one user-facing preview payload for a descriptor location object."""
+    raw_path = str(location.get("path", "")).strip()
+    return {
+        "mode": str(location.get("mode", "")),
+        "path": raw_path,
+        "label": _display_label_from_path(raw_path) if raw_path else "--",
+    }
+
+
+def _library_item_preview(item: dict[str, Any]) -> dict[str, str]:
+    """Return one compact preview payload for a descriptor library item."""
+    source = item.get("source", {})
+    source_kind = str(source.get("kind", ""))
+    source_ref = str(source.get("ref") or source.get("relative_path") or "")
+    return {
+        "slug": str(item.get("slug", "")),
+        "title": str(item.get("title", "")),
+        "source_kind": source_kind,
+        "source_ref": source_ref,
+    }
+
+
+def _library_item_identity(item: dict[str, Any]) -> str:
+    """Return one stable identity string for a descriptor library entry."""
+    source = item.get("source", {})
+    source_kind = str(source.get("kind", ""))
+    source_ref = str(source.get("ref") or source.get("relative_path") or item.get("slug") or "")
+    return f"{source_kind}:{source_ref}"
+
+
+def _library_collection_preview(libraries: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """Return one preview summary for the libraries stored in a workspace descriptor."""
+    categories: dict[str, Any] = {}
+    total_items = 0
+    for category in ("models", "texts", "audio"):
+        entries = libraries.get(category, [])
+        total_items += len(entries)
+        categories[category] = {
+            "count": len(entries),
+            "items": [_library_item_preview(item) for item in entries[:4]],
+        }
+    return {
+        "total_items": total_items,
+        "categories": categories,
+    }
+
+
+def _rescan_delta_preview(
+    current_libraries: dict[str, list[dict[str, Any]]],
+    rescanned_libraries: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Return one preview of what one rescan would add or remove per category."""
+    categories: dict[str, Any] = {}
+    for category in ("models", "texts", "audio"):
+        current_items = current_libraries.get(category, [])
+        rescanned_items = rescanned_libraries.get(category, [])
+        current_ids = {_library_item_identity(item): item for item in current_items}
+        rescanned_ids = {_library_item_identity(item): item for item in rescanned_items}
+        added_ids = [identity for identity in rescanned_ids if identity not in current_ids]
+        removed_ids = [identity for identity in current_ids if identity not in rescanned_ids]
+        categories[category] = {
+            "current_count": len(current_items),
+            "rescanned_count": len(rescanned_items),
+            "delta": len(rescanned_items) - len(current_items),
+            "added_count": len(added_ids),
+            "removed_count": len(removed_ids),
+            "added_preview": [_library_item_preview(rescanned_ids[item_id]) for item_id in added_ids[:4]],
+            "removed_preview": [_library_item_preview(current_ids[item_id]) for item_id in removed_ids[:4]],
+        }
+    return {"categories": categories}
+
+
+def _workspace_descriptor_preview(path: Path, *, registry_source: str) -> dict[str, Any]:
+    """Return one descriptor preview payload, including the current rescan delta."""
+    descriptor = _read_workspace_descriptor(path)
+    record = _load_workspace_record(path, registry_source=registry_source)
+    content_root = _resolve_location(path, descriptor["content_root"])
+    rescanned_libraries = {
+        "models": _auto_collect_workspace_items(content_root, "models"),
+        "texts": _auto_collect_workspace_items(content_root, "texts"),
+        "audio": _auto_collect_workspace_items(content_root, "audio"),
+    }
+    return {
+        "registry_key": record["registry_key"],
+        "slug": record["slug"],
+        "title": descriptor["title"],
+        "description": descriptor.get("description", ""),
+        "registry_source": registry_source,
+        "workspace_file_label": record["workspace_file_label"],
+        "workspace_file_path": record["workspace_file_path"],
+        "can_edit": registry_source == "user_registered",
+        "content_root": _location_preview(descriptor["content_root"]),
+        "file_browser_root": _location_preview(descriptor["file_browser_root"]),
+        "libraries": _library_collection_preview(descriptor.get("libraries", {})),
+        "rescan_preview": _rescan_delta_preview(descriptor.get("libraries", {}), rescanned_libraries),
+    }
 
 
 def _catalog_lookup(items: list[dict[str, Any]], key: str, value: str) -> dict[str, Any] | None:
@@ -754,6 +858,83 @@ def repair_workspace_file(registry_key: str) -> dict[str, Any]:
     return _load_workspace_record(path, registry_source="user_registered")
 
 
+def build_workspace_descriptor_preview(slug: str) -> dict[str, Any]:
+    """Return one preview payload for a valid registered workspace descriptor."""
+    record = _workspace_record_by_slug(slug)
+    return _workspace_descriptor_preview(
+        Path(record["workspace_file_path"]).resolve(),
+        registry_source=record["registry_source"],
+    )
+
+
+def build_invalid_workspace_repair_preview(registry_key: str) -> dict[str, Any]:
+    """Return one preview payload for repairing a broken registered descriptor."""
+    path = _registry_path_by_key(registry_key)
+    if not path.exists() or not path.is_file():
+        raise ValueError("Missing workspace files cannot be repaired in place.")
+    descriptor = _normalized_repair_descriptor(path)
+    return {
+        "registry_key": registry_key,
+        "workspace_file_label": _display_label_from_path(path),
+        "workspace_file_path": str(path.resolve()),
+        "slug": descriptor["slug"],
+        "title": descriptor["title"],
+        "description": descriptor.get("description", ""),
+        "content_root": _location_preview(descriptor["content_root"]),
+        "file_browser_root": _location_preview(descriptor["file_browser_root"]),
+        "libraries": _library_collection_preview(descriptor["libraries"]),
+    }
+
+
+def update_workspace_file(
+    slug: str,
+    *,
+    title: str,
+    description: str,
+    content_root_path: str,
+    file_browser_root_path: str,
+    refresh_libraries: bool,
+) -> dict[str, Any]:
+    """Apply one safe structured descriptor update for a registered workspace."""
+    record = _workspace_record_by_slug(slug)
+    if record["registry_source"] != "user_registered":
+        raise ValueError("Only user-registered workspaces can be edited.")
+
+    normalized_title = title.strip()
+    if not normalized_title:
+        raise ValueError("Workspace title cannot be empty.")
+
+    descriptor_path = Path(record["workspace_file_path"]).resolve()
+    descriptor = _read_workspace_descriptor(descriptor_path)
+    current_content_root = _resolve_location(descriptor_path, descriptor["content_root"])
+    current_file_browser_root = _resolve_location(descriptor_path, descriptor["file_browser_root"])
+    new_content_root = Path(content_root_path).expanduser().resolve()
+    new_file_browser_root = Path(file_browser_root_path).expanduser().resolve()
+    if not new_content_root.exists() or not new_content_root.is_dir():
+        raise ValueError("Workspace content root must be an existing directory.")
+    if not new_file_browser_root.exists() or not new_file_browser_root.is_dir():
+        raise ValueError("Workspace file-browser root must be an existing directory.")
+
+    descriptor["title"] = normalized_title
+    descriptor["description"] = description.strip()
+    descriptor["content_root"] = {"mode": "absolute", "path": str(new_content_root)}
+    descriptor["file_browser_root"] = {"mode": "absolute", "path": str(new_file_browser_root)}
+
+    roots_changed = (
+        new_content_root != current_content_root
+        or new_file_browser_root != current_file_browser_root
+    )
+    if refresh_libraries or roots_changed:
+        descriptor["libraries"] = {
+            "models": _auto_collect_workspace_items(new_content_root, "models"),
+            "texts": _auto_collect_workspace_items(new_content_root, "texts"),
+            "audio": _auto_collect_workspace_items(new_content_root, "audio"),
+        }
+
+    descriptor_path.write_text(json.dumps(descriptor, indent=2), encoding="utf-8")
+    return _load_workspace_record(descriptor_path, registry_source="user_registered")
+
+
 def _auto_collect_workspace_items(root_path: Path, kind: str) -> list[dict[str, Any]]:
     """Discover workspace files of a given kind under a user root."""
     suffixes = {
@@ -820,12 +1001,17 @@ def create_workspace_file(
 def build_workspace_manager_payload() -> dict[str, Any]:
     """Return workspace-manager metadata for the frontend page."""
     snapshot = _workspace_registry_snapshot()
-    return {
-        "workspace_suffix": WORKSPACE_SUFFIX,
-        "registry_file_label": REGISTRY_FILE.name,
-        "registry_storage_scope": "User-local FeelIT application state",
-        "workspaces": build_haptic_workspace_catalog(),
-        "invalid_workspaces": [
+
+    invalid_workspaces: list[dict[str, Any]] = []
+    for record in snapshot["invalid_records"]:
+        preview = None
+        if record["error_code"] == "invalid_descriptor":
+            try:
+                preview = build_invalid_workspace_repair_preview(record["registry_key"])
+            except ValueError:
+                preview = None
+
+        invalid_workspaces.append(
             {
                 "registry_key": record["registry_key"],
                 "workspace_file_label": record["workspace_file_label"],
@@ -834,7 +1020,14 @@ def build_workspace_manager_payload() -> dict[str, Any]:
                 "error": record["error"],
                 "can_unregister": True,
                 "can_repair": record["error_code"] == "invalid_descriptor",
+                "repair_preview": preview,
             }
-            for record in snapshot["invalid_records"]
-        ],
+        )
+
+    return {
+        "workspace_suffix": WORKSPACE_SUFFIX,
+        "registry_file_label": REGISTRY_FILE.name,
+        "registry_storage_scope": "User-local FeelIT application state",
+        "workspaces": build_haptic_workspace_catalog(),
+        "invalid_workspaces": invalid_workspaces,
     }
