@@ -1,5 +1,9 @@
 # FeelIT
 
+[![CI](https://img.shields.io/github/actions/workflow/status/fsantibanezleal/UDEC_FEELIT/ci.yml?branch=main&label=CI)](https://github.com/fsantibanezleal/UDEC_FEELIT/actions)
+[![License](https://img.shields.io/github/license/fsantibanezleal/UDEC_FEELIT)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live-2ea44f)](https://feelit.fasl-work.com)
+
 Modern accessibility-centered haptic application for tactile 3D object exploration, Braille reading, and controlled desktop-style interaction.
 
 ## Overview
